@@ -8,7 +8,11 @@ r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldoc
 jsonf = r.json()
 
 cwl = {}
+
 cwl['id'] = jsonf['name']
+
+cwl["cwlVersion"]= "v1.0"
+
 
 commandline = ""
 
@@ -76,7 +80,7 @@ eturn com;} if (def == []) {return "";} else {return com + def;}}"
                                  ]
     item["baseCommand"] = []
     item["class"] = "CommandLineTool"
-    item["arguments"] = [{"shellQuote": "false", "valueFrom": commandLine(jsonf)}]
+    item["arguments"] = [{"shellQuote": "false", "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', ''))" +  commandLine(jsonf)}]
 
 handleReqs(cwl)
 
