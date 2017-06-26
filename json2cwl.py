@@ -11,11 +11,6 @@ r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldoc
 jsonf = r.json()
 
 fname = jsonf['name']+'.cwl' #set file name
-
-#create file if it doesn't already exist
-# filepath = os.path.join(fpath,fname)
-# if not os.path.exists(fpath):
-# 	os.makedirs(fpath)
 f = open(fname, 'a')
 
 
