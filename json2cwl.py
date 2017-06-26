@@ -31,7 +31,6 @@ for args in jsonf['arguments']:
     inpt['doc'] = args['summary']
     inpt['id'] = args['name'][2:]
 
-
     if args['required'] == 'no':
         typ = args['type'].lower()  #boolean, integer, double, float, long ...
         if 'list' not in typ: 
@@ -39,24 +38,6 @@ for args in jsonf['arguments']:
         else:
             inpt['type'] = convt_type(typ[5:-1])+'[]?'
 
-
-
-
-
-
-
-
-
-    #if type is string, double, boolean, float, integer, long, File ==> then double?, boolean? float? ...
-
-    #if type is list ==. string[]?
-    #if type is unidentified ---> string
-    #unidentified type of list --> string[]?
-    #double -> float
-    #check if (String, boolean, Integer, List, 
-    #string, float, boolean, File, integer
-
-        #what if type is a list : (if 'List' in args['type']: '[]')
         
         if args['defaultValue'] == 'NA':
             pass
