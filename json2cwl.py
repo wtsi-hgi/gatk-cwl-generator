@@ -3,31 +3,104 @@ import pprint
 import os
 
 
-
-#for now we would be importing the url manually but there should be a way to take inputs and put that url into get
-
 #import the json url manually
 r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json')
 jsonf = r.json()
 
-fname = jsonf['name']+'.cwl' #set file name
-f = open(fname, 'a')
+cwl = {}
+cwl['id'] = jsonf['name']
+
+commandline = ""
+
+inputs = []
+
+def convt_type(typ):
+    if typ == 'double':
+        return 'float'
+    elif typ == 'integer':
+        return 'int'
+    elif typ == 'file':
+        return 'File'
+    elif typ in ('string','float','boolean'):
+        return typ
+    else:
+        return 'string'
+
+for args in jsonf['arguments']:
+    inpt = {}
+    inpt['doc'] = args['summary']
+    inpt['id'] = args['name'][2:]
+
+
+    if args['required'] == 'no':
+        typ = args['type'].lower()  #boolean, integer, double, float, long ...
+        if 'list' not in typ: 
+            inpt['type'] = convt_type(typ) +'?'
+        else:
+            inpt['type'] = convt_type(typ[5:-1])+'[]?'
+
+
+
 
 hello = "wef"
 
 
-#g = open("cwl.txt","w+")
-cwl = {}
-cwl['id'] = jsonf['name']
+
+
+    #if type is string, double, boolean, float, integer, long, File ==> then double?, boolean? float? ...
+
+    #if type is list ==. string[]?
+    #if type is unidentified ---> string
+    #unidentified type of list --> string[]?
+    #double -> float
+    #check if (String, boolean, Integer, List, 
+    #string, float, boolean, File, integer
+
+        #what if type is a list : (if 'List' in args['type']: '[]')
+        
+        if args['defaultValue'] == 'NA':
+            pass
+            #commandline function
+        else:
+            pass
+            #commandline function
+    inputs.append(inpt)
+
+
+
+cwl['inputs'] = inputs
+        # {
+        #     "type": "float?", 
+
+
+    #commandline += args['synonyms']+ "VALUE"
+    #print(args)
+
+# 'defaultValue': '0.002',
+#   'fulltext': '',
+#   'kind': 'advanced_param',
+#   'maxRecValue': 'NA',
+#   'maxValue': '1.0',
+#   'minRecValue': 'NA',
+#   'minValue': '0.0',
+
+#   'options': [],
+#   'required': 'no',
+#   'rodTypes': 'NA',
+#   'synonyms': '-ActProbThresh',
+#   'type': 'Double'},
+
+
+
 
 #for args in f['arguments']:
-	#print(args)
+    #print(args)
 #activeregion
 #annotfield
 #annotinfo
 #arguments
-	#default, kind, maxRecValue, macValue, minRecValue, minValue, name, options
-	#full text, required, rodTypes, summary, synonyms, type, Double
+    #default, kind, maxRecValue, macValue, minRecValue, minValue, name, options
+    #full text, required, rodTypes, summary, synonyms, type, Double
 #description
 #downsampling
 #group
@@ -39,26 +112,28 @@ cwl['id'] = jsonf['name']
 #--------------------------------------
 #cwlversion
 #inputs
-	#doc, type, id
+    #doc, type, id
 #requirements
-	#class
-		#expressionLib
-	#dockerPull
+    #class
+        #expressionLib
+    #dockerPull
 #outputs
-	#outputBinding
-		#glob
-	#type
-	#id
+    #outputBinding
+        #glob
+    #type
+    #id
 
 #basecommand
 #class
 #arguments
-	#shellquote
-	#valueFrom
+    #shellquote
+    #valueFrom
 #id
 
+fname = jsonf['name']+'.cwl' #set file name
+f = open(fname, 'a')
 f.write(str(cwl))
-
+f.close()
 
 #print(jsonf['name'])
 #print(cwl)
