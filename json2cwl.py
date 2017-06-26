@@ -13,7 +13,7 @@ jsonf = r.json()
 fname = jsonf['name']+'.cwl' #set file name
 f = open(fname, 'a')
 
-
+hello = "wef"
 
 
 #g = open("cwl.txt","w+")
