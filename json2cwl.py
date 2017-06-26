@@ -11,19 +11,17 @@ r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldoc
 jsonf = r.json()
 
 fname = jsonf['name']+'.cwl' #set file name
-fpath = 'c:/home/yejinyou/PY'
 
-filepath = os.path.join(fpath,fname)
-if not os.path.exists(fpath):
-	os.makedirs(fpath)
-f = open(filepath, 'a')
-
-#fi = open("C:\\example.txt","w+")
-#print(fi)
-#ie. take in url as a string then r = requests.get(url)
+#create file if it doesn't already exist
+# filepath = os.path.join(fpath,fname)
+# if not os.path.exists(fpath):
+# 	os.makedirs(fpath)
+f = open(fname, 'a')
 
 
-g = open("cwl.txt","w+")
+
+
+#g = open("cwl.txt","w+")
 cwl = {}
 cwl['id'] = jsonf['name']
 
