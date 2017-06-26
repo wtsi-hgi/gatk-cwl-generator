@@ -57,7 +57,7 @@ cwl['id'] = jsonf['name']
 	#valueFrom
 #id
 
-
+f.write(str(cwl))
 
 
 #print(jsonf['name'])
