@@ -38,7 +38,7 @@ for args in jsonf['arguments']:
         else:
             inpt['type'] = convt_type(typ[5:-1])+'[]?'
 
-        
+      
         if args['defaultValue'] == 'NA':
             pass
             #commandline function
@@ -50,71 +50,39 @@ for args in jsonf['arguments']:
 
 
 cwl['inputs'] = inputs
-        # {
-        #     "type": "float?", 
 
 
-    #commandline += args['synonyms']+ "VALUE"
-    #print(args)
+def commandLine(item):
+    comLine = ""
+    for args in item['arguments']:
+        comLine += "  $(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + (args['defaultValue'] if args['defaultValue'] != "NA" else ' ')  + "')))"
+    return comLine
 
-# 'defaultValue': '0.002',
-#   'fulltext': '',
-#   'kind': 'advanced_param',
-#   'maxRecValue': 'NA',
-#   'maxValue': '1.0',
-#   'minRecValue': 'NA',
-#   'minValue': '0.0',
+def handleReqs(item):
+    item["requirements"] = [{"class": "ShellCommandRequirement"},
+                            {
+                                           "class": "InLineJavascriptRequirement",
+                                           "expressionLib": [
+                                                               "function WDLCommandPart(expr, def) {var rval; try {rval = eval(expr);} catch(err) {rval = def;} return rval;}",
+                                                               "function NonNull(x) {if(x === null) {throw new UserException(\"NullValue\");} else {return x;}}",
+                                                               "function defHandler(com, def) {if(Array.isArray(def) && def.length == 0) {return '';} else if(Array.isArray(def) && def.length !=0 ) {return def.map(elementh=> com+ ' ' + element).join(' ');} else if (def == \"false\" {return "";} else if (def == \"true\" (r\
+eturn com;} if (def == []) {return "";} else {return com + def;}}"
+                                                               ]
+                                       },
+                                   {
+                                                  "dockerPull": "gatk:latest",
+                                                  "class": "DockerRequirement"
+                                              }
+                                 ]
+    item["baseCommand"] = []
+    item["class"] = "CommandLineTool"
+    item["arguments"] = [{"shellQuote": "false", "valueFrom": commandLine(jsonf)}]
 
-#   'options': [],
-#   'required': 'no',
-#   'rodTypes': 'NA',
-#   'synonyms': '-ActProbThresh',
-#   'type': 'Double'},
-
-
-
-
-#for args in f['arguments']:
-    #print(args)
-#activeregion
-#annotfield
-#annotinfo
-#arguments
-    #default, kind, maxRecValue, macValue, minRecValue, minValue, name, options
-    #full text, required, rodTypes, summary, synonyms, type, Double
-#description
-#downsampling
-#group
-#name
-#parallel
-#partitiontype
-#readfilters
-
-#--------------------------------------
-#cwlversion
-#inputs
-    #doc, type, id
-#requirements
-    #class
-        #expressionLib
-    #dockerPull
-#outputs
-    #outputBinding
-        #glob
-    #type
-    #id
-
-#basecommand
-#class
-#arguments
-    #shellquote
-    #valueFrom
-#id
+handleReqs(cwl)
 
 fname = jsonf['name']+'.cwl' #set file name
 f = open(fname, 'a')
 f.write(str(cwl))
 f.close()
 
-#print(jsonf['name'])
-#print(cwl)
+
