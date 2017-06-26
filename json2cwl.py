@@ -39,12 +39,7 @@ for args in jsonf['arguments']:
         else:
             inpt['type'] = convt_type(typ[5:-1])+'[]?'
 
-
-
-
-hello = "wef"
-
-
+ 
 
 
     #if type is string, double, boolean, float, integer, long, File ==> then double?, boolean? float? ...
@@ -92,7 +87,35 @@ cwl['inputs'] = inputs
 
 
 
+def commandLine(item):
+    comLine = ""
+    for args in item['arguments']:
+        comLine += "  $(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + (args['defaultValue'] if args['defaultValue'] != "NA" else ' ')  + "')))"
+    return comLine
 
+def handleReqs(item):
+    item["requirements"] = [{"class": "ShellCommandRequirement"},
+                            {
+                                           "class": "InLineJavascriptRequirement",
+                                           "expressionLib": [
+                                                               "function WDLCommandPart(expr, def) {var rval; try {rval = eval(expr);} catch(err) {rval = def;} return rval;}",
+                                                               "function NonNull(x) {if(x === null) {throw new UserException(\"NullValue\");} else {return x;}}",
+                                                               "function defHandler(com, def) {if(Array.isArray(def) && def.length == 0) {return '';} else if(Array.isArray(def) && def.length !=0 ) {return def.map(elementh=> com+ ' ' + element).join(' ');} else if (def == \"false\" {return "";} else if (def == \"true\" (r\
+eturn com;} if (def == []) {return "";} else {return com + def;}}"
+                                                               ]
+                                       },
+                                   {
+                                                  "dockerPull": "gatk:latest",
+                                                  "class": "DockerRequirement"
+                                              }
+                                 ]
+    item["baseCommand"] = []
+    item["class"] = "CommandLineTool"
+    item["arguments"] = [{"shellQuote": "false", "valueFrom": commandLine(jsonf)}]
+
+handleReqs(cwl)
+
+    
 #for args in f['arguments']:
     #print(args)
 #activeregion
