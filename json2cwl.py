@@ -41,10 +41,13 @@ def inputs(item):
                 "id": "input_file","secondaryFiles": [".crai"]}]
     
     for args in jsonf['arguments']:
-        inpt = {}
-        inpt["doc"] = args['summary']
-        inpt["id"] = args['name'][2:]
-        typ = args['type'].lower()
+        if args['name'] == '--input_file':
+          continue
+        else:
+          inpt = {}
+          inpt["doc"] = args['summary']
+          inpt["id"] = args['name'][2:]
+          typ = args['type'].lower()
 
         if args['required'] == 'no':
             if 'list' not in typ: 
