@@ -6,9 +6,13 @@ import json
 
 #import the json url manually
 r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json')
+#d = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_engine_CommandLineGATK.php.json')
 d = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_engine_CommandLineGATK.php.json')
 
+#print(d.json())
+#jsonf = r.json()
 jsonf = {}
+#print(type(r.json()['arguments']))
 jsonf['arguments'] = r.json()['arguments']+d.json()['arguments']
 jsonf['name'] = r.json()['name']
 #pprint.pprint(jsonf)
