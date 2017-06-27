@@ -6,7 +6,12 @@ import json
 
 #import the json url manually
 r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json')
-jsonf = r.json()
+d = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_engine_CommandLineGATK.php.json')
+
+jsonf = {}
+jsonf['arguments'] = r.json()['arguments']+d.json()['arguments']
+jsonf['name'] = r.json()['name']
+#pprint.pprint(jsonf)
 
 cwl = {}
 cwl['id'] = jsonf['name']
@@ -39,13 +44,26 @@ def inputs(item):
         inpt = {}
         inpt["doc"] = args['summary']
         inpt["id"] = args['name'][2:]
+        typ = args['type'].lower()
 
         if args['required'] == 'no':
-            typ = args['type'].lower()  #boolean, integer, double, float, long ...
             if 'list' not in typ: 
                 inpt["type"] = convt_type(typ) +"?"
             else:
-                inpt["type"] = convt_type(typ[5:-1])+"[]?"  
+                inpt["type"] = convt_type(typ[5:-1])+"[]?" 
+
+        elif args['required'] == 'yes':
+            if 'list' not in typ:
+                inpt["type"] = convt_type(typ)
+            else:
+                inpt["type"] = convt_type(typ[5:-1])
+            # if args["defaultValue"] == "NA":
+            #   #$(WDLCommandPart('\"-nct\" + NonNull(inputs.nctVal)', ''))
+
+            #   pass
+            # else:
+            #   #-ActProbThresh $(WDLCommandPart('NonNull(inputs.activeProbabilityThreshold)', '0.002'))
+            #   pass
         inputs.append(inpt)
 
     item["inputs"] = inputs
