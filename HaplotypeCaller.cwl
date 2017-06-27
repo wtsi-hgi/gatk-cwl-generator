@@ -346,7 +346,7 @@
             "expressionLib": [
                 "function WDLCommandPart(expr, def) {var rval; try {rval = eval(expr);} catch(err) {rval = def;} return rval;}",
                 "function NonNull(x) {if(x === null) {throw new UserException('NullValue');} else {return x;}}",
-                "function defHandler(com, def) {if(Array.isArray(def) && def.length == 0) {return '';} else if(Array.isArray(def) && def.length !=0 ) {return def.map(elementh=> com+ ' ' + element).join(' ');} else if (def =='false') {return '';} else if (def == 'true') {return com;} if (def == []) {return '';} else {return com + def;}}"
+                "function defHandler(com, def) {return def=='false'; if(Array.isArray(def) && def.length == 0) {return '';} else if(Array.isArray(def) && def.length !=0 ) {return def.map(elementh=> com+ ' ' + element).join(' ');} else if (def =='false') {return '';} else if (def == 'true') {return com;} if (def == []) {return '';} else {return com + def;}}"
             ],
             "class": "InlineJavascriptRequirement"
         },
