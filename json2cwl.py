@@ -81,7 +81,7 @@ eturn com;} if (def == []) {return "";} else {return com + def;}}"
                                  ]
     item["baseCommand"] = []
     item["class"] = "CommandLineTool"
-    item["arguments"] = [{"shellQuote": "false", "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', ''))" +  commandLine(jsonf)}]
+    item["arguments"] = [{"shellQuote": false, "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', ''))" +  commandLine(jsonf)}]
 
 handleReqs(cwl)
 
