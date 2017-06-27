@@ -1,6 +1,7 @@
 import requests
 import pprint
 import os
+import json
 
 
 #import the json url manually
@@ -20,30 +21,30 @@ inputs = []
 
 def convt_type(typ):
     if typ == 'double':
-        return 'float'
+        return "float"
     elif typ == 'integer':
-        return 'int'
+        return "int"
     elif typ == 'file':
-        return 'File'
+        return "File"
     elif typ in ('string','float','boolean'):
         return typ
     else:
-        return 'string'
+        return "string"
 
 for args in jsonf['arguments']:
     inpt = {}
-    inpt['doc'] = args['summary']
-    inpt['id'] = args['name'][2:]
+    inpt["doc"] = args['summary']
+    inpt["id"] = args['name'][2:]
 
     if args['required'] == 'no':
         typ = args['type'].lower()  #boolean, integer, double, float, long ...
         if 'list' not in typ: 
-            inpt['type'] = convt_type(typ) +'?'
+            inpt["type"] = convt_type(typ) +"?"
         else:
-            inpt['type'] = convt_type(typ[5:-1])+'[]?'
+            inpt["type"] = convt_type(typ[5:-1])+"[]?"
 
       
-        if args['defaultValue'] == 'NA':
+        if args["defaultValue"] == "NA":
             pass
             #commandline function
         else:
@@ -53,19 +54,19 @@ for args in jsonf['arguments']:
 
 
 
-cwl['inputs'] = inputs
+cwl["inputs"] = inputs
 
 
 def commandLine(item):
     comLine = ""
-    for args in item['arguments']:
+    for args in item["arguments"]:
         comLine += "  $(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + (args['defaultValue'] if args['defaultValue'] != "NA" else ' ')  + "')))"
     return comLine
 
 def handleReqs(item):
     item["requirements"] = [{"class": "ShellCommandRequirement"},
                             {
-                                           "class": "InLineJavascriptRequirement",
+                                           "class": "InlineJavascriptRequirement",
                                            "expressionLib": [
                                                                "function WDLCommandPart(expr, def) {var rval; try {rval = eval(expr);} catch(err) {rval = def;} return rval;}",
                                                                "function NonNull(x) {if(x === null) {throw new UserException(\"NullValue\");} else {return x;}}",
@@ -86,7 +87,8 @@ handleReqs(cwl)
 
 fname = jsonf['name']+'.cwl' #set file name
 f = open(fname, 'a')
-f.write(str(cwl))
+f.write(json.dumps(cwl, indent = 4, sort_keys = False))
 f.close()
 
+print(json.dumps(cwl, indent = 4, sort_keys = False))
 
