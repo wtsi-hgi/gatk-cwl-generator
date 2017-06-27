@@ -9,15 +9,11 @@ r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldoc
 jsonf = r.json()
 
 cwl = {}
-
 cwl['id'] = jsonf['name']
-
 cwl["cwlVersion"]= "v1.0"
-
 
 commandline = ""
 
-inputs = []
 
 def convt_type(typ):
     if typ == 'double':
@@ -31,63 +27,33 @@ def convt_type(typ):
     else:
         return "string"
 
-for args in jsonf['arguments']:
-    inpt = {}
-    inpt["doc"] = args['summary']
-    inpt["id"] = args['name'][2:]
+def inputs(item):
+    inputs = [{ "doc": "fasta file of reference genome", "type": "File",
+                "id": "ref", "secondaryFiles": [".fai","^.dict"]},
+              { "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
+              { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
+              { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
+                "id": "input_file","secondaryFiles": [".crai"]}]
+    
+    for args in jsonf['arguments']:
+        inpt = {}
+        inpt["doc"] = args['summary']
+        inpt["id"] = args['name'][2:]
 
-    if args['required'] == 'no':
-        typ = args['type'].lower()  #boolean, integer, double, float, long ...
-        if 'list' not in typ: 
-            inpt["type"] = convt_type(typ) +"?"
-        else:
-            inpt["type"] = convt_type(typ[5:-1])+"[]?"
+        if args['required'] == 'no':
+            typ = args['type'].lower()  #boolean, integer, double, float, long ...
+            if 'list' not in typ: 
+                inpt["type"] = convt_type(typ) +"?"
+            else:
+                inpt["type"] = convt_type(typ[5:-1])+"[]?"  
+        inputs.append(inpt)
 
-      
-        if args["defaultValue"] == "NA":
-            pass
-            #commandline function
-        else:
-            pass
-            #commandline function
-    inputs.append(inpt)
+    item["inputs"] = inputs
 
-inputs.extend([{
-            "doc": "fasta file of reference genome",
-            "type": "File",
-            "id": "ref",
-            "secondaryFiles": [".fai","^.dict"]
-        },
-        {
-            "doc": "Index file of reference genome",
-            "type": "File",
-            "id": "refIndex"
-        },
-        {
-            "doc": "dict file of reference genome",
-            "type": "File",
-            "id": "refDict"
-        },
-        {
-            "doc": "Input file containing sequence data (BAM or CRAM)",
-            "type": "File",
-            "id": "input_file",
-            "secondaryFiles": [".crai"]
-        }])
-
-
-
-cwl["inputs"] = inputs
-
-cwl["outputs"] = [
-    {
-        "outputBinding": {
-            "glob":"$(inputs.out)"
-            },
-        "type": "File",
-        "id": "taskOut"
-        }
-    ]
+def outputs(item):
+    item["outputs"] = [{ "outputBinding": { "glob":"$(inputs.out)"},
+                         "type": "File",
+                         "id": "taskOut" }]
 
 def commandLine(item):
     comLine = ""
@@ -114,7 +80,9 @@ def handleReqs(item):
     item["class"] = "CommandLineTool"
     item["arguments"] = [{"shellQuote": False, "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', ''))" +  commandLine(jsonf)}]
 
+inputs(cwl)
 handleReqs(cwl)
+outputs(cwl)
 
 fname = jsonf['name']+'.cwl' #set file name
 f = open(fname, 'a')
