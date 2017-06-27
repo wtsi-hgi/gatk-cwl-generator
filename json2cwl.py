@@ -52,6 +52,29 @@ for args in jsonf['arguments']:
             #commandline function
     inputs.append(inpt)
 
+inputs.extend([{
+            "doc": "fasta file of reference genome",
+            "type": "File",
+            "id": "ref",
+            "secondaryFiles": [".fai","^.dict"]
+        },
+        {
+            "doc": "Index file of reference genome",
+            "type": "File",
+            "id": "refIndex"
+        },
+        {
+            "doc": "dict file of reference genome",
+            "type": "File",
+            "id": "refDict"
+        },
+        {
+            "doc": "Input file containing sequence data (BAM or CRAM)",
+            "type": "File",
+            "id": "input_file",
+            "secondaryFiles": [".crai"]
+        }])
+
 
 
 cwl["inputs"] = inputs
