@@ -6,23 +6,20 @@ import json
 
 #import the json url manually
 r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json')
-#d = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_engine_CommandLineGATK.php.json')
 d = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_engine_CommandLineGATK.php.json')
 
-#print(d.json())
-#jsonf = r.json()
 jsonf = {}
-#print(type(r.json()['arguments']))
 jsonf['arguments'] = r.json()['arguments']+d.json()['arguments']
 jsonf['name'] = r.json()['name']
-#pprint.pprint(jsonf)
+
+fname = jsonf['name']+'.cwl' #set file name
+f = open(fname, 'a')
 
 cwl = {}
 cwl['id'] = jsonf['name']
 cwl["cwlVersion"]= "v1.0"
 
-commandline = ""
-
+#commandline = ""
 
 def convt_type(typ):
     if typ == 'double':
@@ -35,6 +32,7 @@ def convt_type(typ):
         return typ
     else:
         return "string"
+
 
 def inputs(item):
     inputs = [{ "doc": "fasta file of reference genome", "type": "File",
@@ -109,10 +107,7 @@ inputs(cwl)
 handleReqs(cwl)
 outputs(cwl)
 
-fname = jsonf['name']+'.cwl' #set file name
-f = open(fname, 'a')
 f.write(json.dumps(cwl, indent = 4, sort_keys = False))
 f.close()
 
-print(json.dumps(cwl, indent = 4, sort_keys = False))
-
+#print(json.dumps(cwl, indent = 4, sort_keys = False))
