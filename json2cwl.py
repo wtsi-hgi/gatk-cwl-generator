@@ -12,14 +12,15 @@ jsonf = {}
 jsonf['arguments'] = r.json()['arguments']
 #jsonf['arguments'] = r.json()['arguments']+d.json()['arguments']
 jsonf['name'] = r.json()['name']
-#pprint.pprint(jsonf)
+
+fname = jsonf['name']+'.cwl' #set file name
+f = open(fname, 'a')
 
 cwl = {}
 cwl['id'] = jsonf['name']
 cwl["cwlVersion"]= "v1.0"
 
-commandline = ""
-
+#commandline = ""
 
 def convt_type(typ):
     if typ == 'double':
@@ -33,6 +34,7 @@ def convt_type(typ):
     else:
         return "string"
 
+
 def inputs(item):
     inputs = [{ "doc": "fasta file of reference genome", "type": "File",
                 "id": "ref", "secondaryFiles": [".fai","^.dict"]},
@@ -42,10 +44,14 @@ def inputs(item):
                 "id": "input_file","secondaryFiles": [".crai"]}]
     
     for args in jsonf['arguments']:
+        inpt = {}
         if args['name'] == '--input_file':
           continue
+        elif args['name'] == '--help':
+          inpt['doc'] = args['summary']+'\n Name and Synonym modified from help -> gatk_help as it conflicts with cwl-runner argument.'
+          inpt['id'] = 'gatk_help'
+          typ = args['type'].lower()
         else:
-          inpt = {}
           inpt["doc"] = args['summary']
           inpt["id"] = args['name'][2:]
           typ = args['type'].lower()
@@ -126,10 +132,7 @@ inputs(cwl)
 handleReqs(cwl)
 outputs(cwl)
 
-fname = jsonf['name']+'.cwl' #set file name
-f = open(fname, 'a')
 f.write(json.dumps(cwl, indent = 4, sort_keys = False))
 f.close()
 
-print(json.dumps(cwl, indent = 4, sort_keys = False))
-
+#print(json.dumps(cwl, indent = 4, sort_keys = False))
