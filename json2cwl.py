@@ -43,10 +43,14 @@ def inputs(item):
                 "id": "input_file","secondaryFiles": [".crai"]}]
     
     for args in jsonf['arguments']:
+        inpt = {}
         if args['name'] == '--input_file':
           continue
+        elif args['name'] == '--help':
+          inpt['doc'] = args['summary']+'\n Name and Synonym modified from help -> gatk_help as it conflicts with cwl-runner argument.'
+          inpt['id'] = 'gatk_help'
+          typ = args['type'].lower()
         else:
-          inpt = {}
           inpt["doc"] = args['summary']
           inpt["id"] = args['name'][2:]
           typ = args['type'].lower()
