@@ -25,11 +25,11 @@ cwl["cwlVersion"]= "v1.0"
 def convt_type(typ):
     if typ == 'double':
         return "float"
-    elif typ == 'integer':
+    elif typ == 'integer' or typ == 'int':
         return "int"
     elif typ == 'file':
         return "File"
-    elif typ in ('string','float','boolean'):
+    elif typ in ('string','float','boolean','bool'):
         return typ
     else:
         return "string"
@@ -41,7 +41,9 @@ def inputs(item):
               { "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
               { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
               { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
-                "id": "input_file","secondaryFiles": [".crai"]}]
+                "id": "input_file","secondaryFiles": [".crai","^.dict"]},
+              { "doc": "An optional parameter which allows the user to specify additions to the command line at run time",
+                "type": "string?", "id": "userString"} ]
     
     for args in jsonf['arguments']:
         inpt = {}
@@ -114,9 +116,9 @@ def handleReqs(item):
                             {
                                            "class": "InlineJavascriptRequirement",
                                            "expressionLib": [
-                                                               "function WDLCommandPart(expr, def) {var rval; try {rval = eval(expr);} catch(err) {rval = def;} return rval;}",
+                                                               "function WDLCommandPart(expr, def) {var rval; try { rval = eval(expr);} catch(err) {rval = def;} return rval;}",
                                                                "function NonNull(x) {if(x === null) {throw new UserException('NullValue');} else {return x;}}",
-                                                               "function defHandler(com, def) {if(Array.isArray(def) && def.length == 0) {return '';} else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');} else if (def =='false') {return '';} else if (def == 'true') {return com;} if (def == []) {return '';} else {return com + ' ' + def;}}"
+                                                               "function defHandler (com, def) {if(Array.isArray(def) && def.length == 0) {return '';} else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');} else if (def =='false') {return '';} else if (def == 'true') {return com;} if (def == []) {return '';} else {return com + ' ' + def;}}"
                                                                ]
                                        },
                                    {
@@ -135,4 +137,4 @@ outputs(cwl)
 f.write(json.dumps(cwl, indent = 4, sort_keys = False))
 f.close()
 
-#print(json.dumps(cwl, indent = 4, sort_keys = False))
+#print(json.dumps(cwl, indent = 4, sort_keㅑys = False))
