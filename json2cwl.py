@@ -9,7 +9,8 @@ r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldoc
 d = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_engine_CommandLineGATK.php.json')
 
 jsonf = {}
-jsonf['arguments'] = r.json()['arguments']+d.json()['arguments']
+jsonf['arguments'] = r.json()['arguments']
+#jsonf['arguments'] = r.json()['arguments']+d.json()['arguments']
 jsonf['name'] = r.json()['name']
 #pprint.pprint(jsonf)
 
@@ -76,10 +77,30 @@ def outputs(item):
                          "type": "File",
                          "id": "taskOut" }]
 
+def need_def(arg):
+    if 'List' in arg['type']:
+        if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
+            arg['defaultValue'] = []
+        else:
+            arg['defaultValue'] = [str(a) for a in arg['defaultValue'][1:-1].split(',')]
+    if ('boolean' in arg['type'] or 'List' in arg['type']):
+        return True
+    return False
+
 def commandLine(item):
     comLine = ""
-    for args in item["arguments"]:
-        comLine += "  $(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + (args['defaultValue'] if args['defaultValue'] != "NA" else ' ')  + "')))"
+    for args in item["arguments"] :
+        if need_def(args):
+            comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "
+        else:
+            if args['defaultValue'] != "NA":
+                comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + args['defaultValue'] + "')) "
+            else:
+                comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
+        # if need_def(args):
+        #     comLine += "  $(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + (str(args['defaultValue']) if args['defaultValue'] != "NA" else "' '"  )  + ")))"
+        # else:
+        #     comLine += ' ' + args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + (args['defaultValue'] if args['defaultValue'] != "NA" else "' '")  + "'))"
     return comLine
 
 def handleReqs(item):
@@ -89,7 +110,7 @@ def handleReqs(item):
                                            "expressionLib": [
                                                                "function WDLCommandPart(expr, def) {var rval; try {rval = eval(expr);} catch(err) {rval = def;} return rval;}",
                                                                "function NonNull(x) {if(x === null) {throw new UserException('NullValue');} else {return x;}}",
-                                                               "function defHandler(com, def) {if(Array.isArray(def) && def.length == 0) {return '';} else if(Array.isArray(def) && def.length !=0 ) {return def.map(elementh=> com+ ' ' + element).join(' ');} else if (def =='false') {return '';} else if (def == 'true') {return com;} if (def == []) {return '';} else {return com + def;}}"
+                                                               "function defHandler(com, def) {if(Array.isArray(def) && def.length == 0) {return '';} else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');} else if (def =='false') {return '';} else if (def == 'true') {return com;} if (def == []) {return '';} else {return com + ' ' + def;}}"
                                                                ]
                                        },
                                    {
@@ -99,7 +120,7 @@ def handleReqs(item):
                                  ]
     item["baseCommand"] = []
     item["class"] = "CommandLineTool"
-    item["arguments"] = [{"shellQuote": False, "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', ''))" +  commandLine(jsonf)}]
+    item["arguments"] = [{"shellQuote": False, "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  commandLine(jsonf)}] 
 
 inputs(cwl)
 handleReqs(cwl)
