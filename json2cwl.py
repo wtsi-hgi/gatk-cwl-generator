@@ -13,6 +13,13 @@ jsonf['arguments'] = r.json()['arguments']
 #jsonf['arguments'] = r.json()['arguments']+d.json()['arguments']
 jsonf['name'] = r.json()['name']
 
+
+# #########remove this line for actual parser############
+# sanger_specific = ['-maxGt', '-maxNumPLValues', '-heterozygosityStandardDeviation', '-maxReadsInMemoryPerSample', '-maxTotalReadsInMemory']
+# ########remove above lines #########
+
+
+
 fname = jsonf['name']+'.cwl' #set file name
 f = open(fname, 'a')
 
@@ -89,17 +96,21 @@ def need_def(arg):
             arg['defaultValue'] = []
         else:
             arg['defaultValue'] = [str(a) for a in arg['defaultValue'][1:-1].split(',')]
-    if ('boolean' in arg['type'] or 'List' in arg['type']):
+    if ('boolean' in arg['type'] or 'List' in arg['type'] or 'false' in arg['defaultValue']):
         return True
     return False
 
 def commandLine(item):
     comLine = ""
     for args in item["arguments"] :
+        # #####remove next line#####
+        # if args['synonyms'] in sanger_specific:
+        #     continue
+        # ######remove above lines####
         if need_def(args):
             comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "
         else:
-            if args['defaultValue'] != "NA":
+            if args['defaultValue'] != "NA" and args['defaultValue']!= "none":
                 comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + args['defaultValue'] + "')) "
             else:
                 comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
