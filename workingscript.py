@@ -15,9 +15,14 @@ jsonf['name'] = r.json()['name']
 #create file
 fname = jsonf['name']+'.cwl'
 f = open(fname, 'a')
-cwl = {'id':jsonf['name'],'cwlVersion':'v1.0'}
+cwl = {'id':jsonf['name'],'cwlVersion':'v1.0', 'baseCommand':[], 'class': 'CommandLineTool','outputs':[{ "outputBinding": { "glob":"$(inputs.out)"}, "type": "File", "id": "taskOut" }],'requirements':[{ "class": "ShellCommandRequirement"},
+                            { "class": "InlineJavascriptRequirement",
+                              "expressionLib": [ "function WDLCommandPart(expr, def) {var rval; try { rval = eval(expr);} catch(err) {rval = def;} return rval;}",
+                                                 "function NonNull(x) {if(x === null) {throw new UserException('NullValue');} else {return x;}}",
+                                                 "function defHandler (com, def) {if(Array.isArray(def) && def.length == 0) {return '';} else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');} else if (def =='false') {return '';} else if (def == 'true') {return com;} if (def == []) {return '';} else {return com + ' ' + def;}}"
+                                                ]},
+                            { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
 
-#undefined arguments, arguments with invalid default, overlapping arguments
 invalid_args = ['--defaultBaseQualities','--heterozygosity_stdev','--max_genotype_count','--max_num_PL_values',
                 '--maxReadsInMemoryPerSample','--maxTotalReadsInMemory','--secondsBetweenProgressUpdates','--input_file','--help']
 
@@ -38,18 +43,17 @@ def inputs(item):
                 "id": "ref", "secondaryFiles": [".fai","^.dict"]},
               { "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
               { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
-              { "doc": "An optional parameter which allows the user to specify additions to the command line at run time", 
-                "type": "string?", "id": "userString"},
               { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
-                "id": "input_file","secondaryFiles": [".crai","^.dict"]}] ##########################
+                "id": "input_file","secondaryFiles": [".crai","^.dict"]}] 
+             
     for args in jsonf['arguments']:
       inpt = {}
-      if args['required'] == 'yes' or args['name'] in ['--input_file','--help']: ########
+      if args['required'] == 'yes' or args['name'] in invalid_args: #['--input_file','--help']: ########
         continue
       else:
         inpt['doc'] = args['summary']
-        inpt['id'] = args['name'][2:] #strip '-- '
-        typ = args['type'].lower() #make case insensitive
+        inpt['id'] = args['name'][2:] 
+        typ = args['type'].lower()        
         if 'list' not in typ: 
           if args['name'] == '--out':
             inpt['type'] = convt_type(typ) ########################
@@ -59,9 +63,6 @@ def inputs(item):
           inpt['type'] = convt_type(typ[5:-1])+'[]?' 
       inputs.append(inpt)
     item["inputs"] = inputs
-
-def outputs(item):
-    item["outputs"] = [{ "outputBinding": { "glob":"$(inputs.out)"}, "type": "File", "id": "taskOut" }] ########################
 
 def need_def(arg):
     if 'List' in arg['type']:
@@ -73,7 +74,7 @@ def need_def(arg):
         return True
     return False
 
-def commandLine(item):
+def commandLine(item,cwlf):
     comLine = ""
     for args in item["arguments"] :
        if args['required'] == 'yes' or args['name'] in invalid_args: 
@@ -85,23 +86,15 @@ def commandLine(item):
             comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + args['defaultValue'] + "')) "
           else:
             comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
-    return comLine
+#    return comLine
 
-def handleReqs(item):
-    item["requirements"] = [{ "class": "ShellCommandRequirement"},
-                            { "class": "InlineJavascriptRequirement",
-                              "expressionLib": [ "function WDLCommandPart(expr, def) {var rval; try { rval = eval(expr);} catch(err) {rval = def;} return rval;}",
-                                                 "function NonNull(x) {if(x === null) {throw new UserException('NullValue');} else {return x;}}",
-                                                 "function defHandler (com, def) {if(Array.isArray(def) && def.length == 0) {return '';} else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');} else if (def =='false') {return '';} else if (def == 'true') {return com;} if (def == []) {return '';} else {return com + ' ' + def;}}"
-                                                ]},
-                            { "dockerPull": "gatk:latest","class": "DockerRequirement"}]
-    item["baseCommand"] = []
-    item["class"] = "CommandLineTool"
-    item["arguments"] = [{"shellQuote": False, "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  commandLine(jsonf)}] 
+#def handleReqs(item):
+       cwlf["arguments"] = [{"shellQuote": False, "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
 
 inputs(cwl)
-handleReqs(cwl)
-outputs(cwl)
+commandLine(jsonf,cwl)
+#handleReqs(cwl)
+#outputs(cwl)
 
 f.write(json.dumps(cwl, indent = 4, sort_keys = False))
 f.close()
