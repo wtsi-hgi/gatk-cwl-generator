@@ -15,26 +15,19 @@ jsonf['name'] = r.json()['name']
 #create file
 fname = jsonf['name']+'.cwl'
 f = open(fname, 'a')
-cwl = {'id':jsonf['name'],
-       'cwlVersion':'v1.0', 
-       'baseCommand':[], 
-       'class': 'CommandLineTool',
-       'outputs':[{ "outputBinding": { "glob":"$(inputs.out)"}, "type": "File", "id": "taskOut" }],
-       'requirements':[
-           { "class": "ShellCommandRequirement"},
-           { "class": "InlineJavascriptRequirement",
-             "expressionLib": [ "function WDLCommandPart(expr, def) {var rval; try { rval = eval(expr);} catch(err) {rval = def;} return rval;}",
-                                "function NonNull(x) {if(x === null) {throw new UserException('NullValue');} else {return x;}}",
-                                """function defHandler (com, def) { if(Array.isArray(def) && def.length == 0) {return '';} 
-                                      else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');}
-                                      else if (def =='false') {return '';} else if (def == 'true') {return com;} 
-                                      if (def == []) {return '';} else {return com + ' ' + def;}}""" ]},
-           { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
+cwl = {'id':jsonf['name'],'cwlVersion':'v1.0', 'baseCommand':[], 'class': 'CommandLineTool','outputs':[{ "outputBinding": { "glob":"$(inputs.out)"}, "type": "File", "id": "taskOut" }],
+       'requirements':[{ "class": "ShellCommandRequirement"},
+                       { "class": "InlineJavascriptRequirement",
+                         "expressionLib": [ "function WDLCommandPart(expr, def) {var rval; try { rval = eval(expr);} catch(err) {rval = def;} return rval;}",
+                                            "function NonNull(x) {if(x === null) {throw new UserException('NullValue');} else {return x;}}",
+                                            """function defHandler (com, def) {if(Array.isArray(def) && def.length == 0) {return '';} 
+                                            else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');}
+                                            else if (def =='false') {return '';} else if (def == 'true') {return com;} if (def == []) {return '';} else {return com + ' ' + def;}}""" ]},
+                       { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
 
 #undefined args, args with invalid default, args with conflicting name
-invalid_args = ['--defaultBaseQualities','--heterozygosity_stdev','--max_genotype_count',
-                '--max_num_PL_values', '--maxReadsInMemoryPerSample','--maxTotalReadsInMemory',
-                '--secondsBetweenProgressUpdates','--input_file','--help']
+invalid_args = ['--defaultBaseQualities','--heterozygosity_stdev','--max_genotype_count','--max_num_PL_values',
+                '--maxReadsInMemoryPerSample','--maxTotalReadsInMemory','--secondsBetweenProgressUpdates','--input_file','--help']
 
 def convt_type(typ):
     if typ == 'double':
@@ -87,11 +80,8 @@ def cwlf_generator(item,cwlf):
             comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + args['defaultValue'] + "')) "
           else:
             comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
+    cwlf["arguments"] = [{"shellQuote": False, "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
     cwlf["inputs"] = inputs
-    cwlf["arguments"] = [{"shellQuote": False, 
-                          "valueFrom": """java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller 
-                                          -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) 
-                                          --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) """ +  comLine}] 
 
 cwlf_generator(jsonf,cwl)
 
