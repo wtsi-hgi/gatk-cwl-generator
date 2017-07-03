@@ -1,5 +1,6 @@
+#This code converts the gatk-Haplotypecaller3.6 json to cwl.
+
 import requests
-import pprint
 import os
 import json
 
@@ -58,14 +59,15 @@ def need_def(arg):
         return True
     return False
 
+#converts json to cwl
 def cwlf_generator(item,cwlf):
+    comLine = ""
     inputs = [{ "doc": "fasta file of reference genome", "type": "File",
                 "id": "ref", "secondaryFiles": [".fai","^.dict"]},
               { "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
               { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
               { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
-                "id": "input_file","secondaryFiles": [".crai","^.dict"]}] 
-    comLine = ""         
+                "id": "input_file","secondaryFiles": [".crai","^.dict"]}]          
     for args in item['arguments']:
       inpt = {}
       if args['required'] == 'yes' or args['name'] in invalid_args:
@@ -89,8 +91,9 @@ def cwlf_generator(item,cwlf):
     cwlf["inputs"] = inputs
     cwlf["arguments"] = [{"shellQuote": False, "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
    
-cwlf_generator(jsonf,cwl)
 
-f.write(json.dumps(cwl, indent = 4, sort_keys = False))
+
+cwlf_generator(jsonf,cwl)
+f.write(json.dumps(cwl, indent = 4, sort_keys = False)) #write the file
 f.close()
 
