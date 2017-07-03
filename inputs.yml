@@ -1,13 +1,17 @@
 ref:
    class: File
-   path: /home/yejinyou/cwltests/chr22_cwl_test.fa 
+   path: /path/to/fasta/ref/file
+   #path: /home/usr/cwltests/chr22_cwl_test.fa 
 refIndex:
    class: File
-   path: /home/yejinyou/cwltests/chr22_cwl_test.fa.fai 
+   path: /path/to/index/file
+   #path: /home/usr/cwltests/chr22_cwl_test.fa.fai 
 refDict:
    class: File
-   path: /home/yejinyou/cwltests/chr22_cwl_test.fa.dict 
-input_file:
+   path: /path/to/dict/file
+   #path: /home/usr/cwltests/chr22_cwl_test.fa.dict 
+input_file: #must be BAM or CRAM
    class: File
-   path: /home/yejinyou/cwltests/chr22_cwl_test.cram
+   path: /path/to/input/file 
+   #path: /home/usr/cwltests/chr22_cwl_test.cram
 out: out.gvcf.gz
