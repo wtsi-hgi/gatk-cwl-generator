@@ -91,6 +91,8 @@ def cwlf_generator(item,cwlf):
     cwlf["inputs"] = inputs
     cwlf["arguments"] = [{"shellQuote": False, "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
    
+
+
 cwlf_generator(jsonf,cwl)
 f.write(json.dumps(cwl, indent = 4, sort_keys = False)) #write the file
 f.close()
