@@ -14,6 +14,6 @@ Follow the instructions to install cwltools and cwl-runner: https://github.com/c
 
 To test generated HaplotypeCaller CWL files, invoke ```cwl-runner``` and provide the tool wrapper and the input object on the command line.
 ```
-$ cwl-runner HaplotypeCaller.cwl Haplotype_inputs.yml
+$ cwl-runner HaplotypeCaller.cwl HaplotypeCaller_inputs.yml
 ```
 
