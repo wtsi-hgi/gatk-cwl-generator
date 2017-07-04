@@ -9,6 +9,7 @@ Enter the gatk container with:
 ``` 
 docker run -i -t gatk /bin/bash 
 ```
+Follow the instructions to install cwltools and cwl-runner: https://github.com/common-workflow-language/cwltool
 
 
 To test generated HaplotypeCaller CWL files, invoke ```cwl-runner``` and provide the tool wrapper and the input object on the command line.
