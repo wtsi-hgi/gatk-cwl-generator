@@ -7,8 +7,17 @@ docker build gatk-3.5 -t gatk
 
 Enter the gatk container with: 
 ``` 
-docker run -i -t gatk /bin/bash 
+docker run -it gatk /bin/bash 
 ```
+
+Copy the HaplotypeCaller and GATK tools documentation files to your localhost.
+```
+docker cp CONTAINERID:SRC_PATH DEST_PATH
+``` 
+
+#Maybe consider making a bash script that would build the docker and copy the files to the local directory.
+
+
 Follow the instructions to install cwltools and cwl-runner: https://github.com/common-workflow-language/cwltool
 
 
