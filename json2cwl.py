@@ -6,12 +6,16 @@ import json
 
 
 #import the json url manually
-r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json')
-d = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_engine_CommandLineGATK.php.json')
+#r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json')
+#d = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_engine_CommandLineGATK.php.json')
+
+#import the json documentation from jsonfiles built by the docker
+r = json.load(open('jsonfiles/HaplotypeCaller.json','r'))
+d = json.load(open('jsonfiles/CommandLineGATK.json','r'))
 
 jsonf = {}
-jsonf['arguments'] = r.json()['arguments']+d.json()['arguments']
-jsonf['name'] = r.json()['name']
+jsonf['arguments'] = r['arguments']+d['arguments']
+jsonf['name'] = r['name']
 
 #create file
 fname = jsonf['name']+'.cwl'
