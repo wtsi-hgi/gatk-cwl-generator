@@ -16,7 +16,7 @@ docker cp CONTAINERID:SRC_PATH DEST_PATH
 (docker cp CONTAINERID:/jsonfiles ~/PY)
 ```
 
-# Run CWL-runner
+# HaplotypeCaller
 #Maybe consider making a bash script that would build the docker and copy the files to the local directory.
 
 Follow the instructions to install cwltools and cwl-runner: https://github.com/common-workflow-language/cwltool
