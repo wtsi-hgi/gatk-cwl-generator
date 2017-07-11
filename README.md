@@ -13,19 +13,21 @@ docker run --name='CONTAINERNAME' -it IMAGE /bin/bash
 Copy the HaplotypeCaller and GATK tools documentation files to your localhost. 
 ```
 docker cp CONTAINERID:SRC_PATH DEST_PATH   
-(docker cp CONTAINERID:/jsonfiles ~/PY)
+(docker cp gatk:/jsonfiles ~/PY)
 ```
 
 # HaplotypeCaller
-#Maybe consider making a bash script that would build the docker and copy the files to the local directory.
 
 Follow the instructions to install cwltools and cwl-runner: https://github.com/common-workflow-language/cwltool
 
 Run json2cwl.py to generate HaplotypeCaller.cwl file from the jsonfiles from the Docker.
-
-#Consider turning json2cwl.py into CWL-runner tool
+```
+python json2cwl.py
+```
 
 To test generated HaplotypeCaller CWL files, invoke ```cwl-runner``` and provide the tool wrapper and the input object on the command line.
 ```
 $ cwl-runner HaplotypeCaller.cwl HaplotypeCaller_inputs.yml
 ```
+
+#Consider turning json2cwl.py into Cwlrunner format
