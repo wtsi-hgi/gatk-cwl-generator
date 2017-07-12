@@ -50,7 +50,7 @@ def convt_type(typ):
     elif typ in ('string','float','boolean','bool'):
         return typ
     else:
-        return 'string'
+        raise ValueError("unsupported type %s" %(typ)) 
 
 #helps form a commandline
 def need_def(arg):
