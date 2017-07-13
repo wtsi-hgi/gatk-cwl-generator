@@ -1,0 +1,61 @@
+{
+    "downsampling": {
+        "by": "BY_SAMPLE",
+        "to_cov": 1000
+    },
+    "summary": "Calculate basic statistics about the reference sequence itself",
+    "refwindow": {},
+    "description": "\n\n <p>These are very basic statistics: total number of bases and number of \"regular\" bases (i.e. A, C, T or G).</p>\n\n <h3>Input</h3>\n <p>\n A FASTA reference file.\n </p>\n\n <h3>Output</h3>\n <p>\n Base counts are written to file if an output file name is given (with -o), otherwise output to stdout.\n </p>\n\n <h3>Usage example</h3>\n <pre>\n java -jar GenomeAnalysisTK.jar \\\n   -T FastaStats \\\n   -R reference.fasta \\\n   [-o output.txt]\n </pre>",
+    "group": "Diagnostics and Quality Control Tools",
+    "name": "FastaStats",
+    "annotinfo": "",
+    "walkertype": "LocusWalker",
+    "annotfield": "",
+    "parallel": [],
+    "arguments": [
+        {
+            "required": "no",
+            "summary": "An output file created by the walker.  Will overwrite contents if file exists",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "PrintStream",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_UnmappedReadFilter.php",
+            "name": "UnmappedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_NotPrimaryAlignmentFilter.php",
+            "name": "NotPrimaryAlignmentFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_FailsVendorQualityCheckFilter.php",
+            "name": "FailsVendorQualityCheckFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_DuplicateReadFilter.php",
+            "name": "DuplicateReadFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "LOCUS"
+}

@@ -1,0 +1,106 @@
+{
+    "downsampling": {},
+    "summary": "Compare callability statistics",
+    "refwindow": {},
+    "description": "\n\n <p>This tool can be used to evaluate how different sequence datasets compare in terms of \"callability\"\n based on the output of the CallableLoci tool. </p>\n\n\n <h3>Input</h3>\n <p>\n Two files to compare, output by two runs of CallableLoci\n </p>\n\n <h3>Output</h3>\n <p>\n A table showing the callability status of each interval of interest in the two comparison sets and whether they match.\n </p>\n\n <h3>Usage example</h3>\n <pre>\n java -jar GenomeAnalysisTK.jar \\\n   -R reference.fasta \\\n   -T CompareCallableLoci \\\n   -comp1 callable_loci_1.bed \\\n   -comp2 callable_loci_2.bed \\\n   [-L input.intervals \\]\n   -o comparison.table\n </pre>",
+    "group": "Diagnostics and Quality Control Tools",
+    "name": "CompareCallableLoci",
+    "annotinfo": "",
+    "walkertype": "LocusWalker",
+    "annotfield": "",
+    "parallel": [],
+    "arguments": [
+        {
+            "required": "yes",
+            "summary": "First comparison track name",
+            "synonyms": "-comp1",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "required_in",
+            "type": "RodBinding[BEDFeature]",
+            "minRecValue": "NA",
+            "name": "--comp1",
+            "rodTypes": "<a href=htsjdk_tribble_bed_BEDCodec.php>BED</a>",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "yes",
+            "summary": "Second comparison track name",
+            "synonyms": "-comp2",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "required_in",
+            "type": "RodBinding[BEDFeature]",
+            "minRecValue": "NA",
+            "name": "--comp2",
+            "rodTypes": "<a href=htsjdk_tribble_bed_BEDCodec.php>BED</a>",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "An output file created by the walker.  Will overwrite contents if file exists",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "PrintStream",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "If provided, prints sites satisfying this state pair",
+            "synonyms": "-printState",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "String",
+            "minRecValue": "NA",
+            "name": "--printstate",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_UnmappedReadFilter.php",
+            "name": "UnmappedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_NotPrimaryAlignmentFilter.php",
+            "name": "NotPrimaryAlignmentFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_FailsVendorQualityCheckFilter.php",
+            "name": "FailsVendorQualityCheckFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_DuplicateReadFilter.php",
+            "name": "DuplicateReadFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "LOCUS"
+}

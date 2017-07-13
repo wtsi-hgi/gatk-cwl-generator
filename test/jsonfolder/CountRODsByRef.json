@@ -1,0 +1,93 @@
+{
+    "downsampling": {
+        "by": "BY_SAMPLE",
+        "to_cov": 1000
+    },
+    "summary": "Count the number of ROD objects encountered along the reference",
+    "refwindow": {},
+    "description": "\n\n <p>CountRodsByRef is a RefWalker, and so traverses the data by position along the reference. It counts ROD\n elements (such as, but not limited to, variants) found at each position or within specific intervals if you use\n the -L argument (see CommandLineGATK).</p>\n\n <p>Note that this tool is different from the basic CountRods, which is a RODWalker, and so traverses the data by\n ROD. For example if the ROD passed to it is a VCF file, CountRods will simply count the variants in the file.</p>\n\n <p>Both these tools are different from CountVariants in that they are more generic (they can also count RODs that\n are not variants) and CountVariants is more detailed, in that it computes additional statistics (type of variants\n being indels vs. SNPs etc). </p>\n\n <h3>Input</h3>\n <p>\n One or more ROD files.\n </p>\n\n <h3>Output</h3>\n <p>\n Number of RODs seen.\n </p>\n\n <h3>Usage example</h3>\n <pre>\n java -jar GenomeAnalysisTK.jar \\\n   -T CountRODsByRef \\\n   -R reference.fasta \\\n   -o output.txt \\\n   --rod input.vcf\n </pre>",
+    "group": "Diagnostics and Quality Control Tools",
+    "name": "CountRODsByRef",
+    "annotinfo": "",
+    "walkertype": "LocusWalker",
+    "annotfield": "",
+    "parallel": [],
+    "arguments": [
+        {
+            "required": "no",
+            "summary": "Input VCF file(s)",
+            "synonyms": "-rod",
+            "maxValue": "NA",
+            "fulltext": "One or more input rod files",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_in",
+            "type": "List[RodBinding[Feature]]",
+            "minRecValue": "NA",
+            "name": "--rod",
+            "rodTypes": "<a href=htsjdk_variant_bcf2_BCF2Codec.php>BCF2</a>, <a href=org_broadinstitute_gatk_utils_codecs_beagle_BeagleCodec.php>BEAGLE</a>, <a href=htsjdk_tribble_bed_BEDCodec.php>BED</a>, <a href=org_broadinstitute_gatk_utils_codecs_table_BedTableCodec.php>BEDTABLE</a>, <a href=htsjdk_tribble_example_ExampleBinaryCodec.php>EXAMPLEBINARY</a>, <a href=htsjdk_tribble_gelitext_GeliTextCodec.php>GELITEXT</a>, <a href=org_broadinstitute_gatk_utils_codecs_hapmap_RawHapMapCodec.php>RAWHAPMAP</a>, <a href=org_broadinstitute_gatk_utils_codecs_refseq_RefSeqCodec.php>REFSEQ</a>, <a href=org_broadinstitute_gatk_utils_codecs_sampileup_SAMPileupCodec.php>SAMPILEUP</a>, <a href=org_broadinstitute_gatk_utils_codecs_samread_SAMReadCodec.php>SAMREAD</a>, <a href=org_broadinstitute_gatk_utils_codecs_table_TableCodec.php>TABLE</a>, <a href=htsjdk_variant_vcf_VCFCodec.php>VCF</a>, <a href=htsjdk_variant_vcf_VCF3Codec.php>VCF3</a>",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "If true, this tool will print out the skipped locations",
+            "synonyms": "-s",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--showSkipped",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "If true, this tool will print out detailed information about the rods it finds and locations",
+            "synonyms": "-v",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--verbose",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_UnmappedReadFilter.php",
+            "name": "UnmappedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_NotPrimaryAlignmentFilter.php",
+            "name": "NotPrimaryAlignmentFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_FailsVendorQualityCheckFilter.php",
+            "name": "FailsVendorQualityCheckFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_DuplicateReadFilter.php",
+            "name": "DuplicateReadFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "LOCUS"
+}

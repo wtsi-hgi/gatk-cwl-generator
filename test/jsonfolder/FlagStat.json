@@ -1,0 +1,51 @@
+{
+    "downsampling": {
+        "by": "NONE",
+        "to_cov": -1
+    },
+    "summary": "Collect statistics about sequence reads based on their SAM flags",
+    "refwindow": {},
+    "description": "\n\n <p>This tool emulates the behavior of 'samtools flagstat'. It collects statistics such as total number of reads,\n reads with QC failure flag set, number of duplicates, percentage mapped, etc.</p>\n\n <h3>Input</h3>\n <p>\n A BAM file containing the sequence data.\n </p>\n\n <h3>Output</h3>\n <p>\n Resulting stats are written to file if an output file name is given (with -o), otherwise output to stdout.\n </p>\n\n <h3>Usage example</h3>\n <pre>\n java -jar GenomeAnalysisTK.jar \\\n   -T FlagStat \\\n   -R reference.fasta \\\n   -I reads.bam \\\n   [-o output.txt]\n </pre>",
+    "group": "Diagnostics and Quality Control Tools",
+    "name": "FlagStat",
+    "annotinfo": "",
+    "walkertype": "ReadWalker",
+    "annotfield": "",
+    "parallel": [
+        {
+            "name": "NanoSchedulable",
+            "arg": "-nct",
+            "link": "http://www.broadinstitute.org/gatk/guide/tooldocs/org_broadinstitute_gatk_engine_CommandLineGATK.php#-nct"
+        }
+    ],
+    "arguments": [
+        {
+            "required": "no",
+            "summary": "An output file created by the walker.  Will overwrite contents if file exists",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "PrintStream",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "READ"
+}

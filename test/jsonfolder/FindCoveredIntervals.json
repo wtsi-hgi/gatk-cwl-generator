@@ -1,0 +1,261 @@
+{
+    "downsampling": {
+        "by": "BY_SAMPLE",
+        "to_cov": 1000
+    },
+    "summary": "Outputs a list of intervals that are covered to or above a given threshold",
+    "refwindow": {},
+    "description": "\n\n <p>The output list can be used as an interval list for other tools. The logic can be inverted using the -uncovered argument argument to instead output intervals that fail the coverage threshold.\n </p>\n\n <h4>Application example: find and diagnose low-coverage regions</h4>\n <p>Run this toool first with the -uncovered argument to identify regions that have low coverage. Then run DiagnoseTargets on the output intervals to diagnose why they are poorly covered.</p>\n\n <h3>Input</h3>\n <p>\n One or more BAM files.\n </p>\n\n <h3>Output</h3>\n <p>\n List of covered (or uncovered) intervals.\n </p>\n\n <h3>Example</h3>\n <pre>\n java -jar GenomeAnalysisTK.jar \\\n   -T FindCoveredIntervals \\\n   -R reference.fasta \\\n   -I my_file.bam \\\n   [-cov 10 \\]\n   [-uncovered \\]\n   -o output.list\n </pre>",
+    "group": "Diagnostics and Quality Control Tools",
+    "name": "FindCoveredIntervals",
+    "annotinfo": "",
+    "walkertype": "ActiveRegionWalker",
+    "annotfield": "",
+    "parallel": [],
+    "arguments": [
+        {
+            "required": "no",
+            "summary": "Threshold for the probability of a profile state being active.",
+            "synonyms": "-ActProbThresh",
+            "maxValue": "1.0",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "0.002",
+            "kind": "advanced_param",
+            "type": "Double",
+            "minRecValue": "NA",
+            "name": "--activeProbabilityThreshold",
+            "rodTypes": "NA",
+            "minValue": "0.0",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "The active region extension; if not provided defaults to Walker annotated default",
+            "synonyms": "-activeRegionExtension",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "advanced_param",
+            "type": "Integer",
+            "minRecValue": "NA",
+            "name": "--activeRegionExtension",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Use this interval list file as the active regions to process",
+            "synonyms": "-AR",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "advanced_in",
+            "type": "List[IntervalBinding[Feature]]",
+            "minRecValue": "NA",
+            "name": "--activeRegionIn",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "The active region maximum size; if not provided defaults to Walker annotated default",
+            "synonyms": "-activeRegionMaxSize",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "advanced_param",
+            "type": "Integer",
+            "minRecValue": "NA",
+            "name": "--activeRegionMaxSize",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Output the active region to this IGV formatted file",
+            "synonyms": "-ARO",
+            "maxValue": "NA",
+            "fulltext": "If provided, this walker will write out its active and inactive regions\n to this file in the IGV formatted TAB deliminated output:\n\n http://www.broadinstitute.org/software/igv/IGV\n\n Intended to make debugging the active region calculations easier",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "PrintStream",
+            "minRecValue": "NA",
+            "name": "--activeRegionOut",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Output the raw activity profile results in IGV format",
+            "synonyms": "-APO",
+            "maxValue": "NA",
+            "fulltext": "If provided, this walker will write out its activity profile (per bp probabilities of being active)\n to this file in the IGV formatted TAB deliminated output:\n\n http://www.broadinstitute.org/software/igv/IGV\n\n Intended to make debugging the activity profile calculations easier",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "PrintStream",
+            "minRecValue": "NA",
+            "name": "--activityProfileOut",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "The sigma of the band pass filter Gaussian kernel; if not provided defaults to Walker annotated default",
+            "synonyms": "-bandPassSigma",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "advanced_param",
+            "type": "Double",
+            "minRecValue": "NA",
+            "name": "--bandPassSigma",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "The minimum allowable coverage to be considered covered",
+            "synonyms": "-cov",
+            "maxValue": "Infinity",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "20",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--coverage_threshold",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "If provided, all bases will be tagged as active",
+            "synonyms": "-forceActive",
+            "maxValue": "NA",
+            "fulltext": "For the active region walker to treat all bases as active.  Useful for debugging when you want to force something like\n the HaplotypeCaller to process a specific interval you provide the GATK",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "advanced_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--forceActive",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "The minimum allowable base quality score to be counted for coverage",
+            "synonyms": "-minBQ",
+            "maxValue": "Infinity",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "0",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--minBaseQuality",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "The minimum allowable mapping quality score to be counted for coverage",
+            "synonyms": "-minMQ",
+            "maxValue": "Infinity",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "0",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--minMappingQuality",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "An output file created by the walker.  Will overwrite contents if file exists",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "PrintStream",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "output intervals that fail the coverage threshold instead",
+            "synonyms": "-u",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--uncovered",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_UnmappedReadFilter.php",
+            "name": "UnmappedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_NotPrimaryAlignmentFilter.php",
+            "name": "NotPrimaryAlignmentFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_FailsVendorQualityCheckFilter.php",
+            "name": "FailsVendorQualityCheckFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_DuplicateReadFilter.php",
+            "name": "DuplicateReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MappingQualityUnavailableFilter.php",
+            "name": "MappingQualityUnavailableFilter"
+        }
+    ],
+    "activeregion": {
+        "max": 50000,
+        "min": 50,
+        "ext": 0
+    },
+    "partitiontype": "CONTIG"
+}

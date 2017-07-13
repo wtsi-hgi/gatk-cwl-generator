@@ -1,0 +1,28 @@
+{
+    "downsampling": {
+        "by": "NONE",
+        "to_cov": -1
+    },
+    "summary": "Count the number of bases in a set of reads",
+    "refwindow": {},
+    "description": "\n\n <h3>Input</h3>\n <p>\n One or more BAM files.\n </p>\n\n <h3>Output</h3>\n <p>\n Number of bases seen. If an output file name is provided, then the result will be written to that file.\n Otherwise it will be sent to standard console output.\n </p>\n\n <h3>Usage example</h3>\n <pre>\n java -jar GenomeAnalysisTK.jar \\\n   -R reference.fasta \\\n   -T CountBases \\\n   -I input.bam \\\n   [-L input.intervals]\n </pre>",
+    "group": "Diagnostics and Quality Control Tools",
+    "name": "CountBases",
+    "annotinfo": "",
+    "walkertype": "ReadWalker",
+    "annotfield": "",
+    "parallel": [],
+    "arguments": [],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "READ"
+}

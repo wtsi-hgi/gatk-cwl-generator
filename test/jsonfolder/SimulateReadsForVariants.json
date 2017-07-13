@@ -1,0 +1,203 @@
+{
+    "downsampling": {},
+    "summary": "Generate simulated reads for variants",
+    "refwindow": {
+        "start": -200,
+        "stop": 200
+    },
+    "description": "\n\n <p>Given a set of variants, this tool will generate simulated reads that support the input variants.</p>\n\n <h3>Caveat</h3>\n <p>For practical reasons, only bi-allelic variants that are not too close to the ends of contigs\n (< 1/2 read length) are supported; all others will simply be ignored.</p>\n\n <h3>Input</h3>\n <p>A VCF file containing variants.</p>\n\n <h3>Output</h3>\n <p>A BAM file containing simulated sequence reads that support the input variants, with the requested error rate\n and coverage depth.</p>\n\n <h3>Usage example</h3>\n <pre>\n java -jar GenomeAnalysisTK.jar \\\n   -T SimulateReadsForVariants \\\n   -R reference.fasta \\\n   -V input_variants.vcf \\\n   -o simulated_reads.bam \\\n   --readDepth 50 \\\n   --errorRate 25\n </pre>",
+    "group": "Diagnostics and Quality Control Tools",
+    "name": "SimulateReadsForVariants",
+    "annotinfo": "",
+    "walkertype": "LocusWalker",
+    "annotfield": "",
+    "parallel": [],
+    "arguments": [
+        {
+            "required": "no",
+            "summary": "Base error rate (Phred-scaled)",
+            "synonyms": "-ER",
+            "maxValue": "2.147483647E9",
+            "fulltext": "Errors will be generated at this rate in the simulated reads. Base qualities are therefore also assigned this value.",
+            "maxRecValue": "NA",
+            "defaultValue": "20",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--errorRate",
+            "rodTypes": "NA",
+            "minValue": "0.0",
+            "options": []
+        },
+        {
+            "required": "yes",
+            "summary": "Reads corresponding to variants",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "The simulated reads will be written to a BAM file.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "required_out",
+            "type": "GATKSAMFileWriter",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Read depth to generate",
+            "synonyms": "-DP",
+            "maxValue": "2.147483647E9",
+            "fulltext": "Use this argument to set the desired target read depth. See the readSamplingMode argument for options that\n determine whether coverage distribution will be exactly this value or an approximation.",
+            "maxRecValue": "1000.0",
+            "defaultValue": "20",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "1.0",
+            "name": "--readDepth",
+            "rodTypes": "NA",
+            "minValue": "0.0",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Read lengths (bp)",
+            "synonyms": "-RL",
+            "maxValue": "2.147483647E9",
+            "fulltext": "All simulated reads will be exactly this length.",
+            "maxRecValue": "NA",
+            "defaultValue": "101",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--readLength",
+            "rodTypes": "NA",
+            "minValue": "1.0",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Sampling mode",
+            "synonyms": "-RSM",
+            "maxValue": "NA",
+            "fulltext": "This determines how read sampling is achieved, and affects the coverage distribution of simulated reads.\n CONSTANT sampling will produce uniform depth at all positions, while POISSON sampling will produce a\n distribution of coverages around the requested value.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "advanced_param",
+            "type": "ReadSamplingMode",
+            "minRecValue": "NA",
+            "name": "--readSamplingMode",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": [
+                {
+                    "name": "CONSTANT",
+                    "summary": ""
+                },
+                {
+                    "name": "POISSON",
+                    "summary": ""
+                }
+            ]
+        },
+        {
+            "required": "no",
+            "summary": "Sequencing platform",
+            "synonyms": "-RGPL",
+            "maxValue": "NA",
+            "fulltext": "The corresponding platform identifier will be specified in the simulated read group PL tag. This setting does not\n affect the properties of the simulated reads.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "advanced_param",
+            "type": "NGSPlatform",
+            "minRecValue": "NA",
+            "name": "--rgPlatform",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": [
+                {
+                    "name": "ILLUMINA",
+                    "summary": ""
+                },
+                {
+                    "name": "SOLID",
+                    "summary": ""
+                },
+                {
+                    "name": "LS454",
+                    "summary": ""
+                },
+                {
+                    "name": "COMPLETE_GENOMICS",
+                    "summary": ""
+                },
+                {
+                    "name": "PACBIO",
+                    "summary": ""
+                },
+                {
+                    "name": "ION_TORRENT",
+                    "summary": ""
+                },
+                {
+                    "name": "CAPILLARY",
+                    "summary": ""
+                },
+                {
+                    "name": "HELICOS",
+                    "summary": ""
+                },
+                {
+                    "name": "UNKNOWN",
+                    "summary": ""
+                }
+            ]
+        },
+        {
+            "required": "yes",
+            "summary": "Input VCF file",
+            "synonyms": "-V",
+            "maxValue": "NA",
+            "fulltext": "Variants from this VCF file are used by this tool as input.\n The file must at least contain the standard VCF header lines, but\n can be empty (i.e., no variants are contained in the file).",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "required_in",
+            "type": "RodBinding[VariantContext]",
+            "minRecValue": "NA",
+            "name": "--variant",
+            "rodTypes": "<a href=htsjdk_variant_bcf2_BCF2Codec.php>BCF2</a>, <a href=htsjdk_variant_vcf_VCFCodec.php>VCF</a>, <a href=htsjdk_variant_vcf_VCF3Codec.php>VCF3</a>",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_UnmappedReadFilter.php",
+            "name": "UnmappedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_NotPrimaryAlignmentFilter.php",
+            "name": "NotPrimaryAlignmentFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_FailsVendorQualityCheckFilter.php",
+            "name": "FailsVendorQualityCheckFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_DuplicateReadFilter.php",
+            "name": "DuplicateReadFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "LOCUS"
+}

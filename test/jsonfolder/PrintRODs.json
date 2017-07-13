@@ -1,0 +1,74 @@
+{
+    "downsampling": {},
+    "summary": "Print out all of the RODs in the input data set",
+    "refwindow": {},
+    "description": "\n\n <p>This tool reports what RODs (reference ordered data sets) are contained in a given input.</p>",
+    "group": "Diagnostics and Quality Control Tools",
+    "name": "PrintRODs",
+    "annotinfo": "",
+    "walkertype": "LocusWalker",
+    "annotfield": "",
+    "parallel": [],
+    "arguments": [
+        {
+            "required": "yes",
+            "summary": "The input ROD which should be printed out.",
+            "synonyms": "-input",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "required_in",
+            "type": "RodBinding[Feature]",
+            "minRecValue": "NA",
+            "name": "--input",
+            "rodTypes": "<a href=htsjdk_variant_bcf2_BCF2Codec.php>BCF2</a>, <a href=org_broadinstitute_gatk_utils_codecs_beagle_BeagleCodec.php>BEAGLE</a>, <a href=htsjdk_tribble_bed_BEDCodec.php>BED</a>, <a href=org_broadinstitute_gatk_utils_codecs_table_BedTableCodec.php>BEDTABLE</a>, <a href=htsjdk_tribble_example_ExampleBinaryCodec.php>EXAMPLEBINARY</a>, <a href=htsjdk_tribble_gelitext_GeliTextCodec.php>GELITEXT</a>, <a href=org_broadinstitute_gatk_utils_codecs_hapmap_RawHapMapCodec.php>RAWHAPMAP</a>, <a href=org_broadinstitute_gatk_utils_codecs_refseq_RefSeqCodec.php>REFSEQ</a>, <a href=org_broadinstitute_gatk_utils_codecs_sampileup_SAMPileupCodec.php>SAMPILEUP</a>, <a href=org_broadinstitute_gatk_utils_codecs_samread_SAMReadCodec.php>SAMREAD</a>, <a href=org_broadinstitute_gatk_utils_codecs_table_TableCodec.php>TABLE</a>, <a href=htsjdk_variant_vcf_VCFCodec.php>VCF</a>, <a href=htsjdk_variant_vcf_VCF3Codec.php>VCF3</a>",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "An output file created by the walker.  Will overwrite contents if file exists",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "PrintStream",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_UnmappedReadFilter.php",
+            "name": "UnmappedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_NotPrimaryAlignmentFilter.php",
+            "name": "NotPrimaryAlignmentFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_FailsVendorQualityCheckFilter.php",
+            "name": "FailsVendorQualityCheckFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_DuplicateReadFilter.php",
+            "name": "DuplicateReadFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "LOCUS"
+}

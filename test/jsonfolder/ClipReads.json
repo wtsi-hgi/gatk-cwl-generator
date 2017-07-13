@@ -1,0 +1,166 @@
+{
+    "downsampling": {
+        "by": "NONE",
+        "to_cov": -1
+    },
+    "summary": "Read clipping based on quality, position or sequence matching",
+    "refwindow": {},
+    "description": "\n\n <p>This tool provides simple, powerful read clipping capabilities that allow you to remove low quality strings of bases, sections of reads, and reads containing user-provided sequences.</p> \n\n <p>There are three options for clipping (quality, position and sequence), which can be used alone or in combination. In addition, you can also specify a clipping representation, which determines exactly how ClipReads applies clips to the reads (soft clips, writing Q0 base quality scores, etc.). Please note that you MUST specify at least one of the three clipping options, and specifying a clipping representation is not sufficient. If you do not specify a clipping option, the program will run but it will not do anything to your reads.</p>\n\n <dl>\n     <dt>Quality score based clipping</dt>\n     <dd>\n         Clip bases from the read in clipper from\n         <pre>argmax_x{ \\sum{i = x + 1}^l (qTrimmingThreshold - qual)</pre>\n         to the end of the read.  This is copied from BWA.\n\n         Walk through the read from the end (in machine cycle order) to the beginning, calculating the\n         running sum of qTrimmingThreshold - qual.  While we do this, we track the maximum value of this\n         sum where the delta > 0.  After the loop, clipPoint is either -1 (don't do anything) or the\n         clipping index in the read (from the end).\n     </dd><br />\n     <dt>Cycle based clipping</dt>\n     <dd>Clips machine cycles from the read. Accepts a string of ranges of the form start1-end1,start2-end2, etc.\n     For each start/end pair, removes bases in machine cycles from start to end, inclusive. These are 1-based values (positions).\n     For example, 1-5,10-12 clips the first 5 bases, and then three bases at cycles 10, 11, and 12.\n     </dd><br />\n     <dt>Sequence matching</dt>\n     <dd>Clips bases from that exactly match one of a number of base sequences. This employs an exact match algorithm,\n     filtering only bases whose sequence exactly matches SEQ.</dd>\n </dl>\n\n\n <h3>Input</h3>\n <p>\n     Any number of BAM files.\n </p>\n\n <h3>Output</h3>\n <p>\n     A new BAM file containing all of the reads from the input BAMs with the user-specified clipping\n     operation applied to each read.\n </p>\n <p>\n     <h4>Summary output (console)</h4>\n     <pre>\n     Number of examined reads              13\n     Number of clipped reads               13\n     Percent of clipped reads              100.00\n     Number of examined bases              988\n     Number of clipped bases               126\n     Percent of clipped bases              12.75\n     Number of quality-score clipped bases 126\n     Number of range clipped bases         0\n     Number of sequence clipped bases      0\n     </pre>\n </p>\n\n <h3>Usage example</h3>\n <pre>\n   java -jar GenomeAnalysisTK.jar \\\n     -T ClipReads \\\n     -R reference.fasta \\\n     -I original.bam \\\n     -o clipped.bam \\\n     -XF seqsToClip.fasta \\\n     -X CCCCC \\\n     -CT \"1-5,11-15\" \\\n     -QT 10\n </pre>\n <p>The command line shown above will apply all three options in combination. See the detailed examples below to see how the choice of clipping representation affects the output.</p>\n\n     <h4>Detailed clipping examples</h4>\n     <p>Suppose we are given this read:</p>\n     <pre>\n     314KGAAXX090507:1:19:1420:1123#0        16      chrM    3116    29      76M     *       *       *\n          TAGGACCCGGGCCCCCCTCCCCAATCCTCCAACGCATATAGCGGCCGCGCCTTCCCCCGTAAATGATATCATCTCA\n          #################4?6/?2135;;;'1/=/<'B9;12;68?A79@,@==@9?=AAA3;A@B;A?B54;?ABA\n     </pre>\n\n     <p>If we are clipping reads with -QT 10 and -CR WRITE_NS, we get:</p>\n\n     <pre>\n     314KGAAXX090507:1:19:1420:1123#0        16      chrM    3116    29      76M     *       *       *\n          NNNNNNNNNNNNNNNNNTCCCCAATCCTCCAACGCATATAGCGGCCGCGCCTTCCCCCGTAAATGATATCATCTCA\n          #################4?6/?2135;;;'1/=/<'B9;12;68?A79@,@==@9?=AAA3;A@B;A?B54;?ABA\n     </pre>\n\n     <p>Whereas with -QT 10 -CR WRITE_Q0S:</p>\n     <pre>\n     314KGAAXX090507:1:19:1420:1123#0        16      chrM    3116    29      76M     *       *       *\n          TAGGACCCGGGCCCCCCTCCCCAATCCTCCAACGCATATAGCGGCCGCGCCTTCCCCCGTAAATGATATCATCTCA\n          !!!!!!!!!!!!!!!!!4?6/?2135;;;'1/=/<'B9;12;68?A79@,@==@9?=AAA3;A@B;A?B54;?ABA\n     </pre>\n\n     <p>Or -QT 10 -CR SOFTCLIP_BASES:</p>\n     <pre>\n     314KGAAXX090507:1:19:1420:1123#0        16      chrM    3133    29      17S59M  *       *       *\n          TAGGACCCGGGCCCCCCTCCCCAATCCTCCAACGCATATAGCGGCCGCGCCTTCCCCCGTAAATGATATCATCTCA\n          #################4?6/?2135;;;'1/=/<'B9;12;68?A79@,@==@9?=AAA3;A@B;A?B54;?ABA\n     </pre>",
+    "group": "Sequence Data Processing Tools",
+    "name": "ClipReads",
+    "annotinfo": "",
+    "walkertype": "ReadWalker",
+    "annotfield": "",
+    "parallel": [],
+    "arguments": [
+        {
+            "required": "no",
+            "summary": "How should we actually clip the bases?",
+            "synonyms": "-CR",
+            "maxValue": "NA",
+            "fulltext": "The different values for this argument determines how ClipReads applies clips to the reads.  This can range\n from writing Ns over the clipped bases to hard clipping away the bases from the BAM.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "ClippingRepresentation",
+            "minRecValue": "NA",
+            "name": "--clipRepresentation",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": [
+                {
+                    "name": "WRITE_NS",
+                    "summary": "Clipped bases are changed to Ns"
+                },
+                {
+                    "name": "WRITE_Q0S",
+                    "summary": "Clipped bases are changed to have Q0 quality score"
+                },
+                {
+                    "name": "WRITE_NS_Q0S",
+                    "summary": "Clipped bases are change to have both an N base and a Q0 quality score"
+                },
+                {
+                    "name": "SOFTCLIP_BASES",
+                    "summary": "Change the read's cigar string to soft clip (S, see sam-spec) away the bases.\n Note that this can only be applied to cases where the clipped bases occur\n at the start or end of a read."
+                },
+                {
+                    "name": "HARDCLIP_BASES",
+                    "summary": "WARNING: THIS OPTION IS STILL UNDER DEVELOPMENT AND IS NOT SUPPORTED.\n\n Change the read's cigar string to hard clip (H, see sam-spec) away the bases.\n Hard clipping, unlike soft clipping, actually removes bases from the read,\n reducing the resulting file's size but introducing an irrevesible (i.e.,\n lossy) operation.  Note that this can only be applied to cases where the clipped\n bases occur at the start or end of a read."
+                },
+                {
+                    "name": "REVERT_SOFTCLIPPED_BASES",
+                    "summary": "Turn all soft-clipped bases into matches"
+                }
+            ]
+        },
+        {
+            "required": "no",
+            "summary": "Remove sequences within reads matching this sequence",
+            "synonyms": "-X",
+            "maxValue": "NA",
+            "fulltext": "Clips bases from the reads matching the provided SEQ.  Can be provided any number of times on the command line",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "String[]",
+            "minRecValue": "NA",
+            "name": "--clipSequence",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Remove sequences within reads matching the sequences in this FASTA file",
+            "synonyms": "-XF",
+            "maxValue": "NA",
+            "fulltext": "Reads the sequences in the provided FASTA file, and clip any bases that exactly match any of the\n sequences in the file.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "String",
+            "minRecValue": "NA",
+            "name": "--clipSequencesFile",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "String indicating machine cycles to clip from the reads",
+            "synonyms": "-CT",
+            "maxValue": "NA",
+            "fulltext": "Clips machine cycles from the read. Accepts a string of ranges of the form start1-end1,start2-end2, etc.\n For each start/end pair, removes bases in machine cycles from start to end, inclusive. These are 1-based\n values (positions). For example, 1-5,10-12 clips the first 5 bases, and then three bases at cycles 10, 11,\n and 12.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "String",
+            "minRecValue": "NA",
+            "name": "--cyclesToTrim",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Write BAM output here",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "The output SAM/BAM file will be written here",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "GATKSAMFileWriter",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "File to output statistics",
+            "synonyms": "-os",
+            "maxValue": "NA",
+            "fulltext": "If provided, ClipReads will write summary statistics about the clipping operations applied to the reads in this file.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "PrintStream",
+            "minRecValue": "NA",
+            "name": "--outputStatistics",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "If provided, the Q-score clipper will be applied",
+            "synonyms": "-QT",
+            "maxValue": "Infinity",
+            "fulltext": "If a value > 0 is provided, then the quality score based read clipper will be applied to the reads using this\n quality score threshold.",
+            "maxRecValue": "NA",
+            "defaultValue": "-1",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--qTrimmingThreshold",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "READ"
+}

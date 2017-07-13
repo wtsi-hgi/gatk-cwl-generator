@@ -15,12 +15,15 @@ def prepare_json_links(version):
     data = requests.get(url).text
     soup = BeautifulSoup(data, "html.parser")
     url_list = []
+    
     for sub in soup.find_all('tr'):
         for child in sub.find_all('td'):
             for a in child.find_all('a', href = True):
                 url_list.append(a['href'] + ".json") if "Exception" not in a['href'] else ''
 
     return url_list
+
+
 
 
 url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/3.5-0/"
