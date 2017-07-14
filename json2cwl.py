@@ -1,36 +1,34 @@
-#This code converts the gatk-Haplotypecaller3.6 json to cwl.
+
+#This code converts the gatk-Haplotypecaller3.5 json to cwl.
 
 import requests
 import os
 import json
 
 
-#import the json url manually
+#import the json url manually (gatk 3.5-0 version)
 r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/3.5-0/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json').json()
 d = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/3.5-0/org_broadinstitute_gatk_engine_CommandLineGATK.php.json').json()
-#r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json').json()
-#d = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_engine_CommandLineGATK.php.json').json()
-
 
 #import the json documentation from jsonfiles built by the docker
 #r = json.load(open('jsonfiles/HaplotypeCaller.json','r'))
 #d = json.load(open('jsonfiles/CommandLineGATK.json','r'))
 
+
+#Combine two json documentations into one
 jsonf = {}
 jsonf['arguments'] = r['arguments']+d['arguments']
 jsonf['name'] = r['name']
 
-#print(r)
-#print(d)
-
 #create file
 fname = jsonf['name']+'.cwl'
 f = open(fname, 'a')
+
+#Define cwl dictionary
 cwl = {'id':jsonf['name'],
        'cwlVersion':'v1.0', 
        'baseCommand':[], 
        'class': 'CommandLineTool',
-       'outputs':[{ "outputBinding": { "glob":"$(inputs.out)"}, "type": "File", "id": "taskOut" }],
        'requirements':[{ "class": "ShellCommandRequirement"},
                        { "class": "InlineJavascriptRequirement",
                          "expressionLib": [ "function WDLCommandPart(expr, def) {var rval; try { rval = eval(expr);} catch(err) {rval = def;} return rval;}",
@@ -41,9 +39,21 @@ cwl = {'id':jsonf['name'],
                                             if (def == []) {return '';} else {return com + ' ' + def;}}""" ]},
                        { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
 
-#undefined args, args with invalid default, args with conflicting name
-invalid_args = ['--input_file','--help', '--defaultBaseQualities']
+#####OUTPUT SECTIONS NEEDS REDOING################################################################################################################################
+cwl['outputs'] = [{ "outputBinding": { "glob":"$(inputs.out)"}, "type": "File", "id": "taskOut" }]
+################################################################################################################################################################################################
 
+
+#-DBQ has an invalid default
+#-help is a conflicting argument
+#-input_file  ##WHATS THE PROBLEM WITH THIS?????#################################################################################################################################
+invalid_args = ['--input_file','--help', '--defaultBaseQualities']
+################################################################################################################################################################################################
+
+
+################################################################################################################################
+#interval, filewriter 
+################################################################################################################################
 def convt_type(typ):
     if typ in ('integer','byte'):
         return 'int'
@@ -89,10 +99,22 @@ def cwlf_generator(item,cwlf):
               { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
                 "id": "input_file","secondaryFiles": [".crai","^.dict"]}]          
     for args in item['arguments']:
+
+      # if args['name']=='--out':
+      #    print (args)
+
       inpt = {}
-      if args['required'] == 'yes' or args['name'] in invalid_args:
-        print(args['name']) ###NEED TO DO STH ABOUT IT
+
+      
+      if args['name'] in invalid_args:
+        #print(args['name']) ###NEED TO DO STH ABOUT IT
         continue
+
+      if args['required'] == 'yes':
+        print(args)
+        ################################################################ANALYSIS TYPE
+
+
       else: #if not required
         inpt['doc'] = args['summary']
         inpt['id'] = args['name'][2:] 
@@ -101,7 +123,9 @@ def cwlf_generator(item,cwlf):
           inpt['type'] = convt_type(typ) +'?'
         else: #if list is in type
           inpt['type'] = convt_type(typ[5:-1])+'[]?' 
+      
       inputs.append(inpt)
+      
       if need_def(args):
           comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "
       else:
@@ -111,8 +135,10 @@ def cwlf_generator(item,cwlf):
              comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', "+"'stdout'"+"))) "
           else:
              comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
+    
     cwlf["inputs"] = inputs
-    cwlf["arguments"] = [{"shellQuote": False, "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
+    cwlf["arguments"] = [{"shellQuote": False, 
+                          "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
    
 
 
