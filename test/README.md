@@ -5,10 +5,17 @@ This script will generate the JSON files from the GATK documentation (found at "
 To run, use the following command:
 
 ```
-python generate_cwl.py version /path/to/files
+$ python generate_cwl.py version /path/to/files
+```
 
-(python generate_cwl.py 3.5 /home/pkarnati/cwlscripts)
+For example
+
+```
+$ python generate_cwl.py 3.5 /home/pkarnati/cwlscripts
 ```
 
 The script will create two folders, one with the json scripts and one with cwl scripts.
 
+Make sure to place `generate_cwl.py` and `json2cwl` in the same directory.
+
+ty
