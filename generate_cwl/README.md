@@ -1,6 +1,6 @@
 # CWL Generator for GATK Command Line tools
 
-This script will generate the JSON files from the GATK documentation (found at https://software.broadinstitute.org/gatk/documentation/tooldocs/3.5-0/ depending on the version).
+This script will generate the JSON files from the GATK documentation (found at https://software.broadinstitute.org/gatk/documentation/tooldocs/ depending on the version).
 
 To run, use the following command:
 
