@@ -1,0 +1,61 @@
+{
+    "downsampling": {
+        "by": "BY_SAMPLE",
+        "to_cov": 1000
+    },
+    "summary": "Calculates the GC content of the reference sequence for each interval",
+    "refwindow": {},
+    "description": "\n\n\n <h3>Input</h3>\n <p>\n  A reference file\n </p>\n\n <h3>Output</h3>\n <p>\n  GC content calculations per interval.\n </p>\n\n <h3>Usage example</h3>\n <pre>\n java -jar GenomeAnalysisTK.jar \\\n   -T GCContentByInterval \\\n   -R reference.fasta \\\n   -o output.txt \\\n   -L input.intervals\n </pre>",
+    "group": "Diagnostics and Quality Control Tools",
+    "name": "GCContentByInterval",
+    "annotinfo": "",
+    "walkertype": "LocusWalker",
+    "annotfield": "",
+    "parallel": [],
+    "arguments": [
+        {
+            "required": "no",
+            "summary": "An output file created by the walker.  Will overwrite contents if file exists",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "PrintStream",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_UnmappedReadFilter.php",
+            "name": "UnmappedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_NotPrimaryAlignmentFilter.php",
+            "name": "NotPrimaryAlignmentFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_FailsVendorQualityCheckFilter.php",
+            "name": "FailsVendorQualityCheckFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_DuplicateReadFilter.php",
+            "name": "DuplicateReadFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "LOCUS"
+}

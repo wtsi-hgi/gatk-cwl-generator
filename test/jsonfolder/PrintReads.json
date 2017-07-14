@@ -1,0 +1,147 @@
+{
+    "downsampling": {
+        "by": "NONE",
+        "to_cov": -1
+    },
+    "summary": "Write out sequence read data (for filtering, merging, subsetting etc)",
+    "refwindow": {},
+    "description": "\n\n <p>\n PrintReads is a generic utility tool for manipulating sequencing data in SAM/BAM format. It can dynamically\n merge the contents of multiple input BAM files, resulting in merged output sorted in coordinate order. It can\n also optionally filter reads based on various read properties such as read group tags using the `--read_filter/-rf`\n command line argument (see documentation on read filters for more information).\n </p>\n\n <p>\n Note that when PrintReads is used as part of the Base Quality Score Recalibration workflow,\n it takes the `--BQSR` engine argument, which is listed under Inherited Arguments > CommandLineGATK below.\n </p>\n\n <h3>Input</h3>\n <p>\n One or more bam files.\n </p>\n\n <h3>Output</h3>\n <p>\n A single processed bam file.\n </p>\n\n <h3>Usage examples</h3>\n <pre>\n // Prints all reads that have a mapping quality above zero\n java -jar GenomeAnalysisTK.jar \\\n   -T PrintReads \\\n   -R reference.fasta \\\n   -I input1.bam \\\n   -I input2.bam \\\n   -o output.bam \\\n   --read_filter MappingQualityZero\n\n // Prints the first 2000 reads in the BAM file\n java -jar GenomeAnalysisTK.jar \\\n   -T PrintReads \\\n   -R reference.fasta \\\n   -I input.bam \\\n   -o output.bam \\\n   -n 2000\n\n // Downsamples BAM file to 25%\n java -jar GenomeAnalysisTK.jar \\\n   -T PrintReads \\\n   -R reference.fasta \\\n   -I input.bam \\\n   -o output.bam \\\n   -dfrac 0.25\n </pre>",
+    "group": "Sequence Data Processing Tools",
+    "name": "PrintReads",
+    "annotinfo": "",
+    "walkertype": "ReadWalker",
+    "annotfield": "",
+    "parallel": [
+        {
+            "name": "NanoSchedulable",
+            "arg": "-nct",
+            "link": "http://www.broadinstitute.org/gatk/guide/tooldocs/org_broadinstitute_gatk_engine_CommandLineGATK.php#-nct"
+        }
+    ],
+    "arguments": [
+        {
+            "required": "no",
+            "summary": "Print the first n reads from the file, discarding the rest",
+            "synonyms": "-n",
+            "maxValue": "Infinity",
+            "fulltext": "Only prints the first n reads of the file",
+            "maxRecValue": "NA",
+            "defaultValue": "-1",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--number",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Write output to this BAM filename instead of STDOUT",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "GATKSAMFileWriter",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Exclude all reads with this platform from the output",
+            "synonyms": "-platform",
+            "maxValue": "NA",
+            "fulltext": "For example, --platform ILLUMINA or --platform 454.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "String",
+            "minRecValue": "NA",
+            "name": "--platform",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Exclude all reads with this read group from the output",
+            "synonyms": "-readGroup",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "String",
+            "minRecValue": "NA",
+            "name": "--readGroup",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "File containing a list of samples (one per line). Can be specified multiple times",
+            "synonyms": "-sf",
+            "maxValue": "NA",
+            "fulltext": "Only reads from samples listed in the provided file(s) will be included in the output.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "Set[File]",
+            "minRecValue": "NA",
+            "name": "--sample_file",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Sample name to be included in the analysis. Can be specified multiple times.",
+            "synonyms": "-sn",
+            "maxValue": "NA",
+            "fulltext": "Only reads from the sample(s) will be included in the output.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "Set[String]",
+            "minRecValue": "NA",
+            "name": "--sample_name",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Simplify all reads",
+            "synonyms": "-s",
+            "maxValue": "NA",
+            "fulltext": "Erase all extra attributes in the read but keep the read group information",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--simplify",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "READ"
+}

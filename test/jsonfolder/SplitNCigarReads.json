@@ -1,0 +1,109 @@
+{
+    "downsampling": {
+        "by": "NONE",
+        "to_cov": -1
+    },
+    "summary": "Splits reads that contain Ns in their CIGAR string",
+    "refwindow": {},
+    "description": "\n\n <p>This tool identifies all N cigar elements in sequence reads, and creates k+1 new reads\n (where k is the number of N cigar elements) that correspond to the segments of the original read beside/between\n the splicing events represented by the Ns in the original CIGAR. The first read includes the bases that are to the\n left of the first N element, while the part of the read that is to the right of the N (including the Ns) is hard\n clipped, and so on for the rest of the new reads.</p>\n\n <h3>Input</h3>\n <p>\n One or more bam files.\n </p>\n\n <h3>Output</h3>\n <p>\n A single processed bam file.\n </p>\n\n <h3>Usage example</h3>\n <pre>\n java -jar GenomeAnalysisTK.jar \\\n   -T SplitNCigarReads \\\n   -R reference.fasta \\\n   -I input.bam \\\n   -o output.bam \\\n   -U ALLOW_N_CIGARS\n\n <h3>Note</h3>\n <p>When this tool is used as part of the RNAseq best practices, the command should include mapping quality\n reassignment. See the Best Practices documentation for details.</p>",
+    "group": "Sequence Data Processing Tools",
+    "name": "SplitNCigarReads",
+    "annotinfo": "",
+    "walkertype": "ReadWalker",
+    "annotfield": "",
+    "parallel": [],
+    "arguments": [
+        {
+            "required": "no",
+            "summary": "do not have the walker hard-clip overhanging sections of the reads",
+            "synonyms": "-doNotFixOverhangs",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--doNotFixOverhangs",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "max number of bases allowed in the overhang",
+            "synonyms": "-maxOverhang",
+            "maxValue": "Infinity",
+            "fulltext": "If there are more than this many bases in the overhang, we won't try to hard-clip them out",
+            "maxRecValue": "NA",
+            "defaultValue": "40",
+            "kind": "advanced_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--maxBasesInOverhang",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "max number of mismatches allowed in the overhang",
+            "synonyms": "-maxMismatches",
+            "maxValue": "Infinity",
+            "fulltext": "If there are more than this many mismatches within the overhang regions, the whole overhang will get hard-clipped out.\n It is still possible in some cases that the overhang could get clipped if the number of mismatches do not exceed this\n value, e.g. if most of the overhang mismatches.",
+            "maxRecValue": "NA",
+            "defaultValue": "1",
+            "kind": "advanced_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--maxMismatchesInOverhang",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "max reads allowed to be kept in memory at a time by the BAM writer",
+            "synonyms": "-maxInMemory",
+            "maxValue": "Infinity",
+            "fulltext": "For expert users only!  To minimize memory consumption you can lower this number, but then the tool may skip\n overhang fixing in regions with too much coverage.  Just make sure to give Java enough memory!  4Gb should be\n enough with the default value.",
+            "maxRecValue": "NA",
+            "defaultValue": "150000",
+            "kind": "advanced_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--maxReadsInMemory",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Write output to this BAM filename instead of STDOUT",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "GATKSAMFileWriter",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "READ"
+}

@@ -1,0 +1,817 @@
+{
+    "downsampling": {
+        "by": "NONE",
+        "to_cov": -1
+    },
+    "summary": "Detect systematic errors in base quality scores",
+    "refwindow": {},
+    "description": "\n\n <p>\n Variant calling algorithms rely heavily on the quality scores assigned to the individual base calls in each sequence\n read. These scores are per-base estimates of error emitted by the sequencing machines. Unfortunately the scores\n produced by the machines are subject to various sources of systematic technical error, leading to over- or\n under-estimated base quality scores in the data. Base quality score recalibration (BQSR) is a process in which we\n apply machine learning to model these errors empirically and adjust the quality scores accordingly. This allows us\n to get more accurate base qualities, which in turn improves the accuracy of our variant calls.\n\n The base recalibration process involves two key steps: first the program builds a model of covariation based on the\n data and a set of known variants (which you can bootstrap if there is none available for your organism), then it\n adjusts the base quality scores in the data based on the model.\n\n There is an optional but highly recommended step that involves building a second model and generating before/after\n plots to visualize the effects of the recalibration process. This is useful for quality control purposes.\n\n This tool performs the first step described above: it builds the model of covariation and produces the recalibration\n table. It operates only at sites that are not in dbSNP; we assume that all reference mismatches we see are therefore\n errors and indicative of poor base quality. This tool generates tables based on various user-specified covariates\n (such as read group, reported quality score, cycle, and context). Assuming we are working with a large amount of data,\n we can then calculate an empirical probability of error given the particular covariates seen at this site,\n where p(error) = num mismatches / num observations.\n\n The output file is a table (of the several covariate values, number of observations, number of mismatches, empirical\n quality score).\n </p>\n\n <h3>Inputs</h3>\n <p>\n A BAM file containing data that needs to be recalibrated.\n <p>\n A database of known polymorphic sites to mask out.\n </p>\n\n <h3>Output</h3>\n <p>A GATKReport file with many tables:</p>\n <ul>\n     <li>The list of arguments</li>\n     <li>The quantized qualities table</li>\n     <li>The recalibration table by read group</li>\n     <li>The recalibration table by quality score</li>\n     <li>The recalibration table for all the optional covariates</li>\n </ul>\n<p>\n The GATKReport table format is intended to be easy to read by both humans and computer languages (especially R).\n Check out the documentation of the GATKReport (in the FAQs) to learn how to manipulate this table.\n </p>\n\n <h3>Usage example</h3>\n <pre>\n java -jar GenomeAnalysisTK.jar \\\n   -T BaseRecalibrator \\\n   -R reference.fasta \\\n   -I my_reads.bam \\\n   -knownSites latest_dbsnp.vcf \\\n   -o recal_data.table\n </pre>\n\n <h3>Notes</h3>\n <ul><li>This *base* recalibration process should not be confused with *variant* recalibration, which is a s\n ophisticated filtering technique applied on the variant callset produced in a later step of the analysis workflow.</li>\n <li>ReadGroupCovariate and QualityScoreCovariate are required covariates and will be added regardless of whether\n or not they were specified.</li></ul>",
+    "group": "Sequence Data Processing Tools",
+    "name": "BaseRecalibrator",
+    "annotinfo": "",
+    "walkertype": "ReadWalker",
+    "annotfield": "",
+    "parallel": [
+        {
+            "name": "NanoSchedulable",
+            "arg": "-nct",
+            "link": "https://software.broadinstitute.org/gatk/documentation/tooldocs/org_broadinstitute_gatk_engine_CommandLineGATK.php#-nct"
+        }
+    ],
+    "arguments": [
+        {
+            "required": "no",
+            "summary": "the binary tag covariate name if using it",
+            "synonyms": "-bintag",
+            "maxValue": "NA",
+            "fulltext": "The tag name for the binary tag covariate (if using it)",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "advanced_param",
+            "type": "String",
+            "minRecValue": "NA",
+            "name": "--binary_tag_name",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "BQSR BAQ gap open penalty (Phred Scaled).  Default value is 40.  30 is perhaps better for whole genome call sets",
+            "synonyms": "-bqsrBAQGOP",
+            "maxValue": "Infinity",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "40.0",
+            "kind": "advanced_param",
+            "type": "double",
+            "minRecValue": "NA",
+            "name": "--bqsrBAQGapOpenPenalty",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "One or more covariates to be used in the recalibration. Can be specified multiple times",
+            "synonyms": "-cov",
+            "maxValue": "NA",
+            "fulltext": "Note that the ReadGroup and QualityScore covariates are required and do not need to be specified.\n Also, unless --no_standard_covs is specified, the Cycle and Context covariates are standard and are included by default.\n Use the --list argument to see the available covariates.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "String[]",
+            "minRecValue": "NA",
+            "name": "--covariate",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "default quality for the base deletions covariate",
+            "synonyms": "-ddq",
+            "maxValue": "Infinity",
+            "fulltext": "A default base qualities to use as a prior (reported quality) in the mismatch covariate model. This value will replace all base qualities in the read for this default value. Negative value turns it off. [default is on]",
+            "maxRecValue": "NA",
+            "defaultValue": "45",
+            "kind": "advanced_param",
+            "type": "byte",
+            "minRecValue": "NA",
+            "name": "--deletions_default_quality",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Size of the k-mer context to be used for base insertions and deletions",
+            "synonyms": "-ics",
+            "maxValue": "Infinity",
+            "fulltext": "The context covariate will use a context of this size to calculate its covariate value for base insertions and deletions. Must be between 1 and 13 (inclusive). Note that higher values will increase runtime and required java heap size.",
+            "maxRecValue": "NA",
+            "defaultValue": "3",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--indels_context_size",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "default quality for the base insertions covariate",
+            "synonyms": "-idq",
+            "maxValue": "Infinity",
+            "fulltext": "A default base qualities to use as a prior (reported quality) in the insertion covariate model. This parameter is used for all reads without insertion quality scores for each base. [default is on]",
+            "maxRecValue": "NA",
+            "defaultValue": "45",
+            "kind": "advanced_param",
+            "type": "byte",
+            "minRecValue": "NA",
+            "name": "--insertions_default_quality",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "A database of known polymorphic sites",
+            "synonyms": "-knownSites",
+            "maxValue": "NA",
+            "fulltext": "This algorithm treats every reference mismatch as an indication of error. However, real genetic variation is expected to mismatch the reference,\n so it is critical that a database of known polymorphic sites (e.g. dbSNP) is given to the tool in order to mask out those sites.",
+            "maxRecValue": "NA",
+            "defaultValue": "[]",
+            "kind": "optional_in",
+            "type": "List[RodBinding[Feature]]",
+            "minRecValue": "NA",
+            "name": "--knownSites",
+            "rodTypes": "BCF2, BEAGLE, BED, BEDTABLE, EXAMPLEBINARY, GELITEXT, RAWHAPMAP, REFSEQ, SAMPILEUP, SAMREAD, TABLE, VCF, VCF3",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "List the available covariates and exit",
+            "synonyms": "-ls",
+            "maxValue": "NA",
+            "fulltext": "Note that the --list argument requires a fully resolved and correct command-line to work.",
+            "maxRecValue": "NA",
+            "defaultValue": "false",
+            "kind": "optional_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--list",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "minimum quality for the bases in the tail of the reads to be considered",
+            "synonyms": "-lqt",
+            "maxValue": "Infinity",
+            "fulltext": "Reads with low quality bases on either tail (beginning or end) will not be considered in the context. This parameter defines the quality below which (inclusive) a tail is considered low quality",
+            "maxRecValue": "NA",
+            "defaultValue": "2",
+            "kind": "advanced_param",
+            "type": "byte",
+            "minRecValue": "NA",
+            "name": "--low_quality_tail",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Reduce memory usage in multi-threaded code at the expense of threading efficiency",
+            "synonyms": "-lowMemoryMode",
+            "maxValue": "NA",
+            "fulltext": "When you use nct > 1, BQSR uses nct times more memory to compute its recalibration tables, for efficiency\n purposes.  If you have many covariates, and therefore are using a lot of memory, you can use this flag\n to safely access only one table.  There may be some CPU cost, but as long as the table is really big\n the cost should be relatively reasonable.",
+            "maxRecValue": "NA",
+            "defaultValue": "false",
+            "kind": "optional_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--lowMemoryMode",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "The maximum cycle value permitted for the Cycle covariate",
+            "synonyms": "-maxCycle",
+            "maxValue": "Infinity",
+            "fulltext": "The cycle covariate will generate an error if it encounters a cycle greater than this value.\n This argument is ignored if the Cycle covariate is not used.",
+            "maxRecValue": "NA",
+            "defaultValue": "500",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--maximum_cycle_value",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Size of the k-mer context to be used for base mismatches",
+            "synonyms": "-mcs",
+            "maxValue": "Infinity",
+            "fulltext": "The context covariate will use a context of this size to calculate its covariate value for base mismatches. Must be between 1 and 13 (inclusive). Note that higher values will increase runtime and required java heap size.",
+            "maxRecValue": "NA",
+            "defaultValue": "2",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--mismatches_context_size",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "default quality for the base mismatches covariate",
+            "synonyms": "-mdq",
+            "maxValue": "Infinity",
+            "fulltext": "A default base qualities to use as a prior (reported quality) in the mismatch covariate model. This value will replace all base qualities in the read for this default value. Negative value turns it off. [default is off]",
+            "maxRecValue": "NA",
+            "defaultValue": "-1",
+            "kind": "advanced_param",
+            "type": "byte",
+            "minRecValue": "NA",
+            "name": "--mismatches_default_quality",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Do not use the standard set of covariates, but rather just the ones listed using the -cov argument",
+            "synonyms": "-noStandard",
+            "maxValue": "NA",
+            "fulltext": "The Cycle and Context covariates are standard and are included by default unless this argument is provided.\n Note that the ReadGroup and QualityScore covariates are required and cannot be excluded.",
+            "maxRecValue": "NA",
+            "defaultValue": "false",
+            "kind": "optional_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--no_standard_covs",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "yes",
+            "summary": "The output recalibration table file to create",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "After the header, data records occur one per line until the end of the file. The first several items on a line are the\n values of the individual covariates and will change depending on which covariates were specified at runtime. The last\n three items are the data- that is, number of observations for this combination of covariates, number of reference mismatches,\n and the raw empirical quality score calculated by phred-scaling the mismatch rate.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "required_out",
+            "type": "File",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "number of distinct quality scores in the quantized output",
+            "synonyms": "-ql",
+            "maxValue": "Infinity",
+            "fulltext": "BQSR generates a quantization table for quick quantization later by subsequent tools. BQSR does not quantize the base qualities, this is done by the engine with the -qq or -BQSR options.\n This parameter tells BQSR the number of levels of quantization to use to build the quantization table.",
+            "maxRecValue": "NA",
+            "defaultValue": "16",
+            "kind": "advanced_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--quantizing_levels",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "If specified, allows the recalibrator to be used without a dbsnp rod. Very unsafe and for expert users only.",
+            "synonyms": "-run_without_dbsnp_potentially_ruining_quality",
+            "maxValue": "NA",
+            "fulltext": "This calculation is critically dependent on being able to skip over known polymorphic sites. Please be sure that you know what you are doing if you use this option.",
+            "maxRecValue": "NA",
+            "defaultValue": "false",
+            "kind": "advanced_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--run_without_dbsnp_potentially_ruining_quality",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Defines the behavior of the recalibrator when it encounters no calls in the color space. Options = THROW_EXCEPTION, LEAVE_READ_UNRECALIBRATED, or PURGE_READ",
+            "synonyms": "-solid_nocall_strategy",
+            "maxValue": "NA",
+            "fulltext": "BaseRecalibrator accepts a --solid_nocall_strategy <MODE> flag which governs how the recalibrator handles\n no calls in the color space tag. Unfortunately because of the reference inserted bases mentioned above, reads with no calls in\n their color space tag can not be recalibrated.",
+            "maxRecValue": "NA",
+            "defaultValue": "THROW_EXCEPTION",
+            "kind": "optional_param",
+            "type": "SOLID_NOCALL_STRATEGY",
+            "minRecValue": "NA",
+            "name": "--solid_nocall_strategy",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": [
+                {
+                    "name": "THROW_EXCEPTION",
+                    "summary": "When a no call is detected throw an exception to alert the user that recalibrating this SOLiD data is unsafe. This is the default option."
+                },
+                {
+                    "name": "LEAVE_READ_UNRECALIBRATED",
+                    "summary": "Leave the read in the output bam completely untouched. This mode is only okay if the no calls are very rare."
+                },
+                {
+                    "name": "PURGE_READ",
+                    "summary": "Mark these reads as failing vendor quality checks so they can be filtered out by downstream analyses."
+                }
+            ]
+        },
+        {
+            "required": "no",
+            "summary": "How should we recalibrate solid bases in which the reference was inserted? Options = DO_NOTHING, SET_Q_ZERO, SET_Q_ZERO_BASE_N, or REMOVE_REF_BIAS",
+            "synonyms": "-sMode",
+            "maxValue": "NA",
+            "fulltext": "BaseRecalibrator accepts a --solid_recal_mode <MODE> flag which governs how the recalibrator handles the\n reads which have had the reference inserted because of color space inconsistencies.",
+            "maxRecValue": "NA",
+            "defaultValue": "SET_Q_ZERO",
+            "kind": "optional_param",
+            "type": "SOLID_RECAL_MODE",
+            "minRecValue": "NA",
+            "name": "--solid_recal_mode",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": [
+                {
+                    "name": "DO_NOTHING",
+                    "summary": "Treat reference inserted bases as reference matching bases. Very unsafe!"
+                },
+                {
+                    "name": "SET_Q_ZERO",
+                    "summary": "Set reference inserted bases and the previous base (because of color space alignment details) to Q0. This is the default option."
+                },
+                {
+                    "name": "SET_Q_ZERO_BASE_N",
+                    "summary": "In addition to setting the quality scores to zero, also set the base itself to 'N'. This is useful to visualize in IGV."
+                },
+                {
+                    "name": "REMOVE_REF_BIAS",
+                    "summary": "Look at the color quality scores and probabilistically decide to change the reference inserted base to be the base which is implied by the original color space instead of the reference."
+                }
+            ]
+        },
+        {
+            "required": "no",
+            "summary": "Sort the rows in the tables of reports",
+            "synonyms": "-sortAllCols",
+            "maxValue": "NA",
+            "fulltext": "Whether GATK report tables should have rows in sorted order, starting from leftmost column",
+            "maxRecValue": "NA",
+            "defaultValue": "false",
+            "kind": "optional_flag",
+            "type": "Boolean",
+            "minRecValue": "NA",
+            "name": "--sort_by_all_columns",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MappingQualityZeroFilter.php",
+            "name": "MappingQualityZeroFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_UnmappedReadFilter.php",
+            "name": "UnmappedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_NotPrimaryAlignmentFilter.php",
+            "name": "NotPrimaryAlignmentFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_FailsVendorQualityCheckFilter.php",
+            "name": "FailsVendorQualityCheckFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_DuplicateReadFilter.php",
+            "name": "DuplicateReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MappingQualityUnavailableFilter.php",
+            "name": "MappingQualityUnavailableFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "READ"
+}{
+    "downsampling": {
+        "by": "NONE",
+        "to_cov": -1
+    },
+    "summary": "Generate base recalibration table to compensate for systematic errors in basecalling confidences",
+    "refwindow": {},
+    "description": "\n\n <p>\n Variant calling algorithms rely heavily on the quality scores assigned to the individual base calls in each sequence\n read. These scores are per-base estimates of error emitted by the sequencing machines. Unfortunately the scores\n produced by the machines are subject to various sources of systematic technical error, leading to over- or\n under-estimated base quality scores in the data. Base quality score recalibration (BQSR) is a process in which we\n apply machine learning to model these errors empirically and adjust the quality scores accordingly. This allows us\n to get more accurate base qualities, which in turn improves the accuracy of our variant calls.\n\n The base recalibration process involves two key steps: first the program builds a model of covariation based on the\n data and a set of known variants (which you can bootstrap if there is none available for your organism), then it\n adjusts the base quality scores in the data based on the model.\n\n There is an optional but highly recommended step that involves building a second model and generating before/after\n plots to visualize the effects of the recalibration process. This is useful for quality control purposes.\n\n This tool performs the first step described above: it builds the model of covariation and produces the recalibration\n table. It operates only at sites that are not in dbSNP; we assume that all reference mismatches we see are therefore\n errors and indicative of poor base quality. This tool generates tables based on various user-specified covariates\n (such as read group, reported quality score, cycle, and context). Assuming we are working with a large amount of data,\n we can then calculate an empirical probability of error given the particular covariates seen at this site,\n where p(error) = num mismatches / num observations.\n\n The output file is a table (of the several covariate values, number of observations, number of mismatches, empirical\n quality score).\n </p>\n\n <h3>Inputs</h3>\n <p>\n A BAM file containing data that needs to be recalibrated.\n <p>\n A database of known polymorphic sites to mask out.\n </p>\n\n <h3>Output</h3>\n <p>A GATKReport file with many tables:</p>\n <ul>\n     <li>The list of arguments</li>\n     <li>The quantized qualities table</li>\n     <li>The recalibration table by read group</li>\n     <li>The recalibration table by quality score</li>\n     <li>The recalibration table for all the optional covariates</li>\n </ul>\n<p>\n The GATKReport table format is intended to be easy to read by both humans and computer languages (especially R).\n Check out the documentation of the GATKReport (in the FAQs) to learn how to manipulate this table.\n </p>\n\n <h3>Usage example</h3>\n <pre>\n java -jar GenomeAnalysisTK.jar \\\n   -T BaseRecalibrator \\\n   -R reference.fasta \\\n   -I my_reads.bam \\\n   -knownSites latest_dbsnp.vcf \\\n   -o recal_data.table\n </pre>\n\n <h3>Notes</h3>\n <ul><li>This *base* recalibration process should not be confused with *variant* recalibration, which is a s\n ophisticated filtering technique applied on the variant callset produced in a later step of the analysis workflow.</li>\n <li>ReadGroupCovariate and QualityScoreCovariate are required covariates and will be added regardless of whether\n or not they were specified.</li></ul>",
+    "group": "Sequence Data Processing Tools",
+    "name": "BaseRecalibrator",
+    "annotinfo": "",
+    "walkertype": "ReadWalker",
+    "annotfield": "",
+    "parallel": [
+        {
+            "name": "NanoSchedulable",
+            "arg": "-nct",
+            "link": "http://www.broadinstitute.org/gatk/guide/tooldocs/org_broadinstitute_gatk_engine_CommandLineGATK.php#-nct"
+        }
+    ],
+    "arguments": [
+        {
+            "required": "no",
+            "summary": "the binary tag covariate name if using it",
+            "synonyms": "-bintag",
+            "maxValue": "NA",
+            "fulltext": "The tag name for the binary tag covariate (if using it)",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "advanced_param",
+            "type": "String",
+            "minRecValue": "NA",
+            "name": "--binary_tag_name",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "BQSR BAQ gap open penalty (Phred Scaled).  Default value is 40.  30 is perhaps better for whole genome call sets",
+            "synonyms": "-bqsrBAQGOP",
+            "maxValue": "Infinity",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "40.0",
+            "kind": "advanced_param",
+            "type": "double",
+            "minRecValue": "NA",
+            "name": "--bqsrBAQGapOpenPenalty",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "One or more covariates to be used in the recalibration. Can be specified multiple times",
+            "synonyms": "-cov",
+            "maxValue": "NA",
+            "fulltext": "Note that the ReadGroup and QualityScore covariates are required and do not need to be specified.\n Also, unless --no_standard_covs is specified, the Cycle and Context covariates are standard and are included by default.\n Use the --list argument to see the available covariates.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "String[]",
+            "minRecValue": "NA",
+            "name": "--covariate",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "default quality for the base deletions covariate",
+            "synonyms": "-ddq",
+            "maxValue": "Infinity",
+            "fulltext": "A default base qualities to use as a prior (reported quality) in the mismatch covariate model. This value will replace all base qualities in the read for this default value. Negative value turns it off. [default is on]",
+            "maxRecValue": "NA",
+            "defaultValue": "45",
+            "kind": "advanced_param",
+            "type": "byte",
+            "minRecValue": "NA",
+            "name": "--deletions_default_quality",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Size of the k-mer context to be used for base insertions and deletions",
+            "synonyms": "-ics",
+            "maxValue": "Infinity",
+            "fulltext": "The context covariate will use a context of this size to calculate its covariate value for base insertions and deletions. Must be between 1 and 13 (inclusive). Note that higher values will increase runtime and required java heap size.",
+            "maxRecValue": "NA",
+            "defaultValue": "3",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--indels_context_size",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "default quality for the base insertions covariate",
+            "synonyms": "-idq",
+            "maxValue": "Infinity",
+            "fulltext": "A default base qualities to use as a prior (reported quality) in the insertion covariate model. This parameter is used for all reads without insertion quality scores for each base. [default is on]",
+            "maxRecValue": "NA",
+            "defaultValue": "45",
+            "kind": "advanced_param",
+            "type": "byte",
+            "minRecValue": "NA",
+            "name": "--insertions_default_quality",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "A database of known polymorphic sites",
+            "synonyms": "-knownSites",
+            "maxValue": "NA",
+            "fulltext": "This algorithm treats every reference mismatch as an indication of error. However, real genetic variation is expected to mismatch the reference,\n so it is critical that a database of known polymorphic sites (e.g. dbSNP) is given to the tool in order to mask out those sites.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_in",
+            "type": "List[RodBinding[Feature]]",
+            "minRecValue": "NA",
+            "name": "--knownSites",
+            "rodTypes": "<a href=htsjdk_variant_bcf2_BCF2Codec.php>BCF2</a>, <a href=org_broadinstitute_gatk_utils_codecs_beagle_BeagleCodec.php>BEAGLE</a>, <a href=htsjdk_tribble_bed_BEDCodec.php>BED</a>, <a href=org_broadinstitute_gatk_utils_codecs_table_BedTableCodec.php>BEDTABLE</a>, <a href=htsjdk_tribble_example_ExampleBinaryCodec.php>EXAMPLEBINARY</a>, <a href=htsjdk_tribble_gelitext_GeliTextCodec.php>GELITEXT</a>, <a href=org_broadinstitute_gatk_utils_codecs_hapmap_RawHapMapCodec.php>RAWHAPMAP</a>, <a href=org_broadinstitute_gatk_utils_codecs_refseq_RefSeqCodec.php>REFSEQ</a>, <a href=org_broadinstitute_gatk_utils_codecs_sampileup_SAMPileupCodec.php>SAMPILEUP</a>, <a href=org_broadinstitute_gatk_utils_codecs_samread_SAMReadCodec.php>SAMREAD</a>, <a href=org_broadinstitute_gatk_utils_codecs_table_TableCodec.php>TABLE</a>, <a href=htsjdk_variant_vcf_VCFCodec.php>VCF</a>, <a href=htsjdk_variant_vcf_VCF3Codec.php>VCF3</a>",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "List the available covariates and exit",
+            "synonyms": "-ls",
+            "maxValue": "NA",
+            "fulltext": "Note that the --list argument requires a fully resolved and correct command-line to work.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--list",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "minimum quality for the bases in the tail of the reads to be considered",
+            "synonyms": "-lqt",
+            "maxValue": "Infinity",
+            "fulltext": "Reads with low quality bases on either tail (beginning or end) will not be considered in the context. This parameter defines the quality below which (inclusive) a tail is considered low quality",
+            "maxRecValue": "NA",
+            "defaultValue": "2",
+            "kind": "advanced_param",
+            "type": "byte",
+            "minRecValue": "NA",
+            "name": "--low_quality_tail",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Reduce memory usage in multi-threaded code at the expense of threading efficiency",
+            "synonyms": "-lowMemoryMode",
+            "maxValue": "NA",
+            "fulltext": "When you use nct > 1, BQSR uses nct times more memory to compute its recalibration tables, for efficiency\n purposes.  If you have many covariates, and therefore are using a lot of memory, you can use this flag\n to safely access only one table.  There may be some CPU cost, but as long as the table is really big\n the cost should be relatively reasonable.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--lowMemoryMode",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "The maximum cycle value permitted for the Cycle covariate",
+            "synonyms": "-maxCycle",
+            "maxValue": "Infinity",
+            "fulltext": "The cycle covariate will generate an error if it encounters a cycle greater than this value.\n This argument is ignored if the Cycle covariate is not used.",
+            "maxRecValue": "NA",
+            "defaultValue": "500",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--maximum_cycle_value",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Size of the k-mer context to be used for base mismatches",
+            "synonyms": "-mcs",
+            "maxValue": "Infinity",
+            "fulltext": "The context covariate will use a context of this size to calculate its covariate value for base mismatches. Must be between 1 and 13 (inclusive). Note that higher values will increase runtime and required java heap size.",
+            "maxRecValue": "NA",
+            "defaultValue": "2",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--mismatches_context_size",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "default quality for the base mismatches covariate",
+            "synonyms": "-mdq",
+            "maxValue": "Infinity",
+            "fulltext": "A default base qualities to use as a prior (reported quality) in the mismatch covariate model. This value will replace all base qualities in the read for this default value. Negative value turns it off. [default is off]",
+            "maxRecValue": "NA",
+            "defaultValue": "-1",
+            "kind": "advanced_param",
+            "type": "byte",
+            "minRecValue": "NA",
+            "name": "--mismatches_default_quality",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Do not use the standard set of covariates, but rather just the ones listed using the -cov argument",
+            "synonyms": "-noStandard",
+            "maxValue": "NA",
+            "fulltext": "The Cycle and Context covariates are standard and are included by default unless this argument is provided.\n Note that the ReadGroup and QualityScore covariates are required and cannot be excluded.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--no_standard_covs",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "yes",
+            "summary": "The output recalibration table file to create",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "After the header, data records occur one per line until the end of the file. The first several items on a line are the\n values of the individual covariates and will change depending on which covariates were specified at runtime. The last\n three items are the data- that is, number of observations for this combination of covariates, number of reference mismatches,\n and the raw empirical quality score calculated by phred-scaling the mismatch rate.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "required_out",
+            "type": "File",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "number of distinct quality scores in the quantized output",
+            "synonyms": "-ql",
+            "maxValue": "Infinity",
+            "fulltext": "BQSR generates a quantization table for quick quantization later by subsequent tools. BQSR does not quantize the base qualities, this is done by the engine with the -qq or -BQSR options.\n This parameter tells BQSR the number of levels of quantization to use to build the quantization table.",
+            "maxRecValue": "NA",
+            "defaultValue": "16",
+            "kind": "advanced_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--quantizing_levels",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "If specified, allows the recalibrator to be used without a dbsnp rod. Very unsafe and for expert users only.",
+            "synonyms": "-run_without_dbsnp_potentially_ruining_quality",
+            "maxValue": "NA",
+            "fulltext": "This calculation is critically dependent on being able to skip over known polymorphic sites. Please be sure that you know what you are doing if you use this option.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "advanced_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--run_without_dbsnp_potentially_ruining_quality",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Defines the behavior of the recalibrator when it encounters no calls in the color space. Options = THROW_EXCEPTION, LEAVE_READ_UNRECALIBRATED, or PURGE_READ",
+            "synonyms": "-solid_nocall_strategy",
+            "maxValue": "NA",
+            "fulltext": "BaseRecalibrator accepts a --solid_nocall_strategy <MODE> flag which governs how the recalibrator handles\n no calls in the color space tag. Unfortunately because of the reference inserted bases mentioned above, reads with no calls in\n their color space tag can not be recalibrated.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "SOLID_NOCALL_STRATEGY",
+            "minRecValue": "NA",
+            "name": "--solid_nocall_strategy",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": [
+                {
+                    "name": "THROW_EXCEPTION",
+                    "summary": "When a no call is detected throw an exception to alert the user that recalibrating this SOLiD data is unsafe. This is the default option."
+                },
+                {
+                    "name": "LEAVE_READ_UNRECALIBRATED",
+                    "summary": "Leave the read in the output bam completely untouched. This mode is only okay if the no calls are very rare."
+                },
+                {
+                    "name": "PURGE_READ",
+                    "summary": "Mark these reads as failing vendor quality checks so they can be filtered out by downstream analyses."
+                }
+            ]
+        },
+        {
+            "required": "no",
+            "summary": "How should we recalibrate solid bases in which the reference was inserted? Options = DO_NOTHING, SET_Q_ZERO, SET_Q_ZERO_BASE_N, or REMOVE_REF_BIAS",
+            "synonyms": "-sMode",
+            "maxValue": "NA",
+            "fulltext": "BaseRecalibrator accepts a --solid_recal_mode <MODE> flag which governs how the recalibrator handles the\n reads which have had the reference inserted because of color space inconsistencies.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "SOLID_RECAL_MODE",
+            "minRecValue": "NA",
+            "name": "--solid_recal_mode",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": [
+                {
+                    "name": "DO_NOTHING",
+                    "summary": "Treat reference inserted bases as reference matching bases. Very unsafe!"
+                },
+                {
+                    "name": "SET_Q_ZERO",
+                    "summary": "Set reference inserted bases and the previous base (because of color space alignment details) to Q0. This is the default option."
+                },
+                {
+                    "name": "SET_Q_ZERO_BASE_N",
+                    "summary": "In addition to setting the quality scores to zero, also set the base itself to 'N'. This is useful to visualize in IGV."
+                },
+                {
+                    "name": "REMOVE_REF_BIAS",
+                    "summary": "Look at the color quality scores and probabilistically decide to change the reference inserted base to be the base which is implied by the original color space instead of the reference."
+                }
+            ]
+        },
+        {
+            "required": "no",
+            "summary": "Sort the rows in the tables of reports",
+            "synonyms": "-sortAllCols",
+            "maxValue": "NA",
+            "fulltext": "Whether GATK report tables should have rows in sorted order, starting from leftmost column",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_flag",
+            "type": "Boolean",
+            "minRecValue": "NA",
+            "name": "--sort_by_all_columns",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MappingQualityZeroFilter.php",
+            "name": "MappingQualityZeroFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_UnmappedReadFilter.php",
+            "name": "UnmappedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_NotPrimaryAlignmentFilter.php",
+            "name": "NotPrimaryAlignmentFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_FailsVendorQualityCheckFilter.php",
+            "name": "FailsVendorQualityCheckFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_DuplicateReadFilter.php",
+            "name": "DuplicateReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MappingQualityUnavailableFilter.php",
+            "name": "MappingQualityUnavailableFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "READ"
+}

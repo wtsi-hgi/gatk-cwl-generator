@@ -1,0 +1,215 @@
+{
+    "downsampling": {
+        "by": "BY_SAMPLE",
+        "to_cov": 10000
+    },
+    "summary": "Calculate read counts per allele for allele-specific expression analysis",
+    "refwindow": {},
+    "description": "\n\n <p>\n This tool calculates allele counts at a set of positions after applying filters that are tuned for enabling\n allele-specific expression (ASE) analysis. The filters operate on mapping quality, base quality, depth of coverage,\n overlapping paired reads and deletions overlapping the position. All thresholds and options are controlled by\n command-line arguments.\n </p>\n\n <h3>Input</h3>\n <ul>\n     <li>BAM files (with proper headers) to be analyzed for ASE</li>\n     <li>A VCF file with specific sites to process.</li>\n </ul>\n\n <h3>Output</h3>\n <p>\n A table of allele counts at the given sites. By default, it is formatted as a tab-delimited text file\n that is readable by R and compatible with <a href=\"http://www.well.ox.ac.uk/~rivas/mamba/\">Mamba</a>,\n a downstream tool developed for allele-specific expression analysis.\n </p>\n\n <h3>Usage example</h3>\n <pre>\n java -jar GenomeAnalysisTK.jar \\\n   -R reference.fasta \\\n   -T ASEReadCounter \\\n   -o file_name.csv \\\n   -I input.bam \\\n   -sites sites.vcf \\\n   -U ALLOW_N_CIGAR_READS \\\n   [-minDepth 10] \\\n   [--minMappingQuality 10] \\\n   [--minBaseQuality 2] \\\n   [-drf DuplicateRead]\n </pre>\n\n <h3>Note</h3>\n <ul>\n     <li>Like most GATK tools, this tools filters out duplicate reads by default. However, some ASE methods\n     recommend including duplicate reads in the analysis, so the DuplicateRead filter can be disabled using the\n     \"-drf DuplicateRead\" flag in the command-line.</li>\n </ul>\n <h3>Caveat</h3>\n <ul>\n     <li>This tool will only process biallelic sites. If your callset contains multiallelic sites, they will be ignored.\n     Optionally, you can subset your callset to just biallelic variants using e.g.\n     <a href=\"org_broadinstitute_gatk_tools_walkers_variantutils_SelectVariants.php\">SelectVariants</a>\n     with the option \"-restrictAllelesTo BIALLELIC\".</li>\n </ul>",
+    "group": "Diagnostics and Quality Control Tools",
+    "name": "ASEReadCounter",
+    "annotinfo": "",
+    "walkertype": "LocusWalker",
+    "annotfield": "",
+    "parallel": [],
+    "arguments": [
+        {
+            "required": "no",
+            "summary": "Handling of overlapping reads from the same fragment",
+            "synonyms": "-overlap",
+            "maxValue": "NA",
+            "fulltext": "These options modify how the tool deals with overlapping read pairs.\n COUNT_READS -  Count all reads independently, even if they are from the same fragment.\n COUNT_FRAGMENTS - Count all fragments, even if the reads that compose the fragment are not consistent at that base.\n COUNT_FRAGMENTS_REQUIRE_SAME_BASE - Count all fragments, but only if the reads that compose the fragment are consistent at that base (default).",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "CountPileupType",
+            "minRecValue": "NA",
+            "name": "--countOverlapReadsType",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": [
+                {
+                    "name": "COUNT_READS",
+                    "summary": "Count all reads independently (even if from the same fragment)."
+                },
+                {
+                    "name": "COUNT_FRAGMENTS",
+                    "summary": "Count all fragments (even if the reads that compose the fragment are not consistent at that base)."
+                },
+                {
+                    "name": "COUNT_FRAGMENTS_REQUIRE_SAME_BASE",
+                    "summary": "Count all fragments (but only if the reads that compose the fragment are consistent at that base)."
+                }
+            ]
+        },
+        {
+            "required": "no",
+            "summary": "Ignore sites consisting only of deletions",
+            "synonyms": "NA",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "advanced_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--ignoreDeletionSites",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Include information on deletions",
+            "synonyms": "-dels",
+            "maxValue": "NA",
+            "fulltext": "Consider a spanning deletion as contributing to coverage. Also enables deletion counts in per-base output.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "advanced_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--includeDeletions",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Minimum base quality",
+            "synonyms": "-mbq",
+            "maxValue": "127.0",
+            "fulltext": "If this argument is enabled, bases with quality scores lower than this threshold will not be counted.\n This is set to -1 by default to disable the evaluation and ignore this threshold.",
+            "maxRecValue": "NA",
+            "defaultValue": "0",
+            "kind": "optional_param",
+            "type": "byte",
+            "minRecValue": "NA",
+            "name": "--minBaseQuality",
+            "rodTypes": "NA",
+            "minValue": "0.0",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Minimum number of bases that pass filters",
+            "synonyms": "-minDepth",
+            "maxValue": "2.147483647E9",
+            "fulltext": "If this argument is enabled, loci with total depth lower than this threshold after all filters have been applied\n will be skipped. This is set to -1 by default to disable the evaluation and ignore this threshold.",
+            "maxRecValue": "NA",
+            "defaultValue": "-1",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--minDepthOfNonFilteredBase",
+            "rodTypes": "NA",
+            "minValue": "0.0",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Minimum read mapping quality",
+            "synonyms": "-mmq",
+            "maxValue": "2.147483647E9",
+            "fulltext": "If this argument is enabled, reads with mapping quality values lower than this threshold will not be counted.\n This is set to -1 by default to disable the evaluation and ignore this threshold.",
+            "maxRecValue": "NA",
+            "defaultValue": "0",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--minMappingQuality",
+            "rodTypes": "NA",
+            "minValue": "0.0",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "An output file created by the walker.  Will overwrite contents if file exists",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "PrintStream",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Format of the output file, can be CSV, TABLE, RTABLE",
+            "synonyms": "NA",
+            "maxValue": "NA",
+            "fulltext": "Available options are csv, table, rtable. By default, the format is an r-readable table.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_param",
+            "type": "OUTPUT_FORMAT",
+            "minRecValue": "NA",
+            "name": "--outputFormat",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": [
+                {
+                    "name": "TABLE",
+                    "summary": ""
+                },
+                {
+                    "name": "RTABLE",
+                    "summary": ""
+                },
+                {
+                    "name": "CSV",
+                    "summary": ""
+                }
+            ]
+        },
+        {
+            "required": "yes",
+            "summary": "Undocumented option",
+            "synonyms": "-sites",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "required_in",
+            "type": "RodBinding[VariantContext]",
+            "minRecValue": "NA",
+            "name": "--sitesVCFFile",
+            "rodTypes": "<a href=htsjdk_variant_bcf2_BCF2Codec.php>BCF2</a>, <a href=htsjdk_variant_vcf_VCFCodec.php>VCF</a>, <a href=htsjdk_variant_vcf_VCF3Codec.php>VCF3</a>",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_UnmappedReadFilter.php",
+            "name": "UnmappedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_NotPrimaryAlignmentFilter.php",
+            "name": "NotPrimaryAlignmentFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_FailsVendorQualityCheckFilter.php",
+            "name": "FailsVendorQualityCheckFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_DuplicateReadFilter.php",
+            "name": "DuplicateReadFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "LOCUS"
+}

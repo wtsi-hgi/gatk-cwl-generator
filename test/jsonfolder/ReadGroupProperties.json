@@ -1,0 +1,61 @@
+{
+    "downsampling": {
+        "by": "NONE",
+        "to_cov": -1
+    },
+    "summary": "Collect statistics about read groups and their properties",
+    "refwindow": {},
+    "description": "\n\n <p>This tool emits a GATKReport containing read group, sample, library, platform, center, sequencing data,\n paired end status, simple read type name (e.g. 2x76) median insert size and median read length\n for each read group in every provided BAM file.</p>\n\n <p>Note that this walker stops when all read groups have been observed at least a few thousand times so that\n the median statistics are well determined.  It is safe to run it on whole genome sequence data and expect it to\n finish in an appropriate timeframe.</p>\n\n <h3>Input</h3>\n  <p>\n      Any number of BAM files\n  </p>\n\n <h3>Output</h3>\n  <p>\n      GATKReport containing read group, sample, library, platform, center, median insert size and median read length.\n\n      For example, running this tool on the NA12878 data sets:\n\n      <pre>\n      ##:GATKReport.v0.2 ReadGroupProperties : Table of read group properties\n      readgroup  sample   library       platform  center  date     has.any.reads  is.paired.end  n.reads.analyzed  simple.read.type  median.read.length  median.insert.size\n      20FUK.1    NA12878  Solexa-18483  illumina  BI      2/2/10   true           true                        498  2x101                            101                 386\n      20FUK.2    NA12878  Solexa-18484  illumina  BI      2/2/10   true           true                        476  2x101                            101                 417\n      20FUK.3    NA12878  Solexa-18483  illumina  BI      2/2/10   true           true                        407  2x101                            101                 387\n      20FUK.4    NA12878  Solexa-18484  illumina  BI      2/2/10   true           true                        389  2x101                            101                 415\n      20FUK.5    NA12878  Solexa-18483  illumina  BI      2/2/10   true           true                        433  2x101                            101                 386\n      20FUK.6    NA12878  Solexa-18484  illumina  BI      2/2/10   true           true                        480  2x101                            101                 418\n      20FUK.7    NA12878  Solexa-18483  illumina  BI      2/2/10   true           true                        450  2x101                            101                 386\n      20FUK.8    NA12878  Solexa-18484  illumina  BI      2/2/10   true           true                        438  2x101                            101                 418\n      20GAV.1    NA12878  Solexa-18483  illumina  BI      1/26/10  true           true                        490  2x101                            101                 391\n      20GAV.2    NA12878  Solexa-18484  illumina  BI      1/26/10  true           true                        485  2x101                            101                 417\n      20GAV.3    NA12878  Solexa-18483  illumina  BI      1/26/10  true           true                        460  2x101                            101                 392\n      20GAV.4    NA12878  Solexa-18484  illumina  BI      1/26/10  true           true                        434  2x101                            101                 415\n      20GAV.5    NA12878  Solexa-18483  illumina  BI      1/26/10  true           true                        479  2x101                            101                 389\n      20GAV.6    NA12878  Solexa-18484  illumina  BI      1/26/10  true           true                        461  2x101                            101                 416\n      20GAV.7    NA12878  Solexa-18483  illumina  BI      1/26/10  true           true                        509  2x101                            101                 386\n      20GAV.8    NA12878  Solexa-18484  illumina  BI      1/26/10  true           true                        476  2x101                            101                 410                           101                 414\n      </pre>\n  </p>\n\n <h3>Usage example</h3>\n  <pre>\n    java -jar GenomeAnalysisTK.jar \\\n      -T ReadGroupProperties \\\n      -R reference.fasta \\\n      -I example1.bam \\\n      -I example2.bam \\\n      -o readgroup_report.grp\n  </pre>",
+    "group": "Diagnostics and Quality Control Tools",
+    "name": "ReadGroupProperties",
+    "annotinfo": "",
+    "walkertype": "ReadWalker",
+    "annotfield": "",
+    "parallel": [],
+    "arguments": [
+        {
+            "required": "no",
+            "summary": "Calculate median from the first maxElementsForMedian values observed",
+            "synonyms": "-maxElementsForMedian",
+            "maxValue": "Infinity",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "10000",
+            "kind": "optional_param",
+            "type": "int",
+            "minRecValue": "NA",
+            "name": "--max_values_for_median",
+            "rodTypes": "NA",
+            "minValue": "-Infinity",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "An output file created by the walker.  Will overwrite contents if file exists",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "PrintStream",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "READ"
+}

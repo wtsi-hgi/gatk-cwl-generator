@@ -1,0 +1,104 @@
+{
+    "downsampling": {
+        "by": "BY_SAMPLE",
+        "to_cov": 1000
+    },
+    "summary": "Print read alignments in Pileup-style format",
+    "refwindow": {},
+    "description": "\n\n <p>This tool emulates the 'samtools pileup' command. It prints the alignment in a format that is very similar to\n the Samtools pileup format (see the\n <a href=\"http://samtools.sourceforge.net/pileup.shtml\">Pileup format documentation</a> for more details about\n the original format). There is one line per genomic position, listing the chromosome name, coordinate, reference\n base, read bases, and read qualities. In addition to these default fields, additional information can be added to\n the output as extra columns; see options detailed below.</p>\n\n <h4>Emulated command:</h4>\n <pre>\n  samtools pileup -f in.ref.fasta -l in.site_list input.bam\n </pre>\n\n <h3>Input</h3>\n <p>\n A BAM file and the interval to print.\n </p>\n\n <h3>Output</h3>\n <p>\n  Alignment of reads formatted in the Pileup style.\n </p>\n\n <h3>Usage example</h3>\n <pre>\n java -jar GenomeAnalysisTK.jar \\\n   -T Pileup \\\n   -R reference.fasta \\\n   -I my_reads.bam \\\n   -L chr1:257-267\n   -o output.txt\n </pre>\n <h4>Expected output</h4>\n <pre>\n     chr1 257 A CAA '&=\n     chr1 258 C TCC A:=\n     chr1 259 C CCC )A=\n     chr1 260 C ACC (=<\n     chr1 261 T TCT '44\n     chr1 262 A AAA '?:\n     chr1 263 A AGA 1'6\n     chr1 264 C TCC 987\n     chr1 265 C CCC (@(\n     chr1 266 C GCC ''=\n     chr1 267 T AAT 7%>\n </pre>",
+    "group": "Diagnostics and Quality Control Tools",
+    "name": "Pileup",
+    "annotinfo": "",
+    "walkertype": "LocusWalker",
+    "annotfield": "",
+    "parallel": [
+        {
+            "name": "NanoSchedulable",
+            "arg": "-nct",
+            "link": "http://www.broadinstitute.org/gatk/guide/tooldocs/org_broadinstitute_gatk_engine_CommandLineGATK.php#-nct"
+        },
+        {
+            "name": "TreeReducible",
+            "arg": "-nt",
+            "link": "http://www.broadinstitute.org/gatk/guide/tooldocs/org_broadinstitute_gatk_engine_CommandLineGATK.php#-nt"
+        }
+    ],
+    "arguments": [
+        {
+            "required": "no",
+            "summary": "ROD file containing metadata",
+            "synonyms": "-metadata",
+            "maxValue": "NA",
+            "fulltext": "This enables annotating the pileup to show overlaps with metadata from a ROD file.\n For example, if you provide a VCF and there is a SNP at a given location covered by the pileup, the pileup\n output at that position will be annotated with the corresponding source ROD identifier.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_in",
+            "type": "List[RodBinding[Feature]]",
+            "minRecValue": "NA",
+            "name": "--metadata",
+            "rodTypes": "<a href=htsjdk_variant_bcf2_BCF2Codec.php>BCF2</a>, <a href=org_broadinstitute_gatk_utils_codecs_beagle_BeagleCodec.php>BEAGLE</a>, <a href=htsjdk_tribble_bed_BEDCodec.php>BED</a>, <a href=org_broadinstitute_gatk_utils_codecs_table_BedTableCodec.php>BEDTABLE</a>, <a href=htsjdk_tribble_example_ExampleBinaryCodec.php>EXAMPLEBINARY</a>, <a href=htsjdk_tribble_gelitext_GeliTextCodec.php>GELITEXT</a>, <a href=org_broadinstitute_gatk_utils_codecs_hapmap_RawHapMapCodec.php>RAWHAPMAP</a>, <a href=org_broadinstitute_gatk_utils_codecs_refseq_RefSeqCodec.php>REFSEQ</a>, <a href=org_broadinstitute_gatk_utils_codecs_sampileup_SAMPileupCodec.php>SAMPILEUP</a>, <a href=org_broadinstitute_gatk_utils_codecs_samread_SAMReadCodec.php>SAMREAD</a>, <a href=org_broadinstitute_gatk_utils_codecs_table_TableCodec.php>TABLE</a>, <a href=htsjdk_variant_vcf_VCFCodec.php>VCF</a>, <a href=htsjdk_variant_vcf_VCF3Codec.php>VCF3</a>",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "An output file created by the walker.  Will overwrite contents if file exists",
+            "synonyms": "-o",
+            "maxValue": "NA",
+            "fulltext": "",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_out",
+            "type": "PrintStream",
+            "minRecValue": "NA",
+            "name": "--out",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        },
+        {
+            "required": "no",
+            "summary": "Add an extra verbose section to the pileup output",
+            "synonyms": "-verbose",
+            "maxValue": "NA",
+            "fulltext": "In addition to the standard pileup output, adds 'verbose' output too. The verbose output contains the number of spanning deletions,\n and for each read in the pileup it has the read name, offset in the base string, read length, and read mapping quality.  These per\n read items are delimited with an '@' character.",
+            "maxRecValue": "NA",
+            "defaultValue": "NA",
+            "kind": "optional_flag",
+            "type": "boolean",
+            "minRecValue": "NA",
+            "name": "--showVerbose",
+            "rodTypes": "NA",
+            "minValue": "NA",
+            "options": []
+        }
+    ],
+    "readfilters": [
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_MalformedReadFilter.php",
+            "name": "MalformedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_BadCigarFilter.php",
+            "name": "BadCigarFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_UnmappedReadFilter.php",
+            "name": "UnmappedReadFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_NotPrimaryAlignmentFilter.php",
+            "name": "NotPrimaryAlignmentFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_FailsVendorQualityCheckFilter.php",
+            "name": "FailsVendorQualityCheckFilter"
+        },
+        {
+            "filename": "org_broadinstitute_gatk_engine_filters_DuplicateReadFilter.php",
+            "name": "DuplicateReadFilter"
+        }
+    ],
+    "activeregion": {},
+    "partitiontype": "LOCUS"
+}
