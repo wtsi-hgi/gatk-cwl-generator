@@ -11,36 +11,9 @@ import json
 
 #import the json documentation from jsonfiles built by the docker
 
-current = os.getcwd()
-directory = os.path.join(current, 'jsonfolder')
-
-r = json.load(open(os.path.join(directory, 'HaplotypeCaller.json'), 'r'))
-d = json.load(open(os.path.join(directory, 'CommandLineGATK.json'), 'r'))
 
 # r = json.load(open('jsonfiles/HaplotypeCaller.json','r'))
 # d = json.load(open('jsonfiles/CommandLineGATK.json','r'))
-
-jsonf = {}
-jsonf['arguments'] = r['arguments']+d['arguments']
-jsonf['name'] = r['name']
-
-#create file
-fname = jsonf['name']+'.cwl'
-f = open(fname, 'a')
-cwl = {'id':jsonf['name'],
-       'cwlVersion':'v1.0', 
-       'baseCommand':[], 
-       'class': 'CommandLineTool',
-       'outputs':[{ "outputBinding": { "glob":"$(inputs.out)"}, "type": "File", "id": "taskOut" }],
-       'requirements':[{ "class": "ShellCommandRequirement"},
-                       { "class": "InlineJavascriptRequirement",
-                         "expressionLib": [ "function WDLCommandPart(expr, def) {var rval; try { rval = eval(expr);} catch(err) {rval = def;} return rval;}",
-                                            "function NonNull(x) {if(x === null) {throw new UserException('NullValue');} else {return x;}}",
-                                            """function defHandler (com, def) {if(Array.isArray(def) && def.length == 0) {return '';} 
-                                            else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');}
-                                            else if (def =='false') {return '';} else if (def == 'true') {return com;} 
-                                            if (def == []) {return '';} else {return com + ' ' + def;}}""" ]},
-                       { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
 
 #undefined args, args with invalid default, args with conflicting name
 invalid_args = ['--defaultBaseQualities','--heterozygosity_stdev','--max_genotype_count',
@@ -104,8 +77,50 @@ def cwlf_generator(item,cwlf):
     cwlf["arguments"] = [{"shellQuote": False, "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
    
 
+def make_cwl(fromdir, todir, jsonfile):
+    # current = os.getcwd()
+    # directory = os.path.join(current, 'jsonfolder')
 
-cwlf_generator(jsonf,cwl)
-f.write(json.dumps(cwl, indent = 4, sort_keys = False)) #write the file
-f.close()
+    try:
+        r = json.load(open(os.path.join(fromdir, jsonfile), 'r'))
+        d = json.load(open(os.path.join(fromdir, 'CommandLineGATK.json'), 'r'))
+    except Exception as e:
+        print e.message
+        raise e
+        
 
+    jsonf = {}
+    jsonf['arguments'] = r['arguments']+d['arguments']
+    jsonf['name'] = r['name']
+
+    os.chdir(todir)
+    
+    #create file
+    fname = jsonf['name']+'.cwl'
+    f = open(fname, 'a')
+    cwl = {'id':jsonf['name'],
+           'cwlVersion':'v1.0', 
+           'baseCommand':[], 
+           'class': 'CommandLineTool',
+           'outputs':[{ "outputBinding": { "glob":"$(inputs.out)"}, "type": "File", "id": "taskOut" }],
+           'requirements':[{ "class": "ShellCommandRequirement"},
+                           { "class": "InlineJavascriptRequirement",
+                             "expressionLib": [ "function WDLCommandPart(expr, def) {var rval; try { rval = eval(expr);} catch(err) {rval = def;} return rval;}",
+                                                "function NonNull(x) {if(x === null) {throw new UserException('NullValue');} else {return x;}}",
+                                                """function defHandler (com, def) {if(Array.isArray(def) && def.length == 0) {return '';} 
+                                                else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');}
+                                                else if (def =='false') {return '';} else if (def == 'true') {return com;} 
+                                                if (def == []) {return '';} else {return com + ' ' + def;}}""" ]},
+                           { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
+
+
+    cwlf_generator(jsonf,cwl)
+    f.write(json.dumps(cwl, indent = 4, sort_keys = False)) #write the file
+    f.close()
+
+
+# def main(fromdir, todir, jsonfile):
+#     make_cwl(fromdir, todir, jsonfile)
+    
+# if __name__ == '__main__':
+#     main(fromdir, todir, jsonfile)
