@@ -1,5 +1,17 @@
+"""
+The code converts json to cwl files.
+(This code converts the gatk-Haplotypecaller3.5 json to cwl.)
 
-#This code converts the gatk-Haplotypecaller3.5 json to cwl.
+
+-jar /software/hgi/pkglocal/gatk-protected-3.5/GenomeAnalysisTK.jar 
+-T HaplotypeCaller 
+-R chr22_cwl_test.fa 
+-I chr22_cwl_test.cram 
+-o chr22.cram_cwl_test.vcf.gz 
+-L chr22.interval_list
+
+
+"""
 
 import requests
 import os
@@ -13,6 +25,8 @@ d = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldoc
 #import the json documentation from jsonfiles built by the docker
 #r = json.load(open('jsonfiles/HaplotypeCaller.json','r'))
 #d = json.load(open('jsonfiles/CommandLineGATK.json','r'))
+
+
 
 
 #Combine two json documentations into one
@@ -39,9 +53,9 @@ cwl = {'id':jsonf['name'],
                                             if (def == []) {return '';} else {return com + ' ' + def;}}""" ]},
                        { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
 
-#####OUTPUT SECTIONS NEEDS REDOING################################################################################################################################
-cwl['outputs'] = [{ "outputBinding": { "glob":"$(inputs.out)"}, "type": "File", "id": "taskOut" }]
-################################################################################################################################################################################################
+# #####OUTPUT SECTIONS NEEDS REDOING################################################################################################################################
+# cwl['outputs'] = [{ "outputBinding": { "glob":"$(inputs.out)"}, "type": "File", "id": "taskOut" }]
+# ################################################################################################################################################################################################
 
 
 #-DBQ has an invalid default
@@ -50,6 +64,9 @@ cwl['outputs'] = [{ "outputBinding": { "glob":"$(inputs.out)"}, "type": "File", 
 invalid_args = ['--input_file','--help', '--defaultBaseQualities']
 #invalid_args = ['--help', '--defaultBaseQualities']
 ################################################################################################################################################################################################
+
+
+#def get_file_type(f):
 
 
 ################################################################################################################################
