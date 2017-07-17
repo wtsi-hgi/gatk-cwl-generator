@@ -53,20 +53,42 @@ cwl = {'id':jsonf['name'],
                                             if (def == []) {return '';} else {return com + ' ' + def;}}""" ]},
                        { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
 
-# #####OUTPUT SECTIONS NEEDS REDOING################################################################################################################################
-# cwl['outputs'] = [{ "outputBinding": { "glob":"$(inputs.out)"}, "type": "File", "id": "taskOut" }]
-# ################################################################################################################################################################################################
 
 
-#-DBQ has an invalid default
-#-help is a conflicting argument
-#-input_file  ##WHATS THE PROBLEM WITH THIS?????#################################################################################################################################
+# These arguments are classified invalid for following reasons:
+#         --DBQ: invalid default
+#         --help: argument conflicts with cwl-runner's --help' argument    #issue has been submitted
+#         --input_file: I don't know how to deal with secondary files yet sorry
 invalid_args = ['--input_file','--help', '--defaultBaseQualities']
-#invalid_args = ['--help', '--defaultBaseQualities']
-################################################################################################################################################################################################
-
 
 #def get_file_type(f):
+
+#$("."+(inputs.input_file).split('.')[1].replace("m","i"))
+
+
+
+#given an argument and a dictionary to write the files in, it writes the secondary files for that argument
+#input = {}
+
+##  $("."+(inputs.input_file).split('.')[1].replace("m","i"))
+
+'''
+'cram' in $(inputs.input_file) ? "crai" : "bai"
+
+'''
+def add_secondary_files(args, inpt): #return secondary file in [ '.crai'] formet
+  if 'required' not in args['fulltext']:
+    return inpt
+  else:
+    if args['name'] == '--reference_sequence':
+      inpt['secondaryFiles'] = ['^.dict','^fai']
+    elif 'index' in args['fulltext']: #CRAM / BAM for input_files
+      print('requires and index: only input should have this', args['name'])
+      inpt['secondaryFiles'] = ["$('.'+(inputs." + args['name'] + ").split('.')[1].replace('m','i'))"]
+      
+      # "$('.'+(inputs." + args['id'] + ").split('.')[1].replace('m','i'))""
+
+
 
 
 ################################################################################################################################
@@ -113,15 +135,21 @@ def need_def(arg):
 #converts json to cwl
 def cwlf_generator(item,cwlf):
     comLine = ""
-    inputs = [{ "doc": "fasta file of reference genome", "type": "File",
-                 "id": "ref", "secondaryFiles": [".fai","^.dict"]},
-               { "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
-               { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
-               { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
-                 "id": "input_file","secondaryFiles": [".crai","^.dict"]}]          
+    inputs = [{ "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
+               { "doc": "dict file of reference genome", "type": "File", "id": "refDict"}]          
 
+    # inputs = [{ "doc": "fasta file of reference genome", "type": "File",
+    #              "id": "ref", "secondaryFiles": [".fai","^.dict"]},
+    #            { "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
+    #            { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
+    #            { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
+    #              "id": "input_file","secondaryFiles": [".crai","^.dict"]}]      
 #    inputs = [ { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
  #                "id": "input_file","secondaryFiles": [".crai","^.dict"]}]
+###########
+###   if need secondaryfiles:
+####       inpt['secondaryfiles'] = get_secondary_files(arg)
+#######
 
     outputs = []
 
@@ -152,7 +180,7 @@ def cwlf_generator(item,cwlf):
           outpt['outputBinding'] = {'glob':'$(inputs.'+args['name'][2:]+')'}
           outputs.append(outpt)
 
-
+      inpt = add_secondary_files(args, inpt)
       inputs.append(inpt)
       
       if need_def(args):
