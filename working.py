@@ -16,7 +16,7 @@ The code converts json to cwl files.
 import requests
 import os
 import json
-import * from helper_functions
+from helper_functions import *
 
 #import the json url manually (gatk 3.5-0 version)
 r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/3.5-0/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json').json()
