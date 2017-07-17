@@ -51,7 +51,7 @@ cwl = {'id':jsonf['name'],
                                             else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');}
                                             else if (def =='false') {return '';} else if (def == 'true') {return com;} 
                                             if (def == []) {return '';} else {return com + ' ' + def;}}""",
-                                            """function secondary_files(f) {if (f.indexOf('.cram')!= -1 ){ return '.crai';} 
+                                            """function secondary_files(f) { return typeof f; if (f.indexOf('.cram')!= -1 ){ return '.crai';} 
                                             else if (f.search('.bam')) { return '.bai'; } else if (f.search('.fa')) { return ['.fai','^.dict']; }}"""]},
                        { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
 
@@ -61,7 +61,7 @@ cwl = {'id':jsonf['name'],
 #         --DBQ: invalid default
 #         --help: argument conflicts with cwl-runner's --help' argument    #issue has been submitted
 #         --input_file: I don't know how to deal with secondary files yet sorry
-invalid_args = ['--input_file','--help', '--defaultBaseQualities']
+invalid_args = ['--input_file','--reference_sequence','--help', '--defaultBaseQualities']
 
 #def get_file_type(f):
 
@@ -149,15 +149,15 @@ def need_def(arg):
 #converts json to cwl
 def cwlf_generator(item,cwlf):
     comLine = ""
-    inputs = [{ "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
-              { "doc": "dict file of reference genome", "type": "File", "id": "refDict"}]          
+   # inputs = [{ "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
+    #          { "doc": "dict file of reference genome", "type": "File", "id": "refDict"}]          
 
-  #  inputs = [{ "doc": "fasta file of reference genome", "type": "File",
-   #              "id": "ref", "secondaryFiles": [".fai","^.dict"]},
-    #           { "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
-     #          { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
-      #         { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
-       #          "id": "input_file","secondaryFiles": [".crai","^.dict"]}]      
+    inputs = [{ "doc": "fasta file of reference genome", "type": "File",
+                 "id": "reference_sequence", "secondaryFiles": [".fai","^.dict"]},
+               { "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
+               { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
+               { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
+                 "id": "input_file","secondaryFiles": [".crai","^.dict"]}]      
 #    inputs = [ { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
  #                "id": "input_file","secondaryFiles": [".crai","^.dict"]}]
 ###########
@@ -182,7 +182,9 @@ def cwlf_generator(item,cwlf):
         inpt['doc'] = args['summary']
         inpt['id'] = args['name'][2:] 
         typ = args['type'].lower()        
-        if 'list' not in typ:  
+        if args['name'] == '--input_file':
+          inpt['type'] = 'File'
+        elif 'list' not in typ:  
           inpt['type'] = convt_type(typ) +'?'
         else: #if list is in type
           inpt['type'] = convt_type(typ)+'[]?' 
@@ -207,9 +209,9 @@ def cwlf_generator(item,cwlf):
           else:
              comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
       
-      if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
-        print(args['name'])
-        inpt['secondaryFiles'] = '$(secondary_files(self))'
+  #    if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
+ #       print(args['name'])
+#        inpt['secondaryFiles'] = '$(secondary_files(self))'
 
     cwlf["inputs"] = inputs
     cwlf["outputs"] = outputs
