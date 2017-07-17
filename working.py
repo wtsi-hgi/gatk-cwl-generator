@@ -190,10 +190,7 @@ def cwlf_generator(item,cwlf):
           inpt['type'] = convt_type(typ)+'[]?' 
      
         if 'writer' in args['type'].lower():
-          outpt = {}
-          outpt['id'] = args['name']
-          outpt['type'] = ['null','File'] #This is because it is not required/ optional but what if it is ???????? 
-          outpt['outputBinding'] = {'glob':'$(inputs.'+args['name'][2:]+')'}
+          outpt = {'id': args['name'], 'type': ['null','File'], 'outputBinding':{'glob':'$(inputs.'+args['name'][2:]+')'}}
           outputs.append(outpt)
 
       # inpt = add_secondary_files(args, inpt)
