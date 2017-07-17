@@ -149,26 +149,6 @@ def need_def(arg):
         return True
     return False
 
-
-
-
-
-def output_writer(args,outputs=[]):
-  if 'writer' in args['type'].lower():
-    outpt = {'id': args['name'], 'type': ['null','File'], 'outputBinding':{'glob':'$(inputs.'+args['name'][2:]+')'}}
-    outputs.append(outpt)
-
-def command_line_writer(args,comLine=""):
-    if need_def(args):
-        comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "
-    else:
-        if args['defaultValue'] != "NA" and args['defaultValue'] != "none":
-           comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + args['defaultValue'] + "')) "
-        elif args['synonyms'] == '-o':
-           comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', "+"'stdout'"+"))) "
-        else:
-           comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
-
 #converts json to cwl
 def cwlf_generator(item,cwlf):
     comLine = ""
@@ -211,18 +191,31 @@ def cwlf_generator(item,cwlf):
      
 
         #writing the output files // turn it into a separate function possibly
-        output_writer(args,outputs)
+        if 'writer' in args['type'].lower():
+          outpt = {}
+          outpt['id'] = args['name']
+          outpt['type'] = ['null','File']
+          outpt['outputBinding'] = {'glob':'$(inputs.'+args['name'][2:]+')'}
+          outputs.append(outpt)
 
     
       
       inputs.append(inpt)
       
       ###TURN TO COMMANDLINE FUNCTION   
-      command_line_writer(args,comLine)
+      if need_def(args):
+          comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "
+      else:
+          if args['defaultValue'] != "NA" and args['defaultValue'] != "none":
+             comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + args['defaultValue'] + "')) "
+          elif args['synonyms'] == '-o':
+             comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', "+"'stdout'"+"))) "
+          else:
+             comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
       
-      if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
-        print(args['name'])
-        inpt['secondaryFiles'] = '$(secondary_files(self))'
+  #    if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
+ #       print(args['name'])
+#        inpt['secondaryFiles'] = '$(secondary_files(self))'
 
     cwlf["inputs"] = inputs
     cwlf["outputs"] = outputs
