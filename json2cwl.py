@@ -51,8 +51,8 @@ cwl = {'id':jsonf['name'],
                                             else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');}
                                             else if (def =='false') {return '';} else if (def == 'true') {return com;} 
                                             if (def == []) {return '';} else {return com + ' ' + def;}}""",
-                                            """function secondary_files(f) {if (f.includes('.cram') ){ return '.crai';} 
-                                            else if (f.includes('.bam')) { return '.bai'; } else if (f.includes('.fa')) { return ['.fai','^.dict']; }}"""]},
+                                            """function secondary_files(f) {if (f.search('.cram') ){ return '.crai';} 
+                                            else if (f.search('.bam')) { return '.bai'; } else if (f.search('.fa')) { return ['.fai','^.dict']; }}"""]},
                        { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
 
 
@@ -210,7 +210,7 @@ def cwlf_generator(item,cwlf):
       if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
         print(args['name'])
         inpt['secondaryFiles'] = '$(secondary_files(self))'
-        
+
     cwlf["inputs"] = inputs
     cwlf["outputs"] = outputs
     cwlf["arguments"] = [{"shellQuote": False, 
