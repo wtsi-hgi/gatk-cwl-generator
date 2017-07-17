@@ -16,7 +16,7 @@ The code converts json to cwl files.
 import requests
 import os
 import json
-
+import * from helper_functions
 
 #import the json url manually (gatk 3.5-0 version)
 r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/3.5-0/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json').json()
@@ -25,12 +25,6 @@ d = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldoc
 #import the json documentation from jsonfiles built by the docker
 #r = json.load(open('jsonfiles/HaplotypeCaller.json','r'))
 #d = json.load(open('jsonfiles/CommandLineGATK.json','r'))
-
-def output_writer(args,outputs):
-  if 'writer' in args['type'].lower():
-    outpt = {'id': args['name'], 'type': ['null','File'], 'outputBinding':{'glob':'$(inputs.'+args['name'][2:]+')'}}
-    outputs.append(outpt)
-
 
 
 #Combine two json documentations into one
@@ -180,16 +174,16 @@ def cwlf_generator(item,cwlf):
         output_writer(args,outputs)
       # inpt = add_secondary_files(args, inpt)
       inputs.append(inpt)
-      
-      if need_def(args):
-          comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "
-      else:
-          if args['defaultValue'] != "NA" and args['defaultValue'] != "none":
-             comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + args['defaultValue'] + "')) "
-          elif args['synonyms'] == '-o':
-             comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', "+"'stdout'"+"))) "
-          else:
-             comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
+      commandline_writer(args,comLine)
+      # if need_def(args):
+      #     comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "
+      # else:
+      #     if args['defaultValue'] != "NA" and args['defaultValue'] != "none":
+      #        comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + args['defaultValue'] + "')) "
+      #     elif args['synonyms'] == '-o':
+      #        comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', "+"'stdout'"+"))) "
+      #     else:
+      #        comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
       
   #    if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
  #       print(args['name'])
