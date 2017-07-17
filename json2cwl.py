@@ -51,7 +51,7 @@ cwl = {'id':jsonf['name'],
                                             else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');}
                                             else if (def =='false') {return '';} else if (def == 'true') {return com;} 
                                             if (def == []) {return '';} else {return com + ' ' + def;}}""",
-                                            """function secondary_files(f) {if (f.search('.cram') ){ return '.crai';} 
+                                            """function secondary_files(f) {if (f.indexOf('.cram')!= -1 ){ return '.crai';} 
                                             else if (f.search('.bam')) { return '.bai'; } else if (f.search('.fa')) { return ['.fai','^.dict']; }}"""]},
                        { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
 
@@ -149,15 +149,15 @@ def need_def(arg):
 #converts json to cwl
 def cwlf_generator(item,cwlf):
     comLine = ""
-    # inputs = [{ "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
-    #            { "doc": "dict file of reference genome", "type": "File", "id": "refDict"}]          
+    inputs = [{ "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
+              { "doc": "dict file of reference genome", "type": "File", "id": "refDict"}]          
 
-    inputs = [{ "doc": "fasta file of reference genome", "type": "File",
-                 "id": "ref", "secondaryFiles": [".fai","^.dict"]},
-               { "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
-               { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
-               { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
-                 "id": "input_file","secondaryFiles": [".crai","^.dict"]}]      
+  #  inputs = [{ "doc": "fasta file of reference genome", "type": "File",
+   #              "id": "ref", "secondaryFiles": [".fai","^.dict"]},
+    #           { "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
+     #          { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
+      #         { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
+       #          "id": "input_file","secondaryFiles": [".crai","^.dict"]}]      
 #    inputs = [ { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
  #                "id": "input_file","secondaryFiles": [".crai","^.dict"]}]
 ###########
@@ -214,7 +214,7 @@ def cwlf_generator(item,cwlf):
     cwlf["inputs"] = inputs
     cwlf["outputs"] = outputs
     cwlf["arguments"] = [{"shellQuote": False, 
-                          "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
+                          "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.reference_sequence.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
    
 
 
