@@ -76,15 +76,16 @@ invalid_args = ['--input_file','--help', '--defaultBaseQualities']
 'cram' in $(inputs.input_file) ? "crai" : "bai"
 
 '''
-def add_secondary_files(args, inpt): #return secondary file in [ '.crai'] formet
-  if 'required' not in args['fulltext']:
-    return inpt
-  else:
-    if args['name'] == '--reference_sequence':
-      inpt['secondaryFiles'] = ['^.dict','^fai']
-    elif 'index' in args['fulltext']: #CRAM / BAM for input_files
-      print('requires and index: only input should have this', args['name'])
-      inpt['secondaryFiles'] = ["$('.'+(inputs." + args['name'] + ").split('.')[1].replace('m','i'))"]
+# def add_secondary_files(args, inpt): #return secondary file in [ '.crai'] formet
+#   if 'required' not in args['fulltext']:
+#     pass
+#   else:
+#     if 'dictionary' in args['fulltext']:
+#       secondaryfiles = ['^.dict','^fai']
+#     elif 'index' in args['fulltext']: #CRAM / BAM for input_files
+#       print('requires and index: only input should have this', args['name'])
+#       secondaryfiles = ["$('.'+(inputs." + args['name'] + ").split('.')[1].replace('m','i'))"]
+
       
       # "$('.'+(inputs." + args['id'] + ").split('.')[1].replace('m','i'))""
 
@@ -180,7 +181,7 @@ def cwlf_generator(item,cwlf):
           outpt['outputBinding'] = {'glob':'$(inputs.'+args['name'][2:]+')'}
           outputs.append(outpt)
 
-      inpt = add_secondary_files(args, inpt)
+      # inpt = add_secondary_files(args, inpt)
       inputs.append(inpt)
       
       if need_def(args):
