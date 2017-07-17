@@ -234,13 +234,25 @@ def cwlf_generator(item,cwlf):
         else: #if list is in type
           inpt['type'] = convt_type(typ)+'[]?' 
      
-        output_writer(args,outputs)
+        if 'writer' in args['type'].lower():
+          outpt = {}
+          outpt['id'] = args['name']
+          outpt['type'] = ['null','File'] #This is because it is not required/ optional but what if it is ???????? 
+          outpt['outputBinding'] = {'glob':'$(inputs.'+args['name'][2:]+')'}
+          outputs.append(outpt)
 
       # inpt = add_secondary_files(args, inpt)
       inputs.append(inpt)
       
-      command_line_writer(args,comLine)
-      
+      if need_def(args):
+          comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "
+      else:
+          if args['defaultValue'] != "NA" and args['defaultValue'] != "none":
+             comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + args['defaultValue'] + "')) "
+          elif args['synonyms'] == '-o':
+             comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', "+"'stdout'"+"))) "
+          else:
+             comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
       
   #    if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
  #       print(args['name'])
