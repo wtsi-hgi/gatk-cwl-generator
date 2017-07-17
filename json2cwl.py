@@ -56,12 +56,46 @@ cwl = {'id':jsonf['name'],
                        { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
 
 
+#=======================================================================================
+#helps form a commandline
+def need_def(arg):
+    if 'List' in arg['type']:
+        if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
+            arg['defaultValue'] = []
+        else:
+            arg['defaultValue'] = [str(a) for a in arg['defaultValue'][1:-1].split(',')]
+    if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
+        return False
+    if ('boolean' in arg['type'] or 'List' in arg['type']) or 'false' in arg['defaultValue']:
+        return True
+    return False
+
+
+def output_writer(args,outputs=[]):
+  if 'writer' in args['type'].lower():
+    outpt = {'id': args['name'], 'type': ['null','File'], 'outputBinding':{'glob':'$(inputs.'+args['name'][2:]+')'}}
+    outputs.append(outpt)
+
+def command_line_writer(args,comLine=""):
+    if need_def(args):
+        comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "
+    else:
+        if args['defaultValue'] != "NA" and args['defaultValue'] != "none":
+           comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + args['defaultValue'] + "')) "
+        elif args['synonyms'] == '-o':
+           comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', "+"'stdout'"+"))) "
+        else:
+           comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
+
+
+
+
 
 # These arguments are classified invalid for following reasons:
 #         --DBQ: invalid default
 #         --help: argument conflicts with cwl-runner's --help' argument    #issue has been submitted
 #         --input_file: I don't know how to deal with secondary files yet sorry
-invalid_args = ['--input_file','--reference_sequence','--help', '--defaultBaseQualities']
+invalid_args = ['--input_file','--help', '--defaultBaseQualities']
 
 #def get_file_type(f):
 
@@ -136,18 +170,7 @@ def convt_type(typ):
         #temporary measurement`
         #raise ValueError("unsupported type %s" %(typ)) 
 
-#helps form a commandline
-def need_def(arg):
-    if 'List' in arg['type']:
-        if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
-            arg['defaultValue'] = []
-        else:
-            arg['defaultValue'] = [str(a) for a in arg['defaultValue'][1:-1].split(',')]
-    if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
-        return False
-    if ('boolean' in arg['type'] or 'List' in arg['type']) or 'false' in arg['defaultValue']:
-        return True
-    return False
+
 
 #converts json to cwl
 def cwlf_generator(item,cwlf):
@@ -156,7 +179,7 @@ def cwlf_generator(item,cwlf):
     #          { "doc": "dict file of reference genome", "type": "File", "id": "refDict"}]          
 
     inputs = [{ "doc": "fasta file of reference genome", "type": "File",
-                 "id": "reference_sequence", "secondaryFiles": [".fai","^.dict"]},
+                 "id": "ref", "secondaryFiles": [".fai","^.dict"]},
                { "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
                { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
                { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
@@ -191,36 +214,23 @@ def cwlf_generator(item,cwlf):
      
 
         #writing the output files // turn it into a separate function possibly
-        if 'writer' in args['type'].lower():
-          outpt = {}
-          outpt['id'] = args['name']
-          outpt['type'] = ['null','File']
-          outpt['outputBinding'] = {'glob':'$(inputs.'+args['name'][2:]+')'}
-          outputs.append(outpt)
+        output_writer(args,outputs)
 
     
       
       inputs.append(inpt)
       
       ###TURN TO COMMANDLINE FUNCTION   
-      if need_def(args):
-          comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "
-      else:
-          if args['defaultValue'] != "NA" and args['defaultValue'] != "none":
-             comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', '" + args['defaultValue'] + "')) "
-          elif args['synonyms'] == '-o':
-             comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', "+"'stdout'"+"))) "
-          else:
-             comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
+      command_line_writer(args,comLine)
       
-  #    if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
- #       print(args['name'])
-#        inpt['secondaryFiles'] = '$(secondary_files(self))'
+      if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
+        print(args['name'])
+        inpt['secondaryFiles'] = '$(secondary_files(self))'
 
     cwlf["inputs"] = inputs
     cwlf["outputs"] = outputs
     cwlf["arguments"] = [{"shellQuote": False, 
-                          "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.reference_sequence.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
+                          "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.ref.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
    
 
 
