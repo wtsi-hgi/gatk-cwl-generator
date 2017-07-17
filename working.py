@@ -26,6 +26,10 @@ d = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldoc
 #r = json.load(open('jsonfiles/HaplotypeCaller.json','r'))
 #d = json.load(open('jsonfiles/CommandLineGATK.json','r'))
 
+def output_writer(args,outputs):
+  if 'writer' in args['type'].lower():
+    outpt = {'id': args['name'], 'type': ['null','File'], 'outputBinding':{'glob':'$(inputs.'+args['name'][2:]+')'}}
+    outputs.append(outpt)
 
 
 
@@ -69,15 +73,8 @@ invalid_args = ['--input_file','--reference_sequence','--help', '--defaultBaseQu
 
 
 
-#given an argument and a dictionary to write the files in, it writes the secondary files for that argument
-#input = {}
 
 ##  $("."+(inputs.input_file).split('.')[1].replace("m","i"))
-
-'''
-'cram' in $(inputs.input_file) ? "crai" : "bai"
-
-'''
 
 
 # function secondary_files(f) {
@@ -148,22 +145,13 @@ def need_def(arg):
 
 #converts json to cwl
 def cwlf_generator(item,cwlf):
-    comLine = ""
-   # inputs = [{ "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
-    #          { "doc": "dict file of reference genome", "type": "File", "id": "refDict"}]          
-
+    comLine = ""       
     inputs = [{ "doc": "fasta file of reference genome", "type": "File",
                  "id": "reference_sequence", "secondaryFiles": [".fai","^.dict"]},
                { "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
                { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
                { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
                  "id": "input_file","secondaryFiles": [".crai","^.dict"]}]      
-#    inputs = [ { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
- #                "id": "input_file","secondaryFiles": [".crai","^.dict"]}]
-###########
-###   if need secondaryfiles:
-####       inpt['secondaryfiles'] = get_secondary_files(arg)
-#######
 
     outputs = []
 
@@ -189,10 +177,7 @@ def cwlf_generator(item,cwlf):
         else: #if list is in type
           inpt['type'] = convt_type(typ)+'[]?' 
      
-        if 'writer' in args['type'].lower():
-          outpt = {'id': args['name'], 'type': ['null','File'], 'outputBinding':{'glob':'$(inputs.'+args['name'][2:]+')'}}
-          outputs.append(outpt)
-
+        output_writer(args,outputs)
       # inpt = add_secondary_files(args, inpt)
       inputs.append(inpt)
       
