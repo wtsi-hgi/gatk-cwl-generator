@@ -149,6 +149,18 @@ def need_def(arg):
         return True
     return False
 
+
+
+
+
+def output_writer(args,outputs=[]):
+  if 'writer' in args['type'].lower():
+    outpt = {}
+    outpt['id'] = args['name']
+    outpt['type'] = ['null','File']
+    outpt['outputBinding'] = {'glob':'$(inputs.'+args['name'][2:]+')'}
+    outputs.append(outpt)
+
 #converts json to cwl
 def cwlf_generator(item,cwlf):
     comLine = ""
@@ -191,12 +203,7 @@ def cwlf_generator(item,cwlf):
      
 
         #writing the output files // turn it into a separate function possibly
-        if 'writer' in args['type'].lower():
-          outpt = {}
-          outpt['id'] = args['name']
-          outpt['type'] = ['null','File']
-          outpt['outputBinding'] = {'glob':'$(inputs.'+args['name'][2:]+')'}
-          outputs.append(outpt)
+        output_writer(args,outputs)
 
     
       
