@@ -124,18 +124,18 @@ def convt_type(typ):
         #temporary measurement`
         #raise ValueError("unsupported type %s" %(typ)) 
 
-#helps form a commandline
-def need_def(arg):
-    if 'List' in arg['type']:
-        if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
-            arg['defaultValue'] = []
-        else:
-            arg['defaultValue'] = [str(a) for a in arg['defaultValue'][1:-1].split(',')]
-    if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
-        return False
-    if ('boolean' in arg['type'] or 'List' in arg['type']) or 'false' in arg['defaultValue']:
-        return True
-    return False
+# #helps form a commandline
+# def need_def(arg):
+#     if 'List' in arg['type']:
+#         if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
+#             arg['defaultValue'] = []
+#         else:
+#             arg['defaultValue'] = [str(a) for a in arg['defaultValue'][1:-1].split(',')]
+#     if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
+#         return False
+#     if ('boolean' in arg['type'] or 'List' in arg['type']) or 'false' in arg['defaultValue']:
+#         return True
+#     return False
 
 #converts json to cwl
 def cwlf_generator(item,cwlf):
