@@ -4,7 +4,7 @@ def output_writer(args,outputs):
     outputs.append(outpt)
 
 
-def commandline_writer(args,comLine)
+def commandline_writer(args,comLine):
   if need_def(args):
       comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "
   else:
