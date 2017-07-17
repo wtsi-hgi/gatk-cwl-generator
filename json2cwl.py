@@ -89,6 +89,9 @@ invalid_args = ['--input_file','--reference_sequence','--help', '--defaultBaseQu
   #   secondaryfiles += '^.dict'
   # if 'index' in args['fulltext']:
   #   secondaryfiles += "$('.'+(inputs." + args['name'] + ").split('.')[1].replace('m','i'))"
+
+
+
 # def add_secondary_files(args, inpt): #return secondary file in [ '.crai'] formet
 #   if 'required' not in args['fulltext']:
 #     pass
@@ -158,12 +161,6 @@ def cwlf_generator(item,cwlf):
                { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
                { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
                  "id": "input_file","secondaryFiles": [".crai","^.dict"]}]      
-#    inputs = [ { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
- #                "id": "input_file","secondaryFiles": [".crai","^.dict"]}]
-###########
-###   if need secondaryfiles:
-####       inpt['secondaryfiles'] = get_secondary_files(arg)
-#######
 
     outputs = []
 
@@ -179,26 +176,33 @@ def cwlf_generator(item,cwlf):
         continue
         ################################################################ANALYSIS TYPE
       else: #if not required
+
         inpt['doc'] = args['summary']
         inpt['id'] = args['name'][2:] 
+      
         typ = args['type'].lower()        
-        if args['name'] == '--input_file':
+      
+        if args['name'] == '--input_file': #################DEAL WITH THIS SCENARIO SOMEHOW
           inpt['type'] = 'File'
         elif 'list' not in typ:  
           inpt['type'] = convt_type(typ) +'?'
-        else: #if list is in type
+        else:
           inpt['type'] = convt_type(typ)+'[]?' 
      
+
+        #writing the output files // turn it into a separate function possibly
         if 'writer' in args['type'].lower():
           outpt = {}
           outpt['id'] = args['name']
-          outpt['type'] = ['null','File'] #This is because it is not required/ optional but what if it is ???????? 
+          outpt['type'] = ['null','File']
           outpt['outputBinding'] = {'glob':'$(inputs.'+args['name'][2:]+')'}
           outputs.append(outpt)
 
-      # inpt = add_secondary_files(args, inpt)
+    
+      
       inputs.append(inpt)
       
+      ###TURN TO COMMANDLINE FUNCTION   
       if need_def(args):
           comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "
       else:
@@ -209,9 +213,9 @@ def cwlf_generator(item,cwlf):
           else:
              comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
       
-  #    if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
- #       print(args['name'])
-#        inpt['secondaryFiles'] = '$(secondary_files(self))'
+      if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
+        print(args['name'])
+        inpt['secondaryFiles'] = '$(secondary_files(self))'
 
     cwlf["inputs"] = inputs
     cwlf["outputs"] = outputs
