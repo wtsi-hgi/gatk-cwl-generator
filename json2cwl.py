@@ -136,15 +136,15 @@ def need_def(arg):
 #converts json to cwl
 def cwlf_generator(item,cwlf):
     comLine = ""
-    inputs = [{ "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
-               { "doc": "dict file of reference genome", "type": "File", "id": "refDict"}]          
+    # inputs = [{ "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
+    #            { "doc": "dict file of reference genome", "type": "File", "id": "refDict"}]          
 
-    # inputs = [{ "doc": "fasta file of reference genome", "type": "File",
-    #              "id": "ref", "secondaryFiles": [".fai","^.dict"]},
-    #            { "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
-    #            { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
-    #            { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
-    #              "id": "input_file","secondaryFiles": [".crai","^.dict"]}]      
+    inputs = [{ "doc": "fasta file of reference genome", "type": "File",
+                 "id": "ref", "secondaryFiles": [".fai","^.dict"]},
+               { "doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
+               { "doc": "dict file of reference genome", "type": "File", "id": "refDict"},
+               { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
+                 "id": "input_file","secondaryFiles": [".crai","^.dict"]}]      
 #    inputs = [ { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
  #                "id": "input_file","secondaryFiles": [".crai","^.dict"]}]
 ###########
