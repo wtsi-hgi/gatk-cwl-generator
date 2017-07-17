@@ -50,7 +50,9 @@ cwl = {'id':jsonf['name'],
                                             """function defHandler (com, def) {if(Array.isArray(def) && def.length == 0) {return '';} 
                                             else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');}
                                             else if (def =='false') {return '';} else if (def == 'true') {return com;} 
-                                            if (def == []) {return '';} else {return com + ' ' + def;}}""" ]},
+                                            if (def == []) {return '';} else {return com + ' ' + def;}}""",
+                                            """function secondary_files(f) {if (f.includes('.cram') ){ return '.crai';} 
+                                            else if (f.includes('.bam')) { return '.bai'; } else if (f.includes('.fa')) { return ['.fai','^.dict']; }}"""]},
                        { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
 
 
@@ -76,6 +78,17 @@ invalid_args = ['--input_file','--help', '--defaultBaseQualities']
 'cram' in $(inputs.input_file) ? "crai" : "bai"
 
 '''
+
+
+# function secondary_files(f) {
+#   if (f.includes('.cram') ){ return '.crai';} else if (f.includes('.bam')) { return '.bai'; } else if (f.includes('.fa')) { return ['.fai','^.dict']; }
+#     }
+
+  # secondaryfiles = []
+  # if 'dictionary' in args['fulltext']:
+  #   secondaryfiles += '^.dict'
+  # if 'index' in args['fulltext']:
+  #   secondaryfiles += "$('.'+(inputs." + args['name'] + ").split('.')[1].replace('m','i'))"
 # def add_secondary_files(args, inpt): #return secondary file in [ '.crai'] formet
 #   if 'required' not in args['fulltext']:
 #     pass
@@ -193,7 +206,11 @@ def cwlf_generator(item,cwlf):
              comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', "+"'stdout'"+"))) "
           else:
              comLine += "$(WDLCommandPart('\"" + args['synonyms'] + "\" + NonNull(inputs." + args['name'].strip("-") + ")', ' ')) " 
-    
+      
+      if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
+        print(args['name'])
+        inpt['secondaryFiles'] = '$(secondary_files(self))'
+        
     cwlf["inputs"] = inputs
     cwlf["outputs"] = outputs
     cwlf["arguments"] = [{"shellQuote": False, 
