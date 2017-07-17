@@ -1,3 +1,17 @@
+#helps form a commandline
+def need_def(arg):
+    if 'List' in arg['type']:
+        if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
+            arg['defaultValue'] = []
+        else:
+            arg['defaultValue'] = [str(a) for a in arg['defaultValue'][1:-1].split(',')]
+    if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
+        return False
+    if ('boolean' in arg['type'] or 'List' in arg['type']) or 'false' in arg['defaultValue']:
+        return True
+    return False
+
+    
 def output_writer(args,outputs):
   if 'writer' in args['type'].lower():
     outpt = {'id': args['name'], 'type': ['null','File'], 'outputBinding':{'glob':'$(inputs.'+args['name'][2:]+')'}}
