@@ -45,7 +45,7 @@ def type_writer(args,inpt):
       typ = typ + '[]'
     if args['required'] == 'no':
       typ = typ +'?'
-  inpt['type'] = typ
+    inpt['type'] = typ
 
   # typ = args['type'].lower()        
     # if args['name'] == '--input_file':
