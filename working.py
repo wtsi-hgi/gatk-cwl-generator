@@ -102,7 +102,7 @@ def cwlf_generator(item,cwlf):
     cwlf["inputs"] = inputs
     cwlf["outputs"] = outputs
     cwlf["arguments"] = [{"shellQuote": False,    
-                          "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar  -R $(WDLCommandPart('NonNull(inputs.reference_sequence.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
+                          "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar  -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.reference_sequence.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
                                                                        #-T HaplotypeCaller
 
 
