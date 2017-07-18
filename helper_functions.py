@@ -28,7 +28,7 @@ def convt_type(typ):
   elif 'printstream' in typ: 
     return ['null']
   elif 'intervalbinding' in typ:
-    return ['string','file']
+    return ['string','File']
   else:
     raise ValueError('unsupported type: {}'.format(typ))
 
