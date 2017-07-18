@@ -19,12 +19,10 @@ def convt_type(typ):
     typ = typ[5:-1]
   if typ in ('long','double','int','string','float','boolean','bool'):
     return typ
-  elif typ == 'file':
+  elif typ == 'file' or 'rodbinding' in typ: #ROD files
     return 'File'
   elif typ in ('byte','integer'):
     return 'int'
-  elif 'rodbinding' in typ: #ROD files
-    return 'File'
   elif any (x in typ for x in ('writer','rule','option','timeunit','type','mode','validationstringency')):
     return 'string'
   elif 'printstream' in typ: #meant for debugging
@@ -37,53 +35,49 @@ def type_writer(args,inpt):
   if args['name'] == '--input_file': ##################################
     inpt['type'] = 'File'
   elif 'intervalbinding' in typ: ##################################
-    inpt['type'] =  ["string[]?", "File?"]
-
+    inpt['type'] =  ["string[]?", "File?"]  #change it to a list so that you can do for items check but im not so sure atm
   else:
     typ = convt_type(args['type'].lower())
-    if 'list' in args['type'].lower():             #List[interval binding]
+    if 'list' in args['type'].lower():             
       typ = typ + '[]'
     if args['required'] == 'no':
       typ = typ +'?'
     inpt['type'] = typ
 
-  # typ = args['type'].lower()        
-    # if args['name'] == '--input_file':
-    #   inpt['type'] = 'File'
-    # elif 'list' not in typ:  
-    #   inpt['type'] = convt_type(typ) +'?'
-    # else: #if list is in type
-    #   inpt['type'] = convt_type(typ)+'[]?'
+"""
+
+def secondaryfiles_writer ()
+"""
+
+#def get_file_type(f):
+
+#$("."+(inputs.input_file).split('.')[1].replace("m","i"))
 
 
-# ################################################################################################################################
-# #interval, filewriter 
-# # ################################################################################################################################
-# def convt_type(typ):
-#   #  typ = args['type'].lower()
-#  #   if 'list' in typ:
-# #       typ = typ[5:-1]
-#     if typ in ('integer','byte'):
-#         return 'int'
-# #    elif typ == 'intervalbinding[feature]':
-# #        pass        
-#     elif typ == 'file':
-#         return 'File'
-#     elif typ in ('long','double','int','string','float','boolean','bool'):
-#         return typ
-#     elif 'rodbinding' in typ: #ROD file, File to which output should be written
-#         return 'File'
-#     #file writer: take in as an input string
-#     elif 'writer' in typ or 'rule' in typ or 'option' in typ or 'timeunit' in typ or 'type' in typ or 'mode' in typ or 'validationstringency' in typ: #minutes pedigreevalidationtype, gatkvcfindextype, downsampletype ...
-#         return 'string'
-#     elif 'printstream' in typ:
-#         return 'null'
-#     else:
-# #        print('typeerror',typ)   
-#         return 'string'
-#         #temporary measurement`
-#         #raise ValueError("unsupported type %s" %(typ)) 
+##  $("."+(inputs.input_file).split('.')[1].replace("m","i"))
 
+
+# function secondary_files(f) {
+#   if (f.includes('.cram') ){ return '.crai';} else if (f.includes('.bam')) { return '.bai'; } else if (f.includes('.fa')) { return ['.fai','^.dict']; }
+#     }
+
+  # secondaryfiles = []
+  # if 'dictionary' in args['fulltext']:
+  #   secondaryfiles += '^.dict'
+  # if 'index' in args['fulltext']:
+  #   secondaryfiles += "$('.'+(inputs." + args['name'] + ").split('.')[1].replace('m','i'))"
+# def add_secondary_files(args, inpt): #return secondary file in [ '.crai'] formet
+#   if 'required' not in args['fulltext']:
+#     pass
+#   else:
+#     if 'dictionary' in args['fulltext']:
+#       secondaryfiles = ['^.dict','^fai']
+#     elif 'index' in args['fulltext']: #CRAM / BAM for input_files
+#       print('requires and index: only input should have this', args['name'])
+#       secondaryfiles = ["$('.'+(inputs." + args['name'] + ").split('.')[1].replace('m','i'))"]
+
+      
+      # "$('.'+(inputs." + args['id'] + ").split('.')[1].replace('m','i'))""
 
 def output_writer(args,outputs):
   if 'writer' in args['type'].lower():
