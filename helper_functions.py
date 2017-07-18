@@ -39,11 +39,9 @@ def type_writer(args,inpt):
   else:
     typ = convt_type(args['type'].lower())
     if 'list' in args['type'].lower():             #List[interval binding]
-      for item in typ:
-        item = item+'[]'
+      typ = typ + '[]'
     if args['required'] == 'no':
-      for item in typ:
-        item = item+'?'
+      typ = typ +'?'
   inpt['type'] = typ
 
   # typ = args['type'].lower()        
