@@ -124,18 +124,11 @@ def cwlf_generator(item,cwlf):
         print(args)
         continue
         ################################################################ANALYSIS TYPE
-
-
-
       else: #if not required
         inpt['doc'] = args['summary']
         inpt['id'] = args['name'][2:] 
-        
-
         # typ = args['type'].lower()        
-        
-
-        # if args['name'] == '--input_file': ##################################
+        # if args['name'] == '--input_file':
         #   inpt['type'] = 'File'
         # elif 'list' not in typ:  
         #   inpt['type'] = convt_type(typ) +'?'
