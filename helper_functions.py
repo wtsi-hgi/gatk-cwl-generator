@@ -17,7 +17,7 @@ def need_def(arg):
 def convt_type(typ):
   if 'list' in typ:
     typ = typ[5:-1]
-  elif typ in ('long','double','int','integer','string','float','boolean','bool','file'):
+  if typ in ('long','double','int','integer','string','float','boolean','bool','file'):
     return typ
   elif typ == 'byte':
     return 'int'
