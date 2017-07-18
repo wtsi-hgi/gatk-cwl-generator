@@ -39,9 +39,9 @@ def type_writer(args,inpt):
   else:
     typ = convt_type(args['type'].lower())
     if 'list' in args['type'].lower():
-      typ = [item = item+'[]' for item in typ]
+      typ = [item+'[]' for item in typ]
     if args['required'] == 'no':
-      typ = [item = item+'?' for item in typ]
+      typ = [item+'?' for item in typ]
     inpt['type'] = typ
 
 """
