@@ -15,20 +15,32 @@ def cwlf_generator(item,cwlf):
 
     for args in item['arguments']:
       inpt = {}
-      if args['name'] in invalid_args:
-        continue
+      # if args['name'] in invalid_args:
+      #   continue
 
       inpt['doc'] = args['summary']
       inpt['id'] = args['name'][2:] 
-
       type_writer(args,inpt)
+      
+      #input file, reference sequence
+      
+      #if inputfile:
+      #secondaryFiles = ['.crai','^.dict']
+
+#function secondary_files(f) { return typeof f; if (f.indexOf('.cram')!= -1 ){ return '.crai';} 
+# else if (f.search('.bam')) { return '.bai'; } else if (f.search('.fa')) { return ['.fai','^.dict']; }}"""
+
+
+
+      if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
+        print(args['name'])
+         inpt['secondaryFiles'] = '$(secondary_files(self))'
+
       inputs.append(inpt)
       output_writer(args,outputs)
       comLine = commandline_writer(args,comLine)
 
-      # if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
-      #   print(args['name'])
-      #   inpt['secondaryFiles'] = '$(secondary_files(self))'
+
 
     cwlf["inputs"] = inputs
     cwlf["outputs"] = outputs
