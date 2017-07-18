@@ -35,7 +35,7 @@ def type_writer(args,inpt):
   if args['name'] == '--input_file':
     inpt['type'] = 'File' 
   elif 'intervalbinding' in typ:
-    return ['string[]?','File[]?']
+    inpt['type'] = ['string[]?','File[]?']
   else:
     typ = convt_type(args['type'].lower())
     if 'list' in args['type'].lower():
