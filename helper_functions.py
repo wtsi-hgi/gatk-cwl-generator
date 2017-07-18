@@ -87,7 +87,8 @@ def output_writer(args,outputs):
 
 def commandline_writer(args,comLine):
   if args['required'] == 'yes':
-    comLine += args['synonyms'] + "$(inputs." + args['name'].strip("-") + ")"
+    print(args['name'],args['synonyms'] + "$(inputs." + args['name'].strip("-") + ")")
+    comLine += args['synonyms'] + " $(inputs." + args['name'].strip("-") + ")"
   elif need_def(args):
     comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "
   else:
