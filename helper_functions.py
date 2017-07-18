@@ -24,7 +24,7 @@ def convt_type(typ):
   elif typ in ('byte','integer'):
     return 'int'
   elif 'rodbinding' in typ: #ROD files
-    return 'file'
+    return 'File'
   elif any (x in typ for x in ('writer','rule','option','timeunit','type','mode','validationstringency')):
     return 'string'
   elif 'printstream' in typ: #meant for debugging
@@ -37,7 +37,7 @@ def type_writer(args,inpt):
   if args['name'] == '--input_file': ##################################
     inpt['type'] = 'File'
   elif 'intervalbinding' in typ: ##################################
-    inpt['type'] = ['string[]?','file']
+    inpt['type'] = ['string[]?','File']
   else:
     typ = convt_type(args['type'].lower())
     if 'list' in args['type'].lower():             #List[interval binding]
