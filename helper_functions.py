@@ -14,23 +14,19 @@ def need_def(arg):
         return True
     return False
 
-
-#List (?)
-#required - null
-
 def convt_type(typ):
-  if typ in ('long','double','int','integer','string','float','boolean','bool','file'):
-    return [typ]
+  if 'list' in typ:
+    typ = typ[5:-1]
+  elif typ in ('long','double','int','integer','string','float','boolean','bool','file'):
+    return typ
   elif typ == 'byte':
-    return ['int']
+    return 'int'
   elif 'rodbinding' in typ: #ROD files
-    return ['file']
+    return 'file'
   elif any (x in typ for x in ('writer','rule','option','timeunit','type','mode','validationstringency')):
-    return ['string']
+    return 'string'
   elif 'printstream' in typ: #meant for debugging
-    return ['null']
-  elif 'intervalbinding' in typ:
-    return ['string[]?','file']
+    return 'null'
   else:
     raise ValueError('unsupported type: {}'.format(typ))
 
@@ -38,6 +34,8 @@ def type_writer(args,inpt):
   typ = args['type'].lower()             
   if args['name'] == '--input_file': ##################################
     inpt['type'] = 'File'
+  elif 'intervalbinding' in typ: ##################################
+    inpt['type'] = ['string[]?','file']
   else:
     typ = convt_type(args['type'].lower())
     if 'list' in args['type'].lower():             #List[interval binding]
@@ -48,6 +46,42 @@ def type_writer(args,inpt):
         item = item+'?'
   inpt['type'] = typ
 
+  # typ = args['type'].lower()        
+    # if args['name'] == '--input_file':
+    #   inpt['type'] = 'File'
+    # elif 'list' not in typ:  
+    #   inpt['type'] = convt_type(typ) +'?'
+    # else: #if list is in type
+    #   inpt['type'] = convt_type(typ)+'[]?'
+
+
+# ################################################################################################################################
+# #interval, filewriter 
+# # ################################################################################################################################
+# def convt_type(typ):
+#   #  typ = args['type'].lower()
+#  #   if 'list' in typ:
+# #       typ = typ[5:-1]
+#     if typ in ('integer','byte'):
+#         return 'int'
+# #    elif typ == 'intervalbinding[feature]':
+# #        pass        
+#     elif typ == 'file':
+#         return 'File'
+#     elif typ in ('long','double','int','string','float','boolean','bool'):
+#         return typ
+#     elif 'rodbinding' in typ: #ROD file, File to which output should be written
+#         return 'File'
+#     #file writer: take in as an input string
+#     elif 'writer' in typ or 'rule' in typ or 'option' in typ or 'timeunit' in typ or 'type' in typ or 'mode' in typ or 'validationstringency' in typ: #minutes pedigreevalidationtype, gatkvcfindextype, downsampletype ...
+#         return 'string'
+#     elif 'printstream' in typ:
+#         return 'null'
+#     else:
+# #        print('typeerror',typ)   
+#         return 'string'
+#         #temporary measurement`
+#         #raise ValueError("unsupported type %s" %(typ)) 
 
 
 def output_writer(args,outputs):
