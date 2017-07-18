@@ -99,30 +99,6 @@ invalid_args = ['--input_file','--reference_sequence','--help', '--defaultBaseQu
 # ################################################################################################################################
 # #interval, filewriter 
 # ################################################################################################################################
-# def convt_type(typ):
-#   #  typ = args['type'].lower()
-#  #   if 'list' in typ:
-# #       typ = typ[5:-1]
-#     if typ in ('integer','byte'):
-#         return 'int'
-# #    elif typ == 'intervalbinding[feature]':
-# #        pass        
-#     elif typ == 'file':
-#         return 'File'
-#     elif typ in ('long','double','int','string','float','boolean','bool'):
-#         return typ
-#     elif 'rodbinding' in typ: #ROD file, File to which output should be written
-#         return 'File'
-#     #file writer: take in as an input string
-#     elif 'writer' in typ or 'rule' in typ or 'option' in typ or 'timeunit' in typ or 'type' in typ or 'mode' in typ or 'validationstringency' in typ: #minutes pedigreevalidationtype, gatkvcfindextype, downsampletype ...
-#         return 'string'
-#     elif 'printstream' in typ:
-#         return 'null'
-#     else:
-# #        print('typeerror',typ)   
-#         return 'string'
-#         #temporary measurement`
-#         #raise ValueError("unsupported type %s" %(typ)) 
 
 
 #converts json to cwl
@@ -148,17 +124,24 @@ def cwlf_generator(item,cwlf):
         print(args)
         continue
         ################################################################ANALYSIS TYPE
+
+
+
       else: #if not required
         inpt['doc'] = args['summary']
         inpt['id'] = args['name'][2:] 
-        typ = args['type'].lower()        
-        if args['name'] == '--input_file':
-          inpt['type'] = 'File'
-        elif 'list' not in typ:  
-          inpt['type'] = convt_type(typ) +'?'
-        else: #if list is in type
-          inpt['type'] = convt_type(typ)+'[]?' 
-     
+        
+
+        # typ = args['type'].lower()        
+        
+
+        # if args['name'] == '--input_file': ##################################
+        #   inpt['type'] = 'File'
+        # elif 'list' not in typ:  
+        #   inpt['type'] = convt_type(typ) +'?'
+        # else: #if list is in type
+        #   inpt['type'] = convt_type(typ)+'[]?' 
+        type_writer(args,inpt)
         output_writer(args,outputs)
 
       inputs.append(inpt)
