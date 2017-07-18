@@ -88,12 +88,12 @@ def cwlf_generator(item,cwlf):
 
       inputs.append(inpt)
       comLine = commandline_writer(args,comLine)
-      print(comLine)
+      #print(comLine)
       
       
-  #    if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
- #       print(args['name'])
-#        inpt['secondaryFiles'] = '$(secondary_files(self))'
+      if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
+        print(args['name'])
+        inpt['secondaryFiles'] = '$(secondary_files(self))'
 
     cwlf["inputs"] = inputs
     cwlf["outputs"] = outputs
