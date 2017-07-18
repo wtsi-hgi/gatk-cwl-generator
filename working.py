@@ -87,7 +87,7 @@ def cwlf_generator(item,cwlf):
       output_writer(args,outputs)
 
       inputs.append(inpt)
-      commandline_writer(args,comLine)
+      comLine = commandline_writer(args,comLine)
       print(comLine)
       
       
