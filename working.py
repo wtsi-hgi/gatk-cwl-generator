@@ -49,11 +49,11 @@ cwl = {'id':jsonf['name'],
                                             else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');}
                                             else if (def =='false') {return '';} else if (def == 'true') {return com;} 
                                             if (def == []) {return '';} else {return com + ' ' + def;}}""",
-                                            """function secondary_files(f) { return typeof f; if (f.indexOf('.cram')!= -1 ){ return '.crai';} 
-                                            else if (f.search('.bam')) { return '.bai'; } else if (f.search('.fa')) { return ['.fai','^.dict']; }}"""]},
+                                            """function secondary_files(f) { return typeof f; }"""]},
                        { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
 
-
+"""function secondary_files(f) { return typeof f; if (f.indexOf('.cram')!= -1 ){ return '.crai';} 
+                                            else if (f.search('.bam')) { return '.bai'; } else if (f.search('.fa')) { return ['.fai','^.dict']; }}"""
 
 # These arguments are classified invalid for following reasons:
 #         --DBQ: invalid default
@@ -61,44 +61,9 @@ cwl = {'id':jsonf['name'],
 #         --input_file: I don't know how to deal with secondary files yet sorry
 invalid_args = ['--input_file','--reference_sequence','--help', '--defaultBaseQualities']
 
-#def get_file_type(f):
-
-#$("."+(inputs.input_file).split('.')[1].replace("m","i"))
 
 
 
-
-##  $("."+(inputs.input_file).split('.')[1].replace("m","i"))
-
-
-# function secondary_files(f) {
-#   if (f.includes('.cram') ){ return '.crai';} else if (f.includes('.bam')) { return '.bai'; } else if (f.includes('.fa')) { return ['.fai','^.dict']; }
-#     }
-
-  # secondaryfiles = []
-  # if 'dictionary' in args['fulltext']:
-  #   secondaryfiles += '^.dict'
-  # if 'index' in args['fulltext']:
-  #   secondaryfiles += "$('.'+(inputs." + args['name'] + ").split('.')[1].replace('m','i'))"
-# def add_secondary_files(args, inpt): #return secondary file in [ '.crai'] formet
-#   if 'required' not in args['fulltext']:
-#     pass
-#   else:
-#     if 'dictionary' in args['fulltext']:
-#       secondaryfiles = ['^.dict','^fai']
-#     elif 'index' in args['fulltext']: #CRAM / BAM for input_files
-#       print('requires and index: only input should have this', args['name'])
-#       secondaryfiles = ["$('.'+(inputs." + args['name'] + ").split('.')[1].replace('m','i'))"]
-
-      
-      # "$('.'+(inputs." + args['id'] + ").split('.')[1].replace('m','i'))""
-
-
-
-
-# ################################################################################################################################
-# #interval, filewriter 
-# ################################################################################################################################
 
 
 #converts json to cwl
@@ -120,22 +85,11 @@ def cwlf_generator(item,cwlf):
         #print(args['name']) ###NEED TO DO STH ABOUT IT
         continue
 
-      if args['required'] == 'yes':
-        print(args)
-        continue
-        ################################################################ANALYSIS TYPE
-      else: #if not required
-        inpt['doc'] = args['summary']
-        inpt['id'] = args['name'][2:] 
-        # typ = args['type'].lower()        
-        # if args['name'] == '--input_file':
-        #   inpt['type'] = 'File'
-        # elif 'list' not in typ:  
-        #   inpt['type'] = convt_type(typ) +'?'
-        # else: #if list is in type
-        #   inpt['type'] = convt_type(typ)+'[]?' 
-        type_writer(args,inpt)
-        output_writer(args,outputs)
+      inpt['doc'] = args['summary']
+      inpt['id'] = args['name'][2:] 
+
+      type_writer(args,inpt)
+      output_writer(args,outputs)
 
       inputs.append(inpt)
       commandline_writer(args,comLine)
@@ -143,7 +97,7 @@ def cwlf_generator(item,cwlf):
       
   #    if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
  #       print(args['name'])
-#        inpt['secondaryFiles'] = '$(secondary_files(self))'
+#        inpt['secondaryFiles'] = '$(secondary_files(inputs.{}))'.format(args['name'][2:])
 
     cwlf["inputs"] = inputs
     cwlf["outputs"] = outputs
