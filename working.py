@@ -88,6 +88,7 @@ def cwlf_generator(item,cwlf):
 
       inputs.append(inpt)
       commandline_writer(args,comLine)
+      print(comLine)
       
       
   #    if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
@@ -98,8 +99,7 @@ def cwlf_generator(item,cwlf):
     cwlf["outputs"] = outputs
     cwlf["arguments"] = [{"shellQuote": False,    
                           "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar  -R $(WDLCommandPart('NonNull(inputs.reference_sequence.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
-                                                                       #-T HaplotypeCaller
-
+                                                                       
 
 cwlf_generator(jsonf,cwl)
 f.write(json.dumps(cwl, indent = 4, sort_keys = False)) #write the file
