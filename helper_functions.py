@@ -1,4 +1,7 @@
-#helps form a commandline
+"""
+List of helper functions for json2cwl.py
+"""
+
 def need_def(arg):
     if 'List' in arg['type']:
         if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
@@ -11,7 +14,21 @@ def need_def(arg):
         return True
     return False
 
-    
+def convt_type(typ):
+  if typ in ('long','double','int','integer','string','float','boolean','bool','file'):
+    return typ
+  elif typ == 'byte':
+    return 'int'
+  elif 'rodbinding' in typ: #ROD files
+    return 'file'
+  elif any (x in typ for x in ('writer','rule','option','timeunit','type','mode','validationstringency')):
+    return 'string'
+  elif 'printstream' in typ: #meant for debugging
+    return 'null'
+  else:
+    raise ValueError('unsupported type: {}'.format(typ))
+
+
 def output_writer(args,outputs):
   if 'writer' in args['type'].lower():
     outpt = {'id': args['name'], 'type': ['null','File'], 'outputBinding':{'glob':'$(inputs.'+args['name'][2:]+')'}}
