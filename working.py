@@ -62,10 +62,6 @@ cwl = {'id':jsonf['name'],
 invalid_args = ['--input_file','--reference_sequence','--help', '--defaultBaseQualities']
 
 
-
-
-
-
 #converts json to cwl
 def cwlf_generator(item,cwlf):
     comLine = ""       
@@ -82,9 +78,13 @@ def cwlf_generator(item,cwlf):
       inpt = {}
      
       if args['name'] in invalid_args:
-        #print(args['name']) ###NEED TO DO STH ABOUT IT
         continue
 
+      # if args['required'] == 'yes':  ## is being handled 
+      #   print(args)
+      #   continue
+      #   ################################################################ANALYSIS TYPE
+      # else: #if not required
       inpt['doc'] = args['summary']
       inpt['id'] = args['name'][2:] 
 
@@ -97,13 +97,13 @@ def cwlf_generator(item,cwlf):
       
   #    if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
  #       print(args['name'])
-#        inpt['secondaryFiles'] = '$(secondary_files(inputs.{}))'.format(args['name'][2:])
+#        inpt['secondaryFiles'] = '$(secondary_files(self))'
 
     cwlf["inputs"] = inputs
     cwlf["outputs"] = outputs
-    cwlf["arguments"] = [{"shellQuote": False, 
-                          "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.reference_sequence.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
-   
+    cwlf["arguments"] = [{"shellQuote": False,    
+                          "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar  -R $(WDLCommandPart('NonNull(inputs.reference_sequence.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
+                                                                       #-T HaplotypeCaller
 
 
 cwlf_generator(jsonf,cwl)
