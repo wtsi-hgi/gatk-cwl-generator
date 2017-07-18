@@ -14,19 +14,40 @@ def need_def(arg):
         return True
     return False
 
+
+#List (?)
+#required - null
+
 def convt_type(typ):
   if typ in ('long','double','int','integer','string','float','boolean','bool','file'):
-    return typ
+    return [typ]
   elif typ == 'byte':
-    return 'int'
+    return ['int']
   elif 'rodbinding' in typ: #ROD files
-    return 'file'
+    return ['file']
   elif any (x in typ for x in ('writer','rule','option','timeunit','type','mode','validationstringency')):
-    return 'string'
+    return ['string']
   elif 'printstream' in typ: #meant for debugging
-    return 'null'
+    return ['null']
+  elif 'intervalbinding' in typ:
+    return ['string[]?','file']
   else:
     raise ValueError('unsupported type: {}'.format(typ))
+
+def type_writer(args,inpt):
+  typ = args['type'].lower()             
+  if args['name'] == '--input_file': ##################################
+    inpt['type'] = 'File'
+  else:
+    typ = convt_type(args['type'].lower())
+    if 'list' in args['type'].lower():             #List[interval binding]
+      for item in typ:
+        item = item+'[]'
+    if args['required'] == 'no':
+      for item in typ:
+        item = item+'?'
+  inpt['type'] = typ
+
 
 
 def output_writer(args,outputs):
