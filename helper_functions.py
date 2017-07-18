@@ -18,17 +18,15 @@ def convt_type(typ):
   if 'list' in typ:
     typ = typ[5:-1]
   if typ in ('long','double','int','string','float','boolean','bool'):
-    return [typ]
+    return typ
   elif typ == 'file' or 'rodbinding' in typ: #ROD files
-    return ['File']
+    return 'File'
   elif typ in ('byte','integer'):
-    return ['int']
+    return 'int'
   elif any (x in typ for x in ('writer','rule','option','timeunit','type','mode','validationstringency')):
-    return ['string']
+    return 'string'
   elif 'printstream' in typ: 
-    return ['null']
-  elif 'intervalbinding' in typ:
-    return ['string','File']
+    return 'null'
   else:
     raise ValueError('unsupported type: {}'.format(typ))
 
@@ -36,12 +34,14 @@ def type_writer(args,inpt):
   typ = args['type'].lower()             
   if args['name'] == '--input_file':
     inpt['type'] = 'File' 
+  elif 'intervalbinding' in typ:
+    return ['string[]?','File[]?']
   else:
     typ = convt_type(args['type'].lower())
     if 'list' in args['type'].lower():
-      typ = [item+'[]' for item in typ]
+      typ += '[]'
     if args['required'] == 'no':
-      typ = [item+'?' for item in typ]
+      typ += '?'
     inpt['type'] = typ
 
 """
