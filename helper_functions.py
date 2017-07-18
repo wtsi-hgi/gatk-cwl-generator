@@ -17,9 +17,11 @@ def need_def(arg):
 def convt_type(typ):
   if 'list' in typ:
     typ = typ[5:-1]
-  if typ in ('long','double','int','integer','string','float','boolean','bool','file'):
+  if typ in ('long','double','int','string','float','boolean','bool'):
     return typ
-  elif typ == 'byte':
+  elif typ == 'file':
+    return 'File'
+  elif typ in ('byte','integer'):
     return 'int'
   elif 'rodbinding' in typ: #ROD files
     return 'file'
