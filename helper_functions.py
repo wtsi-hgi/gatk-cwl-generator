@@ -35,15 +35,13 @@ def convt_type(typ):
 def type_writer(args,inpt):
   typ = args['type'].lower()             
   if args['name'] == '--input_file':
-    inpt['type'] = 'File'
-  elif 'list[intervalbinding' in typ: 
-    inpt['type'] =  ["string[]?", "File[]?"] 
+    inpt['type'] = 'File' 
   else:
     typ = convt_type(args['type'].lower())
     if 'list' in args['type'].lower():
-      item += '[]' for item in typ
+      typ = [item += '[]' for item in typ]
     if args['required'] == 'no':
-      item += '?' for item in typ
+      typ = [item += '?' for item in typ]
     inpt['type'] = typ
 
 """
