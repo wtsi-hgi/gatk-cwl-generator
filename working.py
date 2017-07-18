@@ -80,11 +80,6 @@ def cwlf_generator(item,cwlf):
       if args['name'] in invalid_args:
         continue
 
-      # if args['required'] == 'yes':  ## is being handled 
-      #   print(args)
-      #   continue
-      #   ################################################################ANALYSIS TYPE
-      # else: #if not required
       inpt['doc'] = args['summary']
       inpt['id'] = args['name'][2:] 
 
@@ -102,7 +97,7 @@ def cwlf_generator(item,cwlf):
     cwlf["inputs"] = inputs
     cwlf["outputs"] = outputs
     cwlf["arguments"] = [{"shellQuote": False,    
-                          "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar  -T HaplotypeCaller -R $(WDLCommandPart('NonNull(inputs.reference_sequence.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
+                          "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar  -R $(WDLCommandPart('NonNull(inputs.reference_sequence.path)', '')) --input_file $(WDLCommandPart('NonNull(inputs.input_file.path)', '')) " +  comLine}] 
                                                                        #-T HaplotypeCaller
 
 
