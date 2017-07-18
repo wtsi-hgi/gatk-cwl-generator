@@ -18,30 +18,32 @@ def convt_type(typ):
   if 'list' in typ:
     typ = typ[5:-1]
   if typ in ('long','double','int','string','float','boolean','bool'):
-    return typ
+    return [typ]
   elif typ == 'file' or 'rodbinding' in typ: #ROD files
-    return 'File'
+    return ['File']
   elif typ in ('byte','integer'):
-    return 'int'
+    return ['int']
   elif any (x in typ for x in ('writer','rule','option','timeunit','type','mode','validationstringency')):
-    return 'string'
-  elif 'printstream' in typ: #meant for debugging
-    return 'null'
+    return ['string']
+  elif 'printstream' in typ: 
+    return ['null']
+  elif 'intervalbinding' in typ:
+    return ['string','file']
   else:
     raise ValueError('unsupported type: {}'.format(typ))
 
 def type_writer(args,inpt):
   typ = args['type'].lower()             
-  if args['name'] == '--input_file': ##################################
+  if args['name'] == '--input_file':
     inpt['type'] = 'File'
-  elif 'intervalbinding' in typ: ##################################
-    inpt['type'] =  ["string[]?", "File?"]  #change it to a list so that you can do for items check but im not so sure atm
+  elif 'list[intervalbinding' in typ: 
+    inpt['type'] =  ["string[]?", "File[]?"] 
   else:
     typ = convt_type(args['type'].lower())
-    if 'list' in args['type'].lower():             
-      typ = typ + '[]'
+    if 'list' in args['type'].lower():
+      item += '[]' for item in typ
     if args['required'] == 'no':
-      typ = typ +'?'
+      item += '?' for item in typ
     inpt['type'] = typ
 
 """
