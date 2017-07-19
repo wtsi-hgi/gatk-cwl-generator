@@ -13,10 +13,14 @@ def cwlf_generator(item,cwlf):
                { "doc": "Input file containing sequence data (BAM or CRAM)", "type": "File",
                  "id": "input_file","secondaryFiles": [".crai","^.dict"]}]      
 
+#    inputs = [ {"doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
+#               { "doc": "dict file of reference genome", "type": "File", "id": "refDict"}]
+              
+
     for args in item['arguments']:
       inpt = {}
-      # if args['name'] in invalid_args:
-      #   continue
+      if args['name'] in invalid_args:
+        continue
 
       inpt['doc'] = args['summary']
       inpt['id'] = args['name'][2:] 
@@ -27,14 +31,14 @@ def cwlf_generator(item,cwlf):
       #if inputfile:
       #secondaryFiles = ['.crai','^.dict']
 
-#function secondary_files(f) { return typeof f; if (f.indexOf('.cram')!= -1 ){ return '.crai';} 
-# else if (f.search('.bam')) { return '.bai'; } else if (f.search('.fa')) { return ['.fai','^.dict']; }}"""
+      #function secondary_files(f) { return typeof f; if (f.indexOf('.cram')!= -1 ){ return '.crai';} 
+      # else if (f.search('.bam')) { return '.bai'; } else if (f.search('.fa')) { return ['.fai','^.dict']; }}"""
 
 
 
       if 'requires' in args['fulltext'] and 'index' in args['fulltext']:
         print(args['name'])
-         inpt['secondaryFiles'] = '$(secondary_files(self))'
+        inpt['secondaryFiles'] = '$(secondary_files(self))'
 
       inputs.append(inpt)
       output_writer(args,outputs)
