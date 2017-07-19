@@ -95,22 +95,25 @@ def commandline_writer(args,comLine):
   if 'file' in args['type'].lower():
     argument += '.path'
     #print(argument)
-  
+
   if args['name'] == '--reference_sequence':
     comLine += p  + " $(WDLCommandPart('NonNull(inputs."+ argument + ")', '')) "
-    #print(args['defaultValue'])
   elif args['required'] == 'yes':
     comLine += "{} $(inputs.{})".format(p,argument)
-#    comLine += p + " $(inputs." + argument + ")"
   elif need_def(args):
- #   comLine += "$(defHandler('{}', WDLCommandPart('NonNull(inputs.{})', {}))) ".format(p,argument,str(default))
-    comLine += "$(defHandler('" + p + "', WDLCommandPart('NonNull(inputs." + argument +  ")', " + str(args['defaultValue'])  + "))) "
+    #comLine += "$(defHandler('{}', WDLCommandPart('NonNull(inputs.{})', {}))) ".format(p,argument,str(default))
+    comLine += "$(defHandler('{}', WDLCommandPart('NonNull(inputs.{})', {}))) ".format(p,argument,str(default))
   else:
       if args['defaultValue'] != "NA" and args['defaultValue'] != "none":
-         comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + argument  + ")', '" + args['defaultValue'] + "')) "
+         comLine += "{} $(WDLCommandPart('NonNull(inputs.{})', '{}')) ".format(p,argument,default)
+         #comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + argument  + ")', '" + args['defaultValue'] + "')) "
       elif args['synonyms'] == '-o':
-         comLine += "$(defHandler('" + p + "', WDLCommandPart('NonNull(inputs." + argument + ")', "+"'stdout'"+"))) "
+         comLine += "$(defHandler('{}', WDLCommandPart('NonNull(inputs.{})', "+"'stdout'"+"))) ".format(p,argument)
+         #comLine += "$(defHandler('" + p + "', WDLCommandPart('NonNull(inputs." + argument + ")', "+"'stdout'"+"))) "
       else:
-        #print(args['name']) 
-        comLine += "$(WDLCommandPart('" + p  + "  NonNull(inputs." + argument + ")', ' ')) " 
+
+        #comLine += "$(WDLCommandPart('" + p  + "  NonNull(inputs." + argument + ")', ' ')) " 
+        comLine += "$(WDLCommandPart('{}  NonNull(inputs.{})', ' ')) ".format(p,argument)
   return comLine 
+
+
