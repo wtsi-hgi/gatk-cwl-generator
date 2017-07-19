@@ -1,5 +1,5 @@
 """
-List of helper functions for json2cwl.py
+Collection of helper functions for cwl_generator.py and json2cwl.py
 """
 
 def need_def(arg):
@@ -13,6 +13,7 @@ def need_def(arg):
     if ('boolean' in arg['type'] or 'List' in arg['type']) or 'false' in arg['defaultValue']:
         return True
     return False
+
 
 def convt_type(typ):
   if 'list' in typ:
@@ -30,9 +31,11 @@ def convt_type(typ):
   else:
     raise ValueError('unsupported type: {}'.format(typ))
 
+
 def type_writer(args,inpt):
   typ = args['type'].lower()             
   if args['name'] == '--input_file':
+    args['type'] = 'File'
     inpt['type'] = 'File' 
   elif 'intervalbinding' in typ:
     inpt['type'] = ['string[]?','File']
@@ -44,40 +47,23 @@ def type_writer(args,inpt):
       typ += '?'
     inpt['type'] = typ
 
-"""
 
-def secondaryfiles_writer ()
-"""
-
-#def get_file_type(f):
-
-#$("."+(inputs.input_file).split('.')[1].replace("m","i"))
+def input_writer(args,inputs):
+  inpt = {'doc':args['summary'],'id':args['name'][2:]}
+  type_writer(args,inpt)
+  secondaryfiles_writer(args,inpt,inputs)
 
 
-##  $("."+(inputs.input_file).split('.')[1].replace("m","i"))
+def secondaryfiles_writer (args,inpt,inputs):
+  if args['name'] == '--reference_sequence':
+    inpt['secondaryFiles'] = ['.fai','^.dict']
+    inputs.insert(0,inpt)
+  elif 'requires' in args['fulltext'] and 'files' in args['fulltext']:
+    inpt['secondaryFiles'] = "$(self.location+'.'+self.basename.split('.').splice(-1)[0].replace('m','i'))"  
+    inputs.insert(0,inpt)
+  else:
+    inputs.append(inpt)
 
-
-# function secondary_files(f) {
-#   if (f.includes('.cram') ){ return '.crai';} else if (f.includes('.bam')) { return '.bai'; } else if (f.includes('.fa')) { return ['.fai','^.dict']; }
-#     }
-
-  # secondaryfiles = []
-  # if 'dictionary' in args['fulltext']:
-  #   secondaryfiles += '^.dict'
-  # if 'index' in args['fulltext']:
-  #   secondaryfiles += "$('.'+(inputs." + args['name'] + ").split('.')[1].replace('m','i'))"
-# def add_secondary_files(args, inpt): #return secondary file in [ '.crai'] formet
-#   if 'required' not in args['fulltext']:
-#     pass
-#   else:
-#     if 'dictionary' in args['fulltext']:
-#       secondaryfiles = ['^.dict','^fai']
-#     elif 'index' in args['fulltext']: #CRAM / BAM for input_files
-#       print('requires and index: only input should have this', args['name'])
-#       secondaryfiles = ["$('.'+(inputs." + args['name'] + ").split('.')[1].replace('m','i'))"]
-
-      
-      # "$('.'+(inputs." + args['id'] + ").split('.')[1].replace('m','i'))""
 
 def output_writer(args,outputs):
   if 'writer' in args['type'].lower():
@@ -89,31 +75,21 @@ def commandline_writer(args,comLine):
   p = args['synonyms']
   argument = args['name'].strip('-')
   default = args['defaultValue']
-
-
-
   if 'file' in args['type'].lower():
     argument += '.path'
-    #print(argument)
-
-  if args['name'] == '--reference_sequence':
+  if args['name'] in ('--reference_sequence','--input_file'):
     comLine += p  + " $(WDLCommandPart('NonNull(inputs."+ argument + ")', '')) "
   elif args['required'] == 'yes':
-    comLine += "{} $(inputs.{})".format(p,argument)
+    comLine += p + " $(inputs."+argument+")"
   elif need_def(args):
-    #comLine += "$(defHandler('{}', WDLCommandPart('NonNull(inputs.{})', {}))) ".format(p,argument,str(default))
-    comLine += "$(defHandler('{}', WDLCommandPart('NonNull(inputs.{})', {}))) ".format(p,argument,str(default))
+    comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "  
   else:
       if args['defaultValue'] != "NA" and args['defaultValue'] != "none":
-         comLine += "{} $(WDLCommandPart('NonNull(inputs.{})', '{}')) ".format(p,argument,default)
-         #comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + argument  + ")', '" + args['defaultValue'] + "')) "
+         comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + argument  + ")', '" + args['defaultValue'] + "')) "
       elif args['synonyms'] == '-o':
-         comLine += "$(defHandler('{}', WDLCommandPart('NonNull(inputs.{})', "+"'stdout'"+"))) ".format(p,argument)
-         #comLine += "$(defHandler('" + p + "', WDLCommandPart('NonNull(inputs." + argument + ")', "+"'stdout'"+"))) "
+         comLine += "$(defHandler('" + p + "', WDLCommandPart('NonNull(inputs." + argument + ")', "+"'stdout'"+"))) "
       else:
-
-        #comLine += "$(WDLCommandPart('" + p  + "  NonNull(inputs." + argument + ")', ' ')) " 
-        comLine += "$(WDLCommandPart('{}  NonNull(inputs.{})', ' ')) ".format(p,argument)
+        comLine += "$(WDLCommandPart('" + p  + "  NonNull(inputs." + argument + ")', ' ')) " 
   return comLine 
 
 
