@@ -6,88 +6,87 @@ import json
 import sys
 from bs4 import BeautifulSoup
 import pprint
+
 import json2cwl
 
 
 def prepare_json_links(version):
+    
     url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" %(version)
     data = requests.get(url).text
     soup = BeautifulSoup(data, "html.parser")
     url_list = []
-    
+
+    ##parse the html to obtain all json file links
     for sub in soup.find_all('tr'):
         for child in sub.find_all('td'):
             for a in child.find_all('a', href = True):
-                url_list.append(a['href'] + ".json") if "Exception" not in a['href'] else ''
+                href = a['href']
+                if href.startswith("org_broadinstitute_gatk") and "Exception" not in href:
+                    url_list.append(href + ".json")
 
-    return url_list
+    ##remove duplicates
+    url_list = list(set(url_list))
+    
+    ##move CommandLine to the front of the list
+    i = url_list.index("org_broadinstitute_gatk_engine_CommandLineGATK.php.json")
+    url_list[0], url_list[i] = url_list[i], url_list[0]
+    # print(url_list)
+    return [url, url_list]
 
 
-def convert_json_files(fromdir, url_list):
+def convert_json_files(fromdir, url_list, url):
+
+    print("creating and converting json files...")
+    
+    ##get current directory and make folders for files
     directory = os.path.join(fromdir, 'jsonfolder')
     todir = os.path.join(fromdir, 'cwlfiles')
+    os.makedirs(directory)
+    os.makedirs(todir)
+
+    #create json for each tool and conver to cwl
     for tool in url_list:
+        #print(tool)
         os.chdir(directory)
         json_1 = url + tool
-        r = requests.get(json_1).json()
-        fname = r['name'] + '.json'
-        f = open(fname, 'a')
-        f.write(json.dumps(r, indent = 4, sort_keys = False))
+        r = requests.get(json_1)
+        # r = requests.get(json_1).json()
+        fname = r.json()['name'] + '.json'
+        print(fname)
+        f = open(fname, 'w+')
+        # f.write(json.dumps(r, indent = 4, sort_keys = False))
+        f.write(r.text)
         f.close()
         json2cwl.make_cwl(directory, todir, fname)
+        print("made cwl")
 
-current = os.getcwd()
+    print("success!!!!!!!!")
 
-url_list = prepare_json_links(3.5)
-convert_json_files(current, url_list)
 
-# url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/3.5-0/"
+def main():
+    #default version is 3.5-0
+    #default directory is current directory/cwlscripts
+    try:
+      version = sys.argv[1]
+      directory = sys.argv[2]
+    except:
+      version = '3.5'
+      directory = os.getcwd()+'/cwlscripts'
 
-# r = requests.get(url)
-# data = r.text
+    print("your chosen directory is: %s" %(directory))
+    url_list = prepare_json_links(version)
+    convert_json_files(directory, url_list[1], url_list[0])
 
-# soup = BeautifulSoup(data, "html.parser")
-# #print(soup)
 
-# url_list = []
-
-# for sub in soup.find_all('tr'):
-#     for child in sub.find_all('td'):
-#         for a in child.find_all('a', href = True):
-#             url_list.append(a['href'] + ".json") if "Exception" not in a['href'] else ''
-
+if __name__ == '__main__':
+    main()
+    
 # current = os.getcwd()
-# directory = os.path.join(current, 'jsonfolder')
-# os.makedirs(directory)
-# os.chdir(directory)
 
-# for tool in url_list:
-#     json_1 = url + tool
-#     r = requests.get(json_1).json()
-#     fname = r['name'] + '.json'
-#     f = open(fname, 'a')
-#     f.write(json.dumps(r, indent = 4, sort_keys = False))
-#     f.close()
-
-
-
-
-# json_1 = url + url_list[0]
-
-# r = requests.get(json_1)
-
-# re = r.json()
-
-# fname = re['name'] + '.json'
-# f = open(fname, 'a')
-# f.write(json.dumps(re, indent = 4, sort_keys = False))
-# f.close()
-
-
-
-
-# pprint.pprint(r.json())
-# print(r.json()['arguments'][0]["defaultValue"])
+# url_list = prepare_json_links(3.5)
+# # print(url_list[1])
+# convert_json_files(current, url_list[1], url_list[0])
 
 
 # directory = sys.argv[1]
