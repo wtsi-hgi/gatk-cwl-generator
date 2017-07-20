@@ -21,7 +21,7 @@ This script will generate the JSON files from the GATK documentation (found at h
 
 To run, use the following command:
 ```
-$ python generate_cwl.py python_version /path/to/dir/for/generated/files
+$ python generate_cwl.py gatk_version /path/to/dir/for/generated/files
 ```
 For example
 ```
