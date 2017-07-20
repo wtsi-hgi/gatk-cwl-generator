@@ -1,5 +1,5 @@
 analysis_type: HaplotypeCaller
-ref:
+reference_sequence:
    class: File
    #path: /path/to/fasta/ref/file
    path: /home/yejinyou/cwltests/chr22_cwl_test.fa 
