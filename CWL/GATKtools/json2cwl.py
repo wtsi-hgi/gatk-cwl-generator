@@ -26,7 +26,7 @@ def make_cwl(fromdir, todir, jsonfile):
          'cwlVersion':'v1.0', 
          'baseCommand':[], 
          'class': 'CommandLineTool',
-       '  requirements':[{ "class": "ShellCommandRequirement"},
+         'requirements':[{ "class": "ShellCommandRequirement"},
                          { "class": "InlineJavascriptRequirement",
                            "expressionLib": [ "function WDLCommandPart(expr, def) {var rval; try { rval = eval(expr);} catch(err) {rval = def;} return rval;}",
                                               "function NonNull(x) {if(x === null || x == 'NA') {throw new UserException('NullValue');} else {return x;}}",
