@@ -48,37 +48,5 @@ def make_cwl(fromdir, todir, jsonfile):
 
 
 
-#Combine two json documentations into one
-jsonf = {}
-jsonf['arguments'] = r['arguments']+d['arguments']
-jsonf['name'] = r['name']
-
-#create file
-fname = jsonf['name']+'.cwl'
-f = open(fname, 'a')
-
-#Define cwl dictionary
-cwl = {'id':jsonf['name'],
-       'cwlVersion':'v1.0', 
-       'baseCommand':[], 
-       'class': 'CommandLineTool',
-       'requirements':[{ "class": "ShellCommandRequirement"},
-                       { "class": "InlineJavascriptRequirement",
-                         "expressionLib": [ "function WDLCommandPart(expr, def) {var rval; try { rval = eval(expr);} catch(err) {rval = def;} return rval;}",
-                                            "function NonNull(x) {if(x === null || x == 'NA') {throw new UserException('NullValue');} else {return x;}}",
-                                            """function defHandler (com, def) {if(Array.isArray(def) && def.length == 0) {return '';} 
-                                            else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');}
-                                            else if (def =='false') {return '';} else if (def == 'true') {return com;} 
-                                            if (def == []) {return '';} else {return com + ' ' + def;}}""",
-                                            """function secondaryfiles(f) { return typeof f; }"""]},
-                       { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
-
-"""function secondary_files(f) { return typeof f; if (f.indexOf('.cram')!= -1 ){ return '.crai';} 
-                                            else if (f.search('.bam')) { return '.bai'; } else if (f.search('.fa')) { return ['.fai','^.dict']; }}"""
-                                                                      
-
-cwlf_generator(jsonf,cwl)
-f.write(json.dumps(cwl, indent = 4, sort_keys = False)) #write the file
-f.close()
 
 
