@@ -16,22 +16,28 @@ def need_def(arg):
 
 
 def convt_type(typ):
-  if 'list' in typ:
-    typ = typ[5:-1]
+  enumerated_types = ['partition','method','format','writer','rule','option','timeunit','type','mode','validationstringency','numberallelerestriction','implementation','platform','clippingrepresentation','solid_nocall_strategy']
+  #print('converting',typ) 
+  if 'list[' in typ or 'set[' in typ:
+    typ = typ[typ.index('[')+1:typ.index(']')]
+  elif '[]' in typ:
+    typ = typ.strip('[]')
+  
   if typ in ('long','double','int','string','float','boolean','bool'):
     return typ
   elif typ == 'file' or 'rodbinding' in typ: #ROD files
     return 'File'
   elif typ in ('byte','integer'):
     return 'int'
-  elif any (x in typ for x in ('writer','rule','option','timeunit','type','mode','validationstringency')):
+  elif any (x in typ for x in enumerated_types):
     return 'string'
   elif 'printstream' in typ: 
     return 'null'
+  elif typ == 'set':
+    return 'string[]'
   else:
     raise ValueError('unsupported type: {}'.format(typ))
-
-
+    
 def type_writer(args,inpt):
   typ = args['type'].lower()             
   if args['name'] == '--input_file':
@@ -41,7 +47,7 @@ def type_writer(args,inpt):
     inpt['type'] = ['string[]?','File']
   else:
     typ = convt_type(args['type'].lower())
-    if 'list' in args['type'].lower():
+    if 'list' in args['type'].lower() or '[]' in args['type'].lower():
       typ += '[]'
     if args['required'] == 'no':
       typ += '?'
