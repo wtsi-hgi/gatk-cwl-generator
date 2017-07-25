@@ -1,6 +1,6 @@
 # Docker Requirements
 
-Build the gatk-3.5 docker from https://github.com/yejinyou/arvados-pipelines/tree/master/docker/gatk-3.5.
+Build the gatk-3.5 docker from https://github.com/wtsi-hgi/arvados-pipelines/tree/master/docker/gatk-3.5.
 ```
 docker build gatk-3.5 -t gatk
 ```
