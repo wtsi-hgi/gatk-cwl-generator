@@ -36,11 +36,6 @@ The script will create two folders inside the specified directory called `jsonfo
 
 Follow the instructions to install cwltools and cwl-runner: https://github.com/common-workflow-language/cwltool
 
-Run json2cwl.py to generate HaplotypeCaller.cwl file from the jsonfiles from the Docker.
-```
-python json2cwl.py
-```
-
 To test generated HaplotypeCaller CWL files, invoke ```cwl-runner``` and provide the tool wrapper and the input object on the command line.
 ```
 $ cwl-runner HaplotypeCaller.cwl HaplotypeCaller_inputs.yml
