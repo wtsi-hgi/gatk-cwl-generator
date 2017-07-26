@@ -15,12 +15,10 @@ def prepare_json_links(version):
     url_list = []
 
     # Parse the html to obtain all json file links
-    for sub in soup.find_all('tr'):
-        for child in sub.find_all('td'):
-            for a in child.find_all('a', href = True):
-                href = a['href']
-                if href.startswith("org_broadinstitute_gatk") and "Exception" not in href:
-                    url_list.append(href + ".json")
+    for link in soup.select("tr > td > a"):
+        href = link['href']
+        if href.startswith("org_broadinstitute_gatk") and "Exception" not in href:
+            url_list.append(href + ".json")
 
     # Remove duplicates
     url_list = list(set(url_list))
