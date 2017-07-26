@@ -1,0 +1,5 @@
+out
+cwl-example-data
+out.gvcf.gz
+.DS_STORE
+*.pyc
