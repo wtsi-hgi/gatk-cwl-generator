@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 import json2cwl
 
 
-def prepare_json_links(version):
+def get_json_links(version):
     url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" % version
     data = requests.get(url).text
     soup = BeautifulSoup(data, "html.parser")
@@ -65,7 +65,7 @@ def main():
         version = sys.argv[1]
         directory = sys.argv[2]
 
-    url_list = prepare_json_links(version)
+    url_list = get_json_links(version)
     convert_json_files(directory, url_list[1], url_list[0])
 
 
