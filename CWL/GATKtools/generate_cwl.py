@@ -57,14 +57,15 @@ def convert_json_files(fromdir, url_list, url):
 
 
 def main():
-    try:
-      version = sys.argv[1]
-      directory = sys.argv[2]
-    except:
-      version = '3.5'
-      directory = os.getcwd()+'/cwlscripts'
     # Default version is 3.5-0
     # Default directory is current directory/cwlscripts
+    
+    if len(sys.argv) == 1:
+        version = '3.5'
+        directory = os.getcwd() + '/cwlscripts'
+    else:
+        version = sys.argv[1]
+        directory = sys.argv[2]
 
     url_list = prepare_json_links(version)
     convert_json_files(directory, url_list[1], url_list[0])
