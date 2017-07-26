@@ -15,7 +15,7 @@ Copy the HaplotypeCaller and GATK tools documentation files to your localhost.
 docker cp CONTAINERID:SRC_PATH DEST_PATH   
 (docker cp gatk:/jsonfiles ~/PY)
 ```
-# CWL/GATKtools/
+## CWL/GATKtools/
 
 This script will generate the JSON files from the GATK documentation (found at https://software.broadinstitute.org/gatk/documentation/tooldocs/ depending on the version).
 
@@ -32,7 +32,7 @@ $ python generate_cwl.py (3.5) (/current/working/directory/cwlfiles)
 The script will create two folders inside the specified directory called `jsonfolder` with the json scripts and `cwlfiles` with translated cwl scripts.
 
 
-# HaplotypeCaller
+## HaplotypeCaller
 
 Follow the instructions to install cwltools and cwl-runner: https://github.com/common-workflow-language/cwltool
 
@@ -46,4 +46,3 @@ To test generated HaplotypeCaller CWL files, invoke ```cwl-runner``` and provide
 $ cwl-runner HaplotypeCaller.cwl HaplotypeCaller_inputs.yml
 ```
 
-#Consider turning json2cwl.py into Cwlrunner format
