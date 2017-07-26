@@ -19,6 +19,11 @@ docker cp CONTAINERID:SRC_PATH DEST_PATH
 
 This script will generate the JSON files from the GATK documentation (found at https://software.broadinstitute.org/gatk/documentation/tooldocs/ depending on the version).
 
+First, install the required dependencies by running the following command:
+```
+$ pip install -r requirements.txt
+```
+
 To run, use the following command:
 ```
 $ python generate_cwl.py gatk_version /path/to/dir/for/generated/files
