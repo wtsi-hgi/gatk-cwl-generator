@@ -56,9 +56,7 @@ def generate_cwl_and_json_files(out_dir, tool_urls, base_url):
 
 
 def main():
-    # Default version is 3.5-0
-    # Default directory is current directory/cwlscripts
-    
+    # If two arguments are not given, use default arguments of v3.5 and output directory of ./cwlscripts
     if len(sys.argv) == 1:
         version = '3.5'
         out_dir = os.getcwd() + '/cwlscripts'
