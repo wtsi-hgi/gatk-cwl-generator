@@ -6,7 +6,6 @@ The code converts json files to cwl files.
 
 import json
 import os
-import requests
 from helper_functions import *
 from cwl_generator import cwlf_generator
 
