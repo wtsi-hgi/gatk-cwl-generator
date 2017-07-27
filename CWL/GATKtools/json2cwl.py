@@ -10,15 +10,15 @@ from helper_functions import *
 from cwl_generator import cwlf_generator
 
 
-def make_cwl(fromdir, todir, jsonfile):
+def make_cwl(json_dir, cwl_dir, json_file_path):
     try:
-        r = json.load(open(os.path.join(fromdir, jsonfile), 'r'))
-        d = json.load(open(os.path.join(fromdir, 'CommandLineGATK.json'), 'r'))
+        json_file = json.load(open(os.path.join(json_dir, json_file_path), 'r'))
+        commandlineGATK = json.load(open(os.path.join(json_dir, 'CommandLineGATK.json'), 'r'))
     except Exception as e:
         print e.message
         raise e
 
-    jsonf = {'arguments': r['arguments'] + d['arguments'], 'name': r['name']}
+    jsonf = {'arguments': json_file['arguments'] + commandlineGATK['arguments'], 'name': json_file['name']}
 
     cwl = {'id': jsonf['name'],
            'cwlVersion': 'v1.0',
@@ -36,7 +36,7 @@ def make_cwl(fromdir, todir, jsonfile):
                             {"dockerPull": "gatk:latest", "class": "DockerRequirement"}]}
 
     # create and write file
-    os.chdir(todir)
+    os.chdir(cwl_dir)
     fname = jsonf['name'] + '.cwl'
     f = open(fname, 'a')
     cwlf_generator(jsonf, cwl)
