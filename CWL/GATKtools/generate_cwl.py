@@ -7,6 +7,8 @@ from bs4 import BeautifulSoup
 
 import json2cwl
 
+dev = True
+
 
 def get_json_links(version):
     base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" % version
@@ -34,8 +36,17 @@ def generate_cwl_and_json_files(out_dir, tool_urls, base_url):
     json_dir = os.path.join(out_dir, 'jsonfolder')
     cwl_dir = os.path.join(out_dir, 'cwlfiles')
 
-    os.makedirs(json_dir)
-    os.makedirs(cwl_dir)
+    try:
+        os.makedirs(json_dir)
+        os.makedirs(cwl_dir)
+    except OSError, e:
+        if dev:
+            os.removedirs(json_dir) # Removing existing generated files if the folder already exists, for testing
+            os.removedirs(cwl_dir)
+            os.makedirs(json_dir)
+            os.makedirs(cwl_dir)
+        else:
+            raise e
 
     # Create json for each tool and convert to cwl
     for tool_url in tool_urls:
