@@ -20,13 +20,13 @@ def cwl_generator(json, cwl):
     inputs = [{"doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
                { "doc": "dict file of reference genome", "type": "File", "id": "refDict"}]
 
-    for args in json['arguments']:
-        if args['name'] in invalid_args:
+    for argument in json['arguments']:
+        if argument['name'] in invalid_args:
             continue
 
-        input_writer(args, inputs)
-        output_writer(args, outputs)
-        com_line = commandline_writer(args, com_line)
+        input_writer(argument, inputs)
+        output_writer(argument, outputs)
+        com_line = commandline_writer(argument, com_line)
 
     cwl["inputs"] = inputs
     cwl["outputs"] = outputs
