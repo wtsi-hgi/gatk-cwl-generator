@@ -9,11 +9,6 @@ import os
 from helper_functions import *
 from cwl_generator import cwlf_generator
 
-# import the json url manually (gatk 3.5-0 version)
-r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/3.5-0/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json').json()
-d = requests.get(
-    'https://software.broadinstitute.org/gatk/documentation/tooldocs/3.5-0/org_broadinstitute_gatk_engine_CommandLineGATK.php.json').json()
-
 
 def make_cwl(fromdir, todir, jsonfile):
     try:
