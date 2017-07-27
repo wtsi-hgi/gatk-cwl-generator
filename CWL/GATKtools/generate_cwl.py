@@ -2,13 +2,13 @@
 
 import os
 import sys
+import shutil
 import requests
 from bs4 import BeautifulSoup
 
 import json2cwl
 
 dev = True
-
 
 def get_json_links(version):
     base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" % version
@@ -41,8 +41,8 @@ def generate_cwl_and_json_files(out_dir, tool_urls, base_url):
         os.makedirs(cwl_dir)
     except OSError, e:
         if dev:
-            os.removedirs(json_dir) # Removing existing generated files if the folder already exists, for testing
-            os.removedirs(cwl_dir)
+            shutil.rmtree(json_dir) # Removing existing generated files if the folder already exists, for testing
+            shutil.rmtree(cwl_dir)
             os.makedirs(json_dir)
             os.makedirs(cwl_dir)
         else:
