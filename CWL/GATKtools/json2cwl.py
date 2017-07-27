@@ -32,9 +32,8 @@ def make_cwl(json_dir, cwl_dir, json_file_path):
                             {"dockerPull": "gatk:latest", "class": "DockerRequirement"}]}
 
     # Create and write the cwl file
-    os.chdir(cwl_dir)
     fname = json_with_cmdlineGATK['name'] + '.cwl'
-    f = open(fname, 'a')
+    f = open(os.path.join(cwl_dir, fname), 'a')
     cwl_generator(json_with_cmdlineGATK, skelleton_cwl)
     f.write(json.dumps(skelleton_cwl, indent=4, sort_keys=False))  # write the file
     f.close()

@@ -50,20 +50,20 @@ def generate_cwl_and_json_files(out_dir, tool_urls, base_url):
 
     # Create json for each tool and convert to cwl
     for tool_url in tool_urls:
-        os.chdir(json_dir)
         full_tool_url = base_url + tool_url
         tool_json = requests.get(full_tool_url)
-        fname = tool_json.json()['name'] + '.json'
-        
-        print(fname)
-        f = open(fname, 'w+')
+        tool_name = tool_json.json()['name']
+        json_name = tool_name + ".json"
+
+        f = open(os.path.join(json_dir, json_name), 'w+')
         f.write(tool_json.text)
         f.close()
+        print("Written jsonfolder/" + json_name)
 
-        json2cwl.make_cwl(json_dir, cwl_dir, fname)
-        print("made cwl")
+        json2cwl.make_cwl(json_dir, cwl_dir, json_name)
+        print("Written cwlfiles/" + tool_name + ".cwl")
 
-    print("success!!!!!!!!")
+    print("Success!")
 
 
 def main():
@@ -74,7 +74,7 @@ def main():
     else:
         version = sys.argv[1]
         out_dir = sys.argv[2]
-
+    
     [base_url, tool_urls] = get_json_links(version)
     generate_cwl_and_json_files(out_dir, tool_urls, base_url)
 
