@@ -7,20 +7,16 @@ The code converts json files to cwl files.
 import json
 import os
 from helper_functions import *
-from cwl_generator import cwlf_generator
+from cwl_generator import cwl_generator
 
 
 def make_cwl(json_dir, cwl_dir, json_file_path):
-    try:
-        json_file = json.load(open(os.path.join(json_dir, json_file_path), 'r'))
-        commandlineGATK = json.load(open(os.path.join(json_dir, 'CommandLineGATK.json'), 'r'))
-    except Exception as e:
-        print e.message
-        raise e
+    json_file = json.load(open(os.path.join(json_dir, json_file_path), 'r'))
+    commandlineGATK = json.load(open(os.path.join(json_dir, 'CommandLineGATK.json'), 'r'))
 
-    jsonf = {'arguments': json_file['arguments'] + commandlineGATK['arguments'], 'name': json_file['name']}
+    json_with_cmdlineGATK = {'arguments': json_file['arguments'] + commandlineGATK['arguments'], 'name': json_file['name']}
 
-    cwl = {'id': jsonf['name'],
+    skelleton_cwl = {'id': json_with_cmdlineGATK['name'],
            'cwlVersion': 'v1.0',
            'baseCommand': [],
            'class': 'CommandLineTool',
@@ -35,10 +31,10 @@ def make_cwl(json_dir, cwl_dir, json_file_path):
                                                """function secondaryfiles(f) { return typeof f; }"""]},
                             {"dockerPull": "gatk:latest", "class": "DockerRequirement"}]}
 
-    # create and write file
+    # Create and write the cwl file
     os.chdir(cwl_dir)
-    fname = jsonf['name'] + '.cwl'
+    fname = json_with_cmdlineGATK['name'] + '.cwl'
     f = open(fname, 'a')
-    cwlf_generator(jsonf, cwl)
-    f.write(json.dumps(cwl, indent=4, sort_keys=False))  # write the file
+    cwl_generator(json_with_cmdlineGATK, skelleton_cwl)
+    f.write(json.dumps(skelleton_cwl, indent=4, sort_keys=False))  # write the file
     f.close()
