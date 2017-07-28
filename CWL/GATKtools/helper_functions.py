@@ -15,47 +15,80 @@ def need_def(arg):
     return False
 
 
-def convt_type(typ):
-  enumerated_types = ['partition','method','format','writer','rule','option','timeunit','type','mode','validationstringency','numberallelerestriction','implementation','platform','clippingrepresentation','solid_nocall_strategy']
-  #print('converting',typ) 
+
+def convt_type(args,typ):
   if 'list[' in typ or 'set[' in typ:
-    typ = typ[typ.index('[')+1:typ.index(']')]
+    typ = typ[typ.index('[')+1:-1]
   elif '[]' in typ:
     typ = typ.strip('[]')
+
   
   if typ in ('long','double','int','string','float','boolean','bool'):
     return typ
-  elif typ == 'file' or 'rodbinding' in typ: #ROD files
+  elif typ == 'file': 
     return 'File'
   elif typ in ('byte','integer'):
     return 'int'
-  elif any (x in typ for x in enumerated_types):
-    return 'string'
-  elif 'printstream' in typ: 
-    return 'null'
-  elif typ == 'set':
+  elif typ == 'set': #ig. -goodSM: name of sample(s) to keep
     return 'string[]'
+  elif args['options']: #check for enumerated types
+    return {'type': 'enum','symbols':[x['name'] for x in args['options']]}
+
+  #output collecters / filewriters
+  elif any (x in typ for x in ('rodbinding','printstream','writer')):
+    return 'string'
+ 
+#############################################################################################################################################################################################
+  elif typ == 'validationtype':
+  #https://software.broadinstitute.org/gatk/gatkdocs/3.6-0/org_broadinstitute_gatk_tools_walkers_variantutils_ValidateVariants.php
+    return 'string' 
+  elif typ == 'contaminationruntype':
+  #https://software.broadinstitute.org/gatk/gatkdocs/3.7-0/org_broadinstitute_gatk_tools_walkers_cancer_contamination_ContEst.php#--lane_level_contamination
+   return {'type':'enum','symbols':['META','SAMPLE','READGROUP']} #default is set to 'META'
+  #  return 'string'
+  elif typ == 'type':
+    return 'string'
+  # any combination of those below enumerated types
+  #  return {'type':'enum','symbols':['INDEL', 'SNP', 'MIXED', 'MNP', 'SYMBOLIC', 'NO_VARIATION']}
+  elif typ == 'partition':
+  #https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php#--partitionType
+    return 'string' #any combination of sample, readgroup and/or library (enum with combinations ?)
+  elif 'intervalbinding' in typ:
+    args['type'] = typ
+    return ['null','string','string[]','File']
   else:
-    raise ValueError('unsupported type: {}'.format(typ))
-    
+     print 'unsupported type:',typ
+#    raise ValueError('unsupported type: {}'.format(typ))
+##############################################################################################################################################################################################
+
+
+
 def type_writer(args,inpt):
   typ = args['type'].lower()             
+  ########################################
+  # can be automated as a string if the docker container can be mounted between the inputfile and the host machine
+  #########################################
+
   if args['name'] == '--input_file':
     args['type'] = 'File'
     inpt['type'] = 'File' 
-  elif 'intervalbinding' in typ:
+  #######################################
+  if 'intervalbinding' in typ:
     inpt['type'] = ['string[]?','File']
-  else:
-    typ = convt_type(args['type'].lower())
+  else: 
+    typ = convt_type(args,args['type'].lower())
     if 'list' in args['type'].lower() or '[]' in args['type'].lower():
-      typ += '[]'
+
+     typ += '[]'
     if args['required'] == 'no':
-      typ += '?'
+      typ = ['null',typ]
     inpt['type'] = typ
 
 
+
 def input_writer(args,inputs):
-  inpt = {'doc':args['summary'],'id':args['name'][2:]}
+  print(args['defaultValue'])
+  inpt = {'doc':args['summary'],'id':args['name'].strip('-')}
   type_writer(args,inpt)
   secondaryfiles_writer(args,inpt,inputs)
 
@@ -73,7 +106,7 @@ def secondaryfiles_writer (args,inpt,inputs):
 
 def output_writer(args,outputs):
   if 'writer' in args['type'].lower():
-    outpt = {'id': args['name'], 'type': ['null','File'], 'outputBinding':{'glob':'$(inputs.'+args['name'][2:]+')'}}
+    outpt = {'id': args['name'], 'type': ['null','File'], 'outputBinding':{'glob':'$(inputs.'+args['name'].strip('-')+')'}}
     outputs.append(outpt)
 
 
@@ -81,7 +114,8 @@ def commandline_writer(args,comLine):
   p = args['synonyms']
   argument = args['name'].strip('-')
   default = args['defaultValue']
-  if 'file' in args['type'].lower():
+  if any(x in args['type'].lower() for x in ('file','rodbinding','variantcontextwriter','gatksamfilewriter')): 
+#    print(argument)
     argument += '.path'
   if args['name'] in ('--reference_sequence','--input_file'):
     comLine += p  + " $(WDLCommandPart('NonNull(inputs."+ argument + ")', '')) "
