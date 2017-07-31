@@ -87,8 +87,11 @@ def test_haplotype_caller():
 
 def test_booleans_handled_correctly():
     debug_stderr = run_haplotype_caller("debug: True")[1]
+def assert_much_smaller_result(run_result_a, run_result_b):
+    filesize_a = json.loads(run_result_a[0])["--out"]["size"]
+    filesize_b = json.loads(run_result_b[0])["--out"]["size"]
 
-    assert_gt(len(debug_stderr), len(normal_run[1]), "Debug mode does not increase the size of stdout: ")
+    assert_gt(filesize_b - filesize_a, 100)
 
 def test_integers():
     with_int_json = run_haplotype_caller("activeProbabilityThreshold: 1")[0]
