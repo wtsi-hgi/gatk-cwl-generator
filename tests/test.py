@@ -13,9 +13,9 @@ def assert_equals(a, b, message=""):
         raise AssertionError("{}{} != {}".format(message, a, b))
 
 
-def assert_gt(a, b, message):
-    if a > b:
-        raise AssertionError("{}{} > {}".format(message, a, b))
+def assert_gt(a, b, message=""):
+    if a <= b:
+        raise AssertionError("{}{} <= {}".format(message, a, b))
 
 """
 Runs the specified command and reports it as an AssertionError if it fails
@@ -38,14 +38,25 @@ def run_command(command, fail_message=None):
 
     return stdout, stderr, exitcode
 
-def get_ht_caller_base_text():
-    f = open("HaplotypeCaller_inputs.yml")
-    text = f.read()
-    f.close()
-
-    return text
-
-ht_caller_base_text = get_ht_caller_base_text()
+ht_caller_base_text = """
+analysis_type: HaplotypeCaller
+reference_sequence:
+   class: File
+   #path: /path/to/fasta/ref/file
+   path: ../cwl-example-data/chr22_cwl_test.fa 
+refIndex:
+   class: File
+   #path: /path/to/index/file
+   path: ../cwl-example-data/chr22_cwl_test.fa.fai 
+refDict:
+   class: File
+   #path: /path/to/dict/file
+   path: ../cwl-example-data/chr22_cwl_test.fa.dict 
+input_file: #must be BAM or CRAM
+   class: File
+   #path: /path/to/input/file 
+   path: ../cwl-example-data/chr22_cwl_test.cram
+out: out.gvcf.gz"""
 
 base_dir = os.path.dirname(os.path.dirname(__file__))
 os.chdir(base_dir) # Need to be in the base directory for the cwl-runner to pick up the correct files
@@ -53,7 +64,9 @@ os.chdir(base_dir) # Need to be in the base directory for the cwl-runner to pick
 """
 Runs the haplotype_caller tool with the specified data
 """
-def run_haplotype_caller(extra_info):
+def run_haplotype_caller(extra_info="", interval=1):
+    extra_info += "\nintervals: [chr22:10591400-{}]".format(10591400 + interval)
+
     f = open("tests/test_haplotypecaller_input.yml", "w")
     f.write(ht_caller_base_text + "\n" + extra_info)
     f.close()
@@ -70,7 +83,10 @@ def test_haplotype_caller():
     run_command("cwl-runner cwlscripts/cwlfiles/HaplotypeCaller.cwl HaplotypeCaller_inputs.yml")
 
 def test_booleans_handled_correctly():
-    print(run_haplotype_caller("debug: True"))
+    debug_stdout = run_haplotype_caller("debug: True")[0]
+    normal_stdout = run_haplotype_caller()[0]
+
+    assert_gt(len(debug_stdout), len(normal_stdout), "Debug mode does not increase the size of stdout")
 
 """
 The entry point for testing
