@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import subprocess
-import unittest
 import os
 from os import path
 import sys
@@ -17,6 +16,10 @@ def assert_equals(a, b, message=""):
 def assert_gt(a, b, message=""):
     if a <= b:
         raise AssertionError("{}{} <= {}".format(message, a, b))
+
+def assert_contains(a, b, message=""):
+    if a in b:
+        raise AssertionError("{}{} in {}".format(message, a, b))
 
 """
 Runs the specified command and reports it as an AssertionError if it fails
@@ -37,7 +40,13 @@ def run_command(command, fail_message=None):
 
         raise AssertionError("Command failed")
 
-    return stdout, stderr, exitcode
+    return CommandOutput(stdout, stderr, exitcode)
+
+class CommandOutput():
+    def __init__(self, stdout, stderr, exitcode):
+        self.stdout = stdout
+        self.stderr = stderr
+        self.exitcode = exitcode
 
 ht_caller_base_text = """
 analysis_type: HaplotypeCaller
@@ -65,11 +74,13 @@ os.chdir(base_dir) # Need to be in the base directory for the cwl-runner to pick
 """
 Runs the haplotype_caller tool with the specified data
 """
-def run_haplotype_caller(extra_info="", interval=1):
-    extra_info += "\nintervals: [chr22:10591400-{}]".format(10591400 + interval)
+def run_haplotype_caller(extra_info="", interval=1, filetext=None):
+    if filetext is None:
+        extra_info += "\nintervals: [chr22:10591400-{}]".format(10591400 + interval)
+        filetext = ht_caller_base_text + "\n" + extra_info
 
     f = open("tests/test_haplotypecaller_input.yml", "w")
-    f.write(ht_caller_base_text + "\n" + extra_info)
+    f.write(filetext)
     f.close()
 
     return run_command("cwl-runner cwlscripts/cwlfiles/HaplotypeCaller.cwl tests/test_haplotypecaller_input.yml")
@@ -86,20 +97,29 @@ def test_haplotype_caller():
     run_command("cwl-runner cwlscripts/cwlfiles/HaplotypeCaller.cwl HaplotypeCaller_inputs.yml")
 
 def test_booleans_handled_correctly():
-    debug_stderr = run_haplotype_caller("debug: True")[1]
-def assert_much_smaller_result(run_result_a, run_result_b):
-    filesize_a = json.loads(run_result_a[0])["--out"]["size"]
-    filesize_b = json.loads(run_result_b[0])["--out"]["size"]
+    debug_stderr = run_haplotype_caller("debug: True").stderr
 
-    assert_gt(filesize_b - filesize_a, 100)
+    assert_gt(len(debug_stderr), len(normal_run.stderr), "Debug mode does not increase the size of stdout: ")
 
 def test_integers():
-    with_int_json = run_haplotype_caller("activeProbabilityThreshold: 1")[0]
+    assert_contains(run_haplotype_caller("num_threads: 42").stderr, "42 data thread")
 
-    with_int_filesize = json.loads(with_int_json)["--out"]["size"] # should be quite a bit less size
-    normal_filesize = json.loads(normal_run[0])["--out"]["size"]
+def test_string():
+    pass
 
-    assert_gt(normal_filesize - with_int_filesize, 100)
+def test_file():
+    pass
+
+def test_enum_type():
+    assert_contains(run_haplotype_caller("validation_strictness: LENIENT").stderr, "Strictness is LENIENT")
+
+def test_list_type():
+    run_with_larger_intervals = run_haplotype_caller(filetext=ht_caller_base_text+"\nintervals: [chr22:10591400-10591500, chr22:10591500-10591645]")
+
+    assert_contains(run_with_larger_intervals.stderr, "Processing 246 bp from intervals")
+
+def test_default_used():
+    pass
 
 """
 The entry point for testing
