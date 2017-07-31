@@ -5,6 +5,7 @@ import unittest
 import os
 from os import path
 import sys
+import json
 
 # Assertions
 
@@ -73,6 +74,8 @@ def run_haplotype_caller(extra_info="", interval=1):
 
     return run_command("cwl-runner cwlscripts/cwlfiles/HaplotypeCaller.cwl tests/test_haplotypecaller_input.yml")
 
+normal_run = run_haplotype_caller()
+
 def test_cwl_file(cwl_file):
     is_valid_cwl_file(cwl_file)
 
@@ -83,16 +86,23 @@ def test_haplotype_caller():
     run_command("cwl-runner cwlscripts/cwlfiles/HaplotypeCaller.cwl HaplotypeCaller_inputs.yml")
 
 def test_booleans_handled_correctly():
-    debug_stdout = run_haplotype_caller("debug: True")[0]
-    normal_stdout = run_haplotype_caller()[0]
+    debug_stderr = run_haplotype_caller("debug: True")[1]
 
-    assert_gt(len(debug_stdout), len(normal_stdout), "Debug mode does not increase the size of stdout")
+    assert_gt(len(debug_stderr), len(normal_run[1]), "Debug mode does not increase the size of stdout: ")
+
+def test_integers():
+    with_int_json = run_haplotype_caller("activeProbabilityThreshold: 1")[0]
+
+    with_int_filesize = json.loads(with_int_json)["--out"]["size"] # should be quite a bit less size
+    normal_filesize = json.loads(normal_run[0])["--out"]["size"]
+
+    assert_gt(normal_filesize - with_int_filesize, 100)
 
 """
 The entry point for testing
 """
 def test():
-    test_booleans_handled_correctly()
+    test_integers()
 
 if __name__ == "__main__":
     test()
