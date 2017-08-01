@@ -38,7 +38,13 @@ def get_json_links(version):
     return [base_url, tool_urls]
 
 
-def generate_cwl_and_json_files(out_dir, tool_urls, base_url):
+def generate_cwl_and_json_files(out_dir, tool_urls, base_url, include_file):
+    """
+    Generates the cwl and json files
+    TODO: other params
+
+    :param include_files: if this is not None, only parse this file
+    """
     print("creating and converting json files...")
     
     # Get current directory and make folders for files
@@ -59,22 +65,20 @@ def generate_cwl_and_json_files(out_dir, tool_urls, base_url):
 
     # Create json for each tool and convert to cwl
     for tool_url in tool_urls:
-        full_tool_url = base_url + tool_url
-        tool_json = requests.get(full_tool_url)
-        try:
-          tool_name = tool_json.json()['name']
-        except:
-          print(tool_json)
-        json_name = tool_name + ".json"
+        if include_file is None or include_file in tool_url or "CommandLineGATK" in tool_url:
+            full_tool_url = base_url + tool_url
+            tool_json = requests.get(full_tool_url)
+            
+            tool_name = tool_json.json()['name'] # TODO: what happens if this doesn't parse correctly?
+            json_name = tool_name + ".json"
+            
+            f = open(os.path.join(json_dir, json_name), 'w+')
+            f.write(tool_json.text)
+            f.close()
+            print("Written jsonfolder/" + json_name)
 
-
-        f = open(os.path.join(json_dir, json_name), 'w+')
-        f.write(tool_json.text)
-        f.close()
-        print("Written jsonfolder/" + json_name)
-
-        json2cwl.make_cwl(json_dir, cwl_dir, json_name)
-        print("Written cwlfiles/" + tool_name + ".cwl")
+            json2cwl.make_cwl(json_dir, cwl_dir, json_name)
+            print("Written cwlfiles/" + tool_name + ".cwl")
 
     print("Success!")
 
@@ -86,8 +90,10 @@ def main():
     parser = argparse.ArgumentParser(description = 'take in GATK documentation version and specify output directory')
     parser.add_argument('-v', action='store', dest='gatkversion')
     parser.add_argument('-out', action='store', dest='outputdir')
+    parser.add_argument('-include', action='store', dest='include_file', help="Only generate this file (note, CommandLinkGATK has to be generated)")
+    # TODO: Implement this
     results = parser.parse_args()
-        
+
     if results.gatkversion:
       version = results.gatkversion
     else:
@@ -100,7 +106,7 @@ def main():
 
     print("your chosen directory is: %s" % directory)
     url_list = get_json_links(version)
-    generate_cwl_and_json_files(directory, url_list[1], url_list[0])
+    generate_cwl_and_json_files(directory, url_list[1], url_list[0], results.include_file)
 
 
 if __name__ == '__main__':
