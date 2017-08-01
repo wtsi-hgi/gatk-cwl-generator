@@ -86,11 +86,10 @@ def type_writer(argument, cwl_desc):
     if argument['name'] == '--input_file':
         argument['type'] = 'File'
         cwl_desc['type'] = 'File'
-    if 'intervalbinding' in argument["type"].lower():  # TODO: check this
+    if 'intervalbinding' in argument["type"].lower():  
         cwl_desc['type'] = ['string[]?', 'File']
     else:
         inner_type = GATK_to_CWL_type(argument, argument['type'].lower())
-
         if 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
             inner_type += '[]'
 
@@ -116,13 +115,14 @@ def input_writer(argument, inputs):
         }
     }
 
-  type_writer(argument, cwl_desc) #CWL type of the input
-  if argument['defaultValue'] != "NA": #if it has a default value
-    default_helper(inpt,args)
-  secondaryfiles_writer(argument,cwl_desc,inputs)
+    type_writer(argument, cwl_desc)
+    if argument['defaultValue'] != "NA": 
+      default_helper(cwl_desc,argument)
+    secondaryfiles_writer(argument,cwl_desc,inputs)
 
 def argument_writer(argument, inputs, outputs):
     if is_output_argument(argument):
+#        print(argument)
         output_writer(argument, outputs)
     else:
         input_writer(argument, inputs)
