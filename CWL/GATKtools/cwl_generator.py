@@ -23,11 +23,12 @@ def cwlf_generator(item,cwlf):
 
       input_writer(args,inputs)
       output_writer(args,outputs)
-      comLine = commandline_writer(args,comLine)
+#      comLine = commandline_writer(args,comLine)
 
 
     cwlf["inputs"] = inputs
     cwlf["outputs"] = outputs
     cwlf["arguments"] = [{"shellQuote": False,    
-                          "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar  " +  comLine}] 
-
+                          "valueFrom" : "java -jar /gatk/GenomeAnalysisTK.jar  "}]
+#                          "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar  " +  comLine}] 
+#    print(comLine)
