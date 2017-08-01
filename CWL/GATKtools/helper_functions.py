@@ -118,7 +118,7 @@ def input_writer(argument, inputs):
 
     type_writer(argument, cwl_desc)
     if argument['defaultValue'] != "NA":
-        default_helper(inpt, args)
+        default_helper(inputs, argument)
 
     secondaryfiles_writer(argument, cwl_desc, inputs)
 
