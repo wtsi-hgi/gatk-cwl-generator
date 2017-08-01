@@ -9,45 +9,6 @@ import os
 from helper_functions import *
 from cwl_generator import cwl_generator
 
-<<<<<<< HEAD
-
-javascript_expr = """
-function commandLine_Handler(prefix, required, defval, item){
-    if (required == 'yes'){
-
-        if (item != null){
-            return "".concat(prefix,' ',item);
-        } else {
-            if ( defval != "NA" ) {
-               return "".concat(prefix,' ', item);
-            } else {
-                throw new UserException('Required Input');
-            }
-        }
-    } else {
-        
-        if ( item != null ) {
-            return "".concat(prefix,' ',item);
-        }  else {
-            if ( defval != "NA" ) {
-                return "".concat(prefix,' ',defval);
-            } else {
-                return "";
-            }
-        }        
-    }    
- 
-}
-
-function assertIsSubset(superset, subset){
-    if(!subset.every(element => superset.includes(element))){
-        throw new UserException(subset + " is not a subset of " + superset)
-    }
-}
-"""
-
-=======
->>>>>>> 83faaa805692b2f9d8c451d63993103df2928bd3
 def make_cwl(json_dir, cwl_dir, json_file_path):
     json_file = json.load(open(os.path.join(json_dir, json_file_path), 'r'))
     commandlineGATK = json.load(open(os.path.join(json_dir, 'CommandLineGATK.json'), 'r'))
