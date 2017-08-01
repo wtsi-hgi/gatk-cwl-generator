@@ -58,7 +58,7 @@ input_file: #must be BAM or CRAM
    path: ../cwl-example-data/chr22_cwl_test.cram
 out: out.gvcf.gz"""
 
-base_dir = os.path.dirname(os.path.dirname(__file__))
+base_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 os.chdir(base_dir) # Need to be in the base directory for the cwl-runner to pick up the correct files
 
 """
