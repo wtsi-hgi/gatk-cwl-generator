@@ -72,6 +72,13 @@ def convt_type(args,typ):
 
 
 
+
+
+
+
+
+#############################WORKIING ON THIS  ############################# 
+
 def type_writer(args,inpt):
   typ = args['type'].lower()             
   if args['name'] == '--input_file':
@@ -89,17 +96,19 @@ def type_writer(args,inpt):
 
 
 def input_writer(args,inputs):
+#  print ('seraihtsio')
   inpt = {'doc':args['summary'],'id':args['name'].strip('-'),'inputBinding':{'prefix':args['name'][1:]}}
   type_writer(args,inpt) #CWL type of the input
-  if args['defaultValue'] != "NA": #if it has a default value
-    # TODO
-    #default_helper(inpt,args)
+  #if args['defaultValue'] != "NA": #if it has a default value
+  print(args['name'],args['defaultValue'])
+  default_helper(inpt,args)
     #inpt['default'] = args['defaultValue']
   secondaryfiles_writer(args,inpt,inputs)
 
 # DON'T TOUCH
 
 def typcash(args,typ,defVal):
+   print('in typcahs')
    if typ  == 'int':
      return int(defVal)
    elif typ == 'boolean':
@@ -114,7 +123,7 @@ def typcash(args,typ,defVal):
      return []
    #remaining types are File, enum, dictionary of enum
    else:
-     print('name: ',args['name'],'type to convert to : ',typ,'default value: ',args['defaultValue'])
+     print('#####################name: ',args['name'],'type to convert to : ',typ,'default value: ',args['defaultValue'])
   # else:
   #   try:
   #     if typ['type'] == 'enum':
@@ -131,8 +140,10 @@ def default_helper(inpt, args):
   if not isinstance(typ,list): #if the type is not a list = 'string','bool'
     typ = typ.encode() #convert to string from unicode
   else: # if it is a list ['null', type]
-#       if not isinstance (typ[1],dict):   
     typ = typ[1]  #not null, could be a type or a dictionary again
+  print(typ)
+  inpt['default'] = typcash(args,typ,defVal)
+  
 #       else:
 #         typ = typ[1]['type']
 #   except:
@@ -154,13 +165,9 @@ def default_helper(inpt, args):
        #print(l)
 #       inpt['default'] = l
 #   else:
-  inpt['default'] = typcash(args,typ,defVal)
+  
 
-
-
-
-
-
+#############################WORKIING ON THIS  ############################# 
 
 
 
@@ -196,7 +203,7 @@ def output_writer(args,outputs):
 #def commandline_writer(args,comLine):
 #  comLine += "$(commandLine_Handler('{}','{}','{}','{}'))".format(args['name'][1:],args['required'],args['defaultValue'],'inputs.'+args['name'].strip('-'))
 #  return comLine
-
+"""
 def input_writer(args, inputs):
     inpt = {'doc': args['summary'], 'id': args['name'][2:]}
     type_writer(args, inpt)
@@ -248,3 +255,5 @@ def commandline_writer(args, comLine):
             comLine += "$(WDLCommandPart('" + p + \
                 "  NonNull(inputs." + argument + ")', ' ')) "
     return comLine
+
+"""
