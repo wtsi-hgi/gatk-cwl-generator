@@ -89,13 +89,19 @@ def type_writer(argument, cwl_desc):
     if 'intervalbinding' in argument["type"].lower():  
         cwl_desc['type'] = ['string[]?', 'File']
     else:
-        inner_type = GATK_to_CWL_type(argument, argument['type'].lower())
+        type_ = GATK_to_CWL_type(argument, argument['type'].lower())
         if 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
-            inner_type += '[]'
+            if isinstance(type_, str):
+                type_ += '[]'
+            else:
+                type_ = {
+                    "type": "array",
+                    "items": type_
+                }
 
         if argument['required'] == 'no':
-            inner_type = ['null', inner_type]
-        cwl_desc['type'] = inner_type
+            type_ = ['null', type_]
+        cwl_desc['type'] = type_
 
 
 """
