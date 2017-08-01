@@ -24,56 +24,48 @@ def need_def(arg):
 Gets the correct CWL type for an argument, given an argument's GATK type 
 
 :param argument: The cwl argument, as specified in the json file
-:param cwl_desc: The inputs object, to be written to with the correct information
+:param type: The GATK type given
 """
-def GATK_to_CWL_type(argument, typ):
-  if 'list[' in typ or 'set[' in typ:
-    typ = typ[typ.index('[')+1:-1]
-  elif '[]' in typ:
-    typ = typ.strip('[]')
+def GATK_to_CWL_type(argument, type_):
+  # Remove list[...], set[...] or ...[] to get the inner type
+  if 'list[' in type_ or 'set[' in type_:
+    inner_type = type_[type_.index('[')+1:-1]
+  elif '[]' in type_:
+    inner_type = type_.strip('[]')
 
-  
-  if typ in ('long','double','int','string','float','boolean','bool'):
-    return typ
-  elif typ == 'file': 
+  if inner_type in ('long', 'double', 'int', 'string', 'float', 'boolean', 'bool'):
+    return inner_type
+  elif inner_type == 'file': 
     return 'File'
-  elif typ in ('byte','integer'):
+  elif inner_type in ('byte', 'integer'):
     return 'int'
-  elif typ == 'set': #ig. -goodSM: name of sample(s) to keep
+  elif inner_type == 'set': #ig. -goodSM: name of sample(s) to keep
     return 'string[]'
-  elif argument['options']: #check for enumerated types
-    return {'type': 'enum','symbols':[x['name'] for x in argument['options']]}
-
-  #output collecters / filewriters
-  elif any (x in typ for x in ('rodbinding','printstream','writer')):
-    return 'string'
- 
-#############################################################################################################################################################################################
-  elif typ == 'validationtype':
-  #https://software.broadinstitute.org/gatk/gatkdocs/3.6-0/org_broadinstitute_gatk_tools_walkers_variantutils_ValidateVariants.php
-    return 'string' 
- 
-  elif typ == 'contaminationruntype':
-  #https://software.broadinstitute.org/gatk/gatkdocs/3.7-0/org_broadinstitute_gatk_tools_walkers_cancer_contamination_ContEst.php#--lane_level_contamination
-   return {'type':'enum','symbols':['META','SAMPLE','READGROUP']} #default is set to 'META'
-  #  return 'string'
-  elif typ == 'type':
+  elif argument['options']: # Check for enumerated types, and if they exist, ignore the specified type name
+    return {
+      'type': 'enum',
+      'symbols': [x['name'] for x in argument['options']]
+    }
+  # Include enum types which are not included in the documentation
+  elif inner_type == 'validationtype':
+    # Example: https://software.broadinstitute.org/gatk/gatkdocs/3.6-0/org_broadinstitute_gatk_tools_walkers_variantutils_ValidateVariants.php
+    return {'type': 'enum', 'symbols': ["ALL", "REF", "IDS", "ALLELES", "CHR_COUNTS"]}
+  elif inner_type == 'contaminationruntype':
+    # Example: https://software.broadinstitute.org/gatk/gatkdocs/3.7-0/org_broadinstitute_gatk_tools_walkers_cancer_contamination_ContEst.php#--lane_level_contamination
+    return {'type': 'enum', 'symbols': ['META','SAMPLE','READGROUP']} #default is set to 'META'
+  elif inner_type == 'type':
     return 'string'
   # any combination of those below enumerated types
   #  return {'type':'enum','symbols':['INDEL', 'SNP', 'MIXED', 'MNP', 'SYMBOLIC', 'NO_VARIATION']}
-  elif typ == 'partition':
-  #https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php#--partitionType
+  elif inner_type == 'partitionType':
+    # Example: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php#--partitionType
     return 'string' #any combination of sample, readgroup and/or library (enum with combinations ?)
- 
-
-
-  elif 'intervalbinding' in typ:
-    argument['type'] = typ
+  elif 'intervalbinding' in inner_type:
+    argument['type'] = inner_type
     return ['null','string','string[]','File']
   else:
-     print 'unsupported type:',typ
-#    raise ValueError('unsupported type: {}'.format(typ))
-##############################################################################################################################################################################################
+     raise ValueError('unsupported type: {}'.format(typ))
+####
 
 
 """
@@ -91,14 +83,16 @@ def type_writer(argument, cwl_desc):
     cwl_desc['type'] = ['string[]?', 'File']
   else:
     arg_type = GATK_to_CWL_type(argument, argument['type'].lower())
+
     if 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
-     arg_type += '[]'
+      arg_type += '[]'
+
     if argument['required'] == 'no':
-      arg_type = ['null',arg_type]
+      arg_type = ['null', arg_type]
     cwl_desc['type'] = arg_type
 
 """
-Adds to the inputs parameter the cwl syntax for expressing a given argument
+Modifies the `inputs` parameter with the cwl syntax for expressing a given input argument
 
 :param argument: The cwl argument, as specified in the json file
 :param inputs: The inputs object, to be written to with the correct information
@@ -120,6 +114,12 @@ def input_writer(argument, inputs):
     pass
 
   secondaryfiles_writer(argument,cwl_desc,inputs)
+
+def argument_writer(argument, inputs, outputs):
+  if is_output_argument(argument):
+    output_writer(argument, outputs)
+  else:
+    input_writer(argument, inputs)
 
 # DON'T TOUCH
 
@@ -211,11 +211,28 @@ def secondaryfiles_writer (args,inpt,inputs):
   else:
     inputs.append(inpt)
 
+"""
+Returns whether this argument's type indicates it's an output argument
+"""
+def is_output_argument(argument):
+  return any (x in argument["type"].lower() for x in ('rodbinding', 'printstream', 'writer'))
 
-def output_writer(args,outputs):
-  if 'writer' in args['type'].lower():
-    outpt = {'id': args['name'], 'type': ['null','File'], 'outputBinding':{'glob':'$(inputs.'+args['name'].strip('-')+')'}}
-    outputs.append(outpt)
+"""
+Modifies the `outputs` parameter with the cwl syntax for expressing a given output argument
+
+:param argument Object: The cwl argument, as specified in the json file
+:param outputs Object: The outputs object, to be written to with the correct information
+"""
+def output_writer(argument, outputs):
+  outpt = {
+    'id': argument['name'],
+    'type': ['null', 'File'], # TODO: check null
+    'outputBinding': {
+      'glob': '$(inputs.' + argument['name'].strip('-') + ')'
+    }
+  }
+
+  outputs.append(outpt)
 
 #def commandline_writer(args,comLine):
 #  comLine += "$(commandLine_Handler('{}','{}','{}','{}'))".format(args['name'][1:],args['required'],args['defaultValue'],'inputs.'+args['name'].strip('-'))
@@ -236,7 +253,7 @@ def secondaryfiles_writer(args, inpt, inputs):
         inputs.insert(0, inpt)
     else:
         inputs.append(inpt)
-
+         
 
 def output_writer(args, outputs):
     if 'writer' in args['type'].lower():

@@ -24,8 +24,7 @@ def cwl_generator(json, cwl):
         if argument['name'] in invalid_args:
             continue
 
-        input_writer(argument, inputs)
-        output_writer(argument, outputs)
+        argument_writer(argument, inputs, outputs)
         # com_line = commandline_writer(argument, com_line)
 
     cwl["inputs"] = inputs
