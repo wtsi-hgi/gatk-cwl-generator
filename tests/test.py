@@ -3,42 +3,32 @@ from __future__ import print_function
 import subprocess
 import os
 from os import path
-import sys
-import json
+import unittest
 
 # Assertions
 
-def assert_equals(a, b, message=""):
-    if a != b:
-        raise AssertionError("{}{} != {}".format(message, a, b))
-
-
-def assert_gt(a, b, message=""):
-    if a <= b:
-        raise AssertionError("{}{} <= {}".format(message, a, b))
-
 def assert_contains(a, b, message=""):
-    if a in b:
-        raise AssertionError("{}{} in {}".format(message, a, b))
+    if not b in a:
+        raise AssertionError("{}The text \"{}\" does not appear in:\n{}".format(message, b, a))
 
 """
-Runs the specified command and reports it as an AssertionError if it fails
+Runs the specified command and reports it as an AssertionError if it fails (can override this with
+expect_failure)
 """
-def run_command(command, fail_message=None):
+def run_command(command, fail_message=None, expect_failure=False):
     process = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
     exitcode = process.returncode
 
-    if exitcode != 0:
-        print("{}\"{}\" fails with exit code {}\nstdout:\n{}\nstderr:\n{}".format(
+    if exitcode != 0 and not expect_failure:
+
+        raise AssertionError("{}\"{}\" fails with exit code {}\nstdout:\n{}\nstderr:\n{}".format(
             "" if fail_message is None else fail_message + ": ",
             command,
             exitcode,
             stdout,
             stderr
-        ), file=sys.stderr)
-
-        raise AssertionError("Command failed")
+        ))
 
     return CommandOutput(stdout, stderr, exitcode)
 
@@ -74,7 +64,7 @@ os.chdir(base_dir) # Need to be in the base directory for the cwl-runner to pick
 """
 Runs the haplotype_caller tool with the specified data
 """
-def run_haplotype_caller(extra_info="", interval=1, filetext=None):
+def run_haplotype_caller(extra_info="", interval=1, filetext=None, expect_failure=False):
     if filetext is None:
         extra_info += "\nintervals: [chr22:10591400-{}]".format(10591400 + interval)
         filetext = ht_caller_base_text + "\n" + extra_info
@@ -83,49 +73,61 @@ def run_haplotype_caller(extra_info="", interval=1, filetext=None):
     f.write(filetext)
     f.close()
 
-    return run_command("cwl-runner cwlscripts/cwlfiles/HaplotypeCaller.cwl tests/test_haplotypecaller_input.yml")
+    return run_command("cwl-runner cwlscripts/cwlfiles/HaplotypeCaller.cwl tests/test_haplotypecaller_input.yml", expect_failure=expect_failure)
 
-normal_run = run_haplotype_caller()
+class TestGeneratedCWLFiles(unittest.TestCase):
+    base_cwl_path = path.join(base_dir, "cwlscripts/cwlfiles")
 
-def test_cwl_file(cwl_file):
-    is_valid_cwl_file(cwl_file)
+    def is_cwlfile_valid(self, cwl_file):
+        run_command("cwl-runner --validate " + path.join(self.base_cwl_path, cwl_file))
 
-def is_valid_cwl_file(cwl_file):
-    run_command("cwl-runner --validate " + cwl_file)
+    def test_are_cwl_files_valid(self):
+        exceptions = []
+        for cwl_file in ["CommandLineGATK.cwl"]:
+            try:
+                run_command("cwl-runner --validate " + path.join(self.base_cwl_path, cwl_file))
+            except AssertionError as e:
+                exceptions.append(e)
 
-def test_haplotype_caller():
-    run_command("cwl-runner cwlscripts/cwlfiles/HaplotypeCaller.cwl HaplotypeCaller_inputs.yml")
+        if not exceptions:
+            raise AssertionError("Not all cwl files are valid:/n" + "/n/n".join(exceptions))
 
-def test_booleans_handled_correctly():
-    debug_stderr = run_haplotype_caller("debug: True").stderr
+    def test_haplotype_caller(self):
+        run_command("cwl-runner cwlscripts/cwlfiles/HaplotypeCaller.cwl HaplotypeCaller_inputs.yml")
 
-    assert_gt(len(debug_stderr), len(normal_run.stderr), "Debug mode does not increase the size of stdout: ")
+    # Test if the haplotype caller accepts all the correct types
 
-def test_integers():
-    assert_contains(run_haplotype_caller("num_threads: 42").stderr, "42 data thread")
+    def test_boolean_type(self):
+        assert_contains(run_haplotype_caller("monitorThreadEfficiency: True").stderr, "ThreadEfficiencyMonitor")
 
-def test_string():
-    pass
+    def test_integers_type(self):
+        assert_contains(run_haplotype_caller("num_threads: 42", expect_failure=True).stderr, "42 data thread")
 
-def test_file():
-    pass
+    def test_string_type(self):
+        assert_contains(run_haplotype_caller("sample_name: invalid_sample_name", expect_failure=True).stderr,
+            "Specified name does not exist in input bam files")
 
-def test_enum_type():
-    assert_contains(run_haplotype_caller("validation_strictness: LENIENT").stderr, "Strictness is LENIENT")
+    def test_file_type(self):
+        assert_contains(run_haplotype_caller("BQSR: /data/chr22_cwl_test.fa", expect_failure=True).stderr, 
+            "Bad input: The GATK report has an unknown/unsupported version in the header")
 
-def test_list_type():
-    run_with_larger_intervals = run_haplotype_caller(filetext=ht_caller_base_text+"\nintervals: [chr22:10591400-10591500, chr22:10591500-10591645]")
+    def test_enum_type(self):
+        assert_contains(run_haplotype_caller("validation_strictness: LENIENT").stderr, "Strictness is LENIENT")
 
-    assert_contains(run_with_larger_intervals.stderr, "Processing 246 bp from intervals")
+    def test_list_type(self):
+        run_with_larger_intervals = run_haplotype_caller(filetext=ht_caller_base_text +
+            "\nintervals: [chr22:10591400-10591500, chr22:10591500-10591645]")
 
-def test_default_used():
-    pass
+        assert_contains(run_with_larger_intervals.stderr, "Processing 246 bp from intervals")
+
+    def test_default_used(self):
+        assert_contains(run_haplotype_caller().stderr, "-indelHeterozygosity 1.25E-4")
 
 """
 The entry point for testing
 """
 def test():
-    test_integers()
+    unittest.main()
 
 if __name__ == "__main__":
     test()
