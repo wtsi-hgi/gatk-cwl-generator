@@ -121,7 +121,6 @@ def argument_writer(argument, inputs, outputs):
   else:
     input_writer(argument, inputs)
 
-# DON'T TOUCH
 
 def typcash(args,typ,defVal):
    if typ  == 'int':
@@ -130,76 +129,37 @@ def typcash(args,typ,defVal):
      return bool(defVal)
    elif typ == 'string':
      return defVal
+   elif typ == 'enum':
+     return defVal
    elif typ == 'long':
      return  long(defVal)
    elif typ == 'double':
      return float(defVal)
-   elif defVal == '[]':
+   elif defVal == '[]' :
      return []
-   #remaining types are File, enum, dictionary of enum
-   else:
-     print('name: ',args['name'],'type to convert to : ',typ,'default value: ',args['defaultValue'])
-  # else:
-  #   try:
-  #     if typ['type'] == 'enum':
-  #       return defVal
-  #   except:
-  #     print('unrecognized type error',typ,defVal)
-
+   else: 
+     raise Exception('failed to cash type {}'.format(typ))
 
 def default_helper(inpt, args):
-  typ = inpt['type'] #CWL type that has been inserted
-  defVal = args['defaultValue'].encode() #default Value in string
-
- # try:
-  if not isinstance(typ,list): #if the type is not a list = 'string','bool'
-    typ = typ.encode() #convert to string from unicode
-  else: # if it is a list ['null', type]
-#       if not isinstance (typ[1],dict):   
-    typ = typ[1]  #not null, could be a type or a dictionary again
-#       else:
-#         typ = typ[1]['type']
-#   except:
-#     print('the type of the input is:',inpt['type'],args['defaultValue'])
-
-  # print(typ,defVal)
-   #try:
-   #  to =  inpt['type'][1].encode()
-   #except:
-   #  to = inpt['type'].encode()
-   #inpt['default'] = to(args['defaultValue'].encode())
-
-#   if '[]' in typ and typ != '[]':
-     #print(inpt['id'],inpt['type'])
-#     typ = typ.strip('[]')
-#     l = []
-#     for elm in args['defaultValue']:
-#       l.append(typcash(args,typ,elm))
-       #print(l)
-#       inpt['default'] = l
-#   else:
-  inpt['default'] = typcash(args,typ,defVal)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  typ = inpt['type'] 
+  defVal = args['defaultValue'].encode() 
+  try:
+   if isinstance(typ,list):
+     typ = typ[1] 
+   if isinstance(typ,dict):
+     typ = typ['type'] 
+  except: 
+   raise Exception('Unverified type {}'.format(typ)) 
+  
+  if '[]' in typ and typ != '[]':
+    typ = typ.strip('[]')
+    if defVal == '[]':
+      inpt['default'] = []
+    else: 
+      inpt['default'] = [typcash(args,typ,val) for val in defVal[1:-1].replace(' ','').split(',')]
+  else:
+    inpt['default'] = typcash(args,typ,defVal)
+  
 
 def secondaryfiles_writer (args,inpt,inputs):
   if args['name'] == '--reference_sequence':
@@ -233,59 +193,3 @@ def output_writer(argument, outputs):
   }
 
   outputs.append(outpt)
-
-#def commandline_writer(args,comLine):
-#  comLine += "$(commandLine_Handler('{}','{}','{}','{}'))".format(args['name'][1:],args['required'],args['defaultValue'],'inputs.'+args['name'].strip('-'))
-#  return comLine
-
-def input_writer(args, inputs):
-    inpt = {'doc': args['summary'], 'id': args['name'][2:]}
-    type_writer(args, inpt)
-    secondaryfiles_writer(args, inpt, inputs)
-
-
-def secondaryfiles_writer(args, inpt, inputs):
-    if args['name'] == '--reference_sequence':
-        inpt['secondaryFiles'] = ['.fai', '^.dict']
-        inputs.insert(0, inpt)
-    elif 'requires' in args['fulltext'] and 'files' in args['fulltext']:
-        inpt['secondaryFiles'] = "$(self.location+'.'+self.basename.split('.').splice(-1)[0].replace('m','i'))"
-        inputs.insert(0, inpt)
-    else:
-        inputs.append(inpt)
-         
-
-def output_writer(args, outputs):
-    if 'writer' in args['type'].lower():
-        outpt = {'id': args['name'], 'type': ['null', 'File'], 'outputBinding': {
-            'glob': '$(inputs.' + args['name'][2:] + ')'}}
-        outputs.append(outpt)
-
-
-def commandline_writer(args, comLine):
-    p = args['synonyms']
-    argument = args['name'].strip('-')
-    default = args['defaultValue']
-    if 'file' in args['type'].lower():
-        argument += '.path'
-    if args['name'] in ('--reference_sequence', '--input_file'):
-        comLine += p + \
-            " $(WDLCommandPart('NonNull(inputs." + argument + ")', '')) "
-    elif args['required'] == 'yes':
-        comLine += p + " $(inputs." + argument + ")"
-    elif need_def(args):
-        comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + \
-            args['name'].strip("-") + ")', " + \
-            str(args['defaultValue']) + "))) "
-    else:
-        if args['defaultValue'] != "NA" and args['defaultValue'] != "none":
-            comLine += args['synonyms'] + \
-                " $(WDLCommandPart('NonNull(inputs." + argument + \
-                ")', '" + args['defaultValue'] + "')) "
-        elif args['synonyms'] == '-o':
-            comLine += "$(defHandler('" + p + "', WDLCommandPart('NonNull(inputs." + \
-                argument + ")', " + "'stdout'" + "))) "
-        else:
-            comLine += "$(WDLCommandPart('" + p + \
-                "  NonNull(inputs." + argument + ")', ' ')) "
-    return comLine

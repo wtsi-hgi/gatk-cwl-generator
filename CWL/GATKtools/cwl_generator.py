@@ -29,5 +29,3 @@ def cwl_generator(json, cwl):
 
     cwl["inputs"] = inputs
     cwl["outputs"] = outputs
-    cwl["arguments"] = [{"shellQuote": False,
-                         "valueFrom": "java -jar /gatk/GenomeAnalysisTK.jar"}] 
