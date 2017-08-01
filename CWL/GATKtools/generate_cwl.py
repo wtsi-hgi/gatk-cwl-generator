@@ -16,7 +16,7 @@ dev = True
 def get_json_links(version):
     if type(version) == "current":
        base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" % version
-   else:
+    else:
        base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" % version
     data = requests.get(base_url).text
     soup = BeautifulSoup(data, "html.parser")
