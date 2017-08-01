@@ -12,7 +12,7 @@ Arguments below are classified as invalid for following reasons:
      --help: conflicts with cwl-runner '--help'    #issue has been submitted
 
 :param json: The json file to convert
-:param cwl: A skelleton of the cwl file, which this function will complete.
+:param cwl: A skeleton of the cwl file, which this function will complete.
 """
 def cwl_generator(json, cwl):
     com_line = ""
