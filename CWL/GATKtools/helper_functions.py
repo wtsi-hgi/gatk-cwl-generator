@@ -20,8 +20,13 @@ def need_def(arg):
     return False
 
 
+"""
+Gets the correct CWL type for an argument, given an argument's GATK type 
 
-def convt_type(args,typ):
+:param argument: The cwl argument, as specified in the json file
+:param cwl_desc: The inputs object, to be written to with the correct information
+"""
+def GATK_to_CWL_type(argument, typ):
   if 'list[' in typ or 'set[' in typ:
     typ = typ[typ.index('[')+1:-1]
   elif '[]' in typ:
@@ -36,8 +41,8 @@ def convt_type(args,typ):
     return 'int'
   elif typ == 'set': #ig. -goodSM: name of sample(s) to keep
     return 'string[]'
-  elif args['options']: #check for enumerated types
-    return {'type': 'enum','symbols':[x['name'] for x in args['options']]}
+  elif argument['options']: #check for enumerated types
+    return {'type': 'enum','symbols':[x['name'] for x in argument['options']]}
 
   #output collecters / filewriters
   elif any (x in typ for x in ('rodbinding','printstream','writer')):
@@ -63,7 +68,7 @@ def convt_type(args,typ):
 
 
   elif 'intervalbinding' in typ:
-    args['type'] = typ
+    argument['type'] = typ
     return ['null','string','string[]','File']
   else:
      print 'unsupported type:',typ
@@ -71,31 +76,50 @@ def convt_type(args,typ):
 ##############################################################################################################################################################################################
 
 
+"""
+Fills the type in an incomplete cwl description, outputing to cwl_desc
 
-def type_writer(args,inpt):
-  typ = args['type'].lower()             
-  if args['name'] == '--input_file':
-    args['type'] = 'File'
-    inpt['type'] = 'File' 
-  if 'intervalbinding' in typ:
-    inpt['type'] = ['string[]?','File']
-  else: 
-    typ = convt_type(args,args['type'].lower())
-    if 'list' in args['type'].lower() or '[]' in args['type'].lower():
-     typ += '[]'
-    if args['required'] == 'no':
-      typ = ['null',typ]
-    inpt['type'] = typ
+:param argument: The cwl argument, as specified in the json file
+:param cwl_desc: The inputs object, to be written to with the correct information
+"""
+def type_writer(argument, cwl_desc):
+  # Patch the incorrect description given by GATK for both --input_file and the type intervalbinding
+  if argument['name'] == '--input_file':
+    argument['type'] = 'File'
+    cwl_desc['type'] = 'File'
+  if 'intervalbinding' in arg_type: # TODO: check this
+    cwl_desc['type'] = ['string[]?', 'File']
+  else:
+    arg_type = GATK_to_CWL_type(argument, argument['type'].lower())
+    if 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
+     arg_type += '[]'
+    if argument['required'] == 'no':
+      arg_type = ['null',arg_type]
+    cwl_desc['type'] = arg_type
 
+"""
+Adds to the inputs parameter the cwl syntax for expressing a given argument
 
-def input_writer(args,inputs):
-  inpt = {'doc':args['summary'],'id':args['name'].strip('-'),'inputBinding':{'prefix':args['name'][1:]}}
-  type_writer(args,inpt) #CWL type of the input
-  if args['defaultValue'] != "NA": #if it has a default value
+:param argument: The cwl argument, as specified in the json file
+:param inputs: The inputs object, to be written to with the correct information
+"""
+def input_writer(argument, inputs):
+  cwl_desc = {
+    'doc': argument['summary'],
+    'id': argument['name'].strip('-'),
+    'inputBinding': {
+      'prefix': argument['name'][1:]
+    }
+  }
+
+  type_writer(argument, cwl_desc) #CWL type of the input
+  if argument['defaultValue'] != "NA": #if it has a default value
     # TODO
     #default_helper(inpt,args)
     #inpt['default'] = args['defaultValue']
-  secondaryfiles_writer(args,inpt,inputs)
+    pass
+
+  secondaryfiles_writer(argument,cwl_desc,inputs)
 
 # DON'T TOUCH
 
