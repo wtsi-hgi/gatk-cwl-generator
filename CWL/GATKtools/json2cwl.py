@@ -28,15 +28,36 @@ def make_cwl(fromdir, todir, jsonfile):
          'class': 'CommandLineTool',
          'requirements':[{ "class": "ShellCommandRequirement"},
                          { "class": "InlineJavascriptRequirement",
-                           "expressionLib": [ "function WDLCommandPart(expr, def) {var rval; try { rval = eval(expr);} catch(err) {rval = def;} return rval;}",
-                                              "function NonNull(x) {if(x === null || x == 'NA') {throw new UserException('NullValue');} else {return x;}}",
-                                              """function defHandler (com, def) {if(Array.isArray(def) && def.length == 0) {return '';} 
-                                              else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');}
-                                              else if (def =='false') {return '';} else if (def == 'true') {return com;} 
-                                              if (def == []) {return '';} else {return com + ' ' + def;}}""",
-                                              """function secondaryfiles(f) { return typeof f; }"""]},
-                         { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
-  
+                           "expressionLib": ["""function commandLine_Handler(prefix, required, defval, item){
+    if (required == 'yes'){
+
+        if (item != null){
+            return "".concat(prefix,' ',item);
+        } else {
+            if ( defval != "NA" ) {
+               return "".concat(prefix,' ', item);
+            } else {
+                throw new UserException('Required Input');
+            }
+        }
+    } else {
+        
+        if ( item != null ) {
+            return "".concat(prefix,' ',item);
+        }  else {
+            if ( defval != "NA" ) {
+                return "".concat(prefix,' ',defval);
+            } else {
+                return "";
+            }
+        }        
+    }    
+      
+}"""] },
+                   { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
+
+
+
   #create and write file
   os.chdir(todir)
   fname = jsonf['name']+'.cwl'
