@@ -17,7 +17,7 @@ results = parser.parse_args()
 
 
 def prepare_json_links(version):
-    if type(version) == "current":
+    if version == "current":
        url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" %(version)
     else:
        url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" %(version)
