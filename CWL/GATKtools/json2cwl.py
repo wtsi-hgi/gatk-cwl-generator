@@ -10,6 +10,35 @@ from helper_functions import *
 from cwl_generator import cwl_generator
 
 
+javascript_expr = """
+function commandLine_Handler(prefix, required, defval, item){
+    if (required == 'yes'){
+
+        if (item != null){
+            return "".concat(prefix,' ',item);
+        } else {
+            if ( defval != "NA" ) {
+               return "".concat(prefix,' ', item);
+            } else {
+                throw new UserException('Required Input');
+            }
+        }
+    } else {
+        
+        if ( item != null ) {
+            return "".concat(prefix,' ',item);
+        }  else {
+            if ( defval != "NA" ) {
+                return "".concat(prefix,' ',defval);
+            } else {
+                return "";
+            }
+        }        
+    }    
+      
+}
+"""
+
 def make_cwl(json_dir, cwl_dir, json_file_path):
     json_file = json.load(open(os.path.join(json_dir, json_file_path), 'r'))
     commandlineGATK = json.load(open(os.path.join(json_dir, 'CommandLineGATK.json'), 'r'))
@@ -22,13 +51,7 @@ def make_cwl(json_dir, cwl_dir, json_file_path):
            'class': 'CommandLineTool',
            'requirements': [{"class": "ShellCommandRequirement"},
                             {"class": "InlineJavascriptRequirement",
-                             "expressionLib": ["function WDLCommandPart(expr, def) {var rval; try { rval = eval(expr);} catch(err) {rval = def;} return rval;}",
-                                               "function NonNull(x) {if(x === null || x == 'NA') {throw new UserException('NullValue');} else {return x;}}",
-                                               """function defHandler (com, def) {if(Array.isArray(def) && def.length == 0) {return '';} 
-                                              else if(Array.isArray(def) && def.length !=0 ) {return def.map(element => com+ ' ' + element).join(' ');}
-                                              else if (def =='false') {return '';} else if (def == 'true') {return com;} 
-                                              if (def == []) {return '';} else {return com + ' ' + def;}}""",
-                                               """function secondaryfiles(f) { return typeof f; }"""]},
+                             "expressionLib": [javascript_expr]},
                             {"dockerPull": "gatk:latest", "class": "DockerRequirement"}]}
 
     # Create and write the cwl file

@@ -1,20 +1,27 @@
 #!/bin/python
 
-import os
-import sys
-import shutil
 import requests
+import os
+import json
+import sys
 from bs4 import BeautifulSoup
+import pprint
+import argparse
+import shutil
 
 import json2cwl
 
 dev = True
 
 def get_json_links(version):
-    base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" % version
+    if type(version) == "current":
+       base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" % version
+    else:
+       base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" % version
     data = requests.get(base_url).text
     soup = BeautifulSoup(data, "html.parser")
     tool_urls = []
+    print('getting files from: ', base_url)    
 
     # Parse the html to obtain all json file links
     for link in soup.select("tr > td > a"):
@@ -28,10 +35,13 @@ def get_json_links(version):
     # Move CommandLine to the front of the list
     i = tool_urls.index("org_broadinstitute_gatk_engine_CommandLineGATK.php.json")
     tool_urls[0], tool_urls[i] = tool_urls[i], tool_urls[0]
+    # print(url_list)
     return [base_url, tool_urls]
 
 
 def generate_cwl_and_json_files(out_dir, tool_urls, base_url):
+    print("creating and converting json files...")
+    
     # Get current directory and make folders for files
     json_dir = os.path.join(out_dir, 'jsonfolder')
     cwl_dir = os.path.join(out_dir, 'cwlfiles')
@@ -67,16 +77,27 @@ def generate_cwl_and_json_files(out_dir, tool_urls, base_url):
 
 
 def main():
-    # If two arguments are not given, use default arguments of v3.5 and output directory of ./cwlscripts
-    if len(sys.argv) == 1:
-        version = '3.5'
-        out_dir = os.getcwd() + '/cwlscripts'
+    #default version is 3.5-0
+    #default directory is current directory/cwlscripts
+
+    parser = argparse.ArgumentParser(description = 'take in GATK documentation version and specify output directory')
+    parser.add_argument('-v', action='store', dest='gatkversion')
+    parser.add_argument('-out', action='store', dest='outputdir')
+    results = parser.parse_args()
+        
+    if results.gatkversion:
+      version = results.gatkversion
     else:
-        version = sys.argv[1]
-        out_dir = sys.argv[2]
+      version = '3.5'
     
-    [base_url, tool_urls] = get_json_links(version)
-    generate_cwl_and_json_files(out_dir, tool_urls, base_url)
+    if results.outputdir:
+      directory = results.outputdir
+    else:
+      directory = os.getcwd() + '/cwlscripts'
+
+    print("your chosen directory is: %s" % directory)
+    url_list = get_json_links(version)
+    generate_cwl_and_json_files(directory, url_list[1], url_list[0])
 
 
 if __name__ == '__main__':
