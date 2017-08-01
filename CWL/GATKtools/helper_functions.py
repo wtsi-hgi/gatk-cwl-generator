@@ -115,7 +115,7 @@ def input_writer(argument, inputs):
         'doc': argument['summary'],
         'id': argument['name'].strip('-'),
         'inputBinding': {
-            'prefix': argument['name'][1:]
+            'prefix': argument['name']
         }
     }
 
