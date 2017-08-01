@@ -35,7 +35,13 @@ function commandLine_Handler(prefix, required, defval, item){
             }
         }        
     }    
-      
+ 
+}
+
+function assertIsSubset(superset, subset){
+    if(!subset.every(element => superset.includes(element))){
+        throw new UserException(subset + " is not a subset of " + superset)
+    }
 }
 """
 
