@@ -42,6 +42,7 @@ def convt_type(args,typ):
   elif typ == 'validationtype':
   #https://software.broadinstitute.org/gatk/gatkdocs/3.6-0/org_broadinstitute_gatk_tools_walkers_variantutils_ValidateVariants.php
     return 'string' 
+ 
   elif typ == 'contaminationruntype':
   #https://software.broadinstitute.org/gatk/gatkdocs/3.7-0/org_broadinstitute_gatk_tools_walkers_cancer_contamination_ContEst.php#--lane_level_contamination
    return {'type':'enum','symbols':['META','SAMPLE','READGROUP']} #default is set to 'META'
@@ -53,6 +54,9 @@ def convt_type(args,typ):
   elif typ == 'partition':
   #https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php#--partitionType
     return 'string' #any combination of sample, readgroup and/or library (enum with combinations ?)
+ 
+
+
   elif 'intervalbinding' in typ:
     args['type'] = typ
     return ['null','string','string[]','File']
@@ -65,32 +69,96 @@ def convt_type(args,typ):
 
 def type_writer(args,inpt):
   typ = args['type'].lower()             
-  ########################################
-  # can be automated as a string if the docker container can be mounted between the inputfile and the host machine
-  #########################################
-
   if args['name'] == '--input_file':
     args['type'] = 'File'
     inpt['type'] = 'File' 
-  #######################################
   if 'intervalbinding' in typ:
     inpt['type'] = ['string[]?','File']
   else: 
     typ = convt_type(args,args['type'].lower())
     if 'list' in args['type'].lower() or '[]' in args['type'].lower():
-
      typ += '[]'
     if args['required'] == 'no':
       typ = ['null',typ]
     inpt['type'] = typ
 
 
-
 def input_writer(args,inputs):
-  print(args['defaultValue'])
+#  print(args['defaultValue'])
   inpt = {'doc':args['summary'],'id':args['name'].strip('-')}
   type_writer(args,inpt)
+  if args['defaultValue'] != "NA":
+#    print(args['defaultValue'],inpt['type'])
+  
+    default_helper(inpt,args)
+    #inpt['default'] = args['defaultValue']
+  inpt['inputBinding'] = {'prefix':args['name'][1:]}
   secondaryfiles_writer(args,inpt,inputs)
+
+
+#possible types = []
+
+
+
+def typcash(args,typ,defVal):
+   if typ  == 'int':
+     return int(defVal)
+   elif typ == 'boolean':
+     return bool(defVal)
+   elif typ == 'string':
+     return defVal
+   elif typ == 'long':
+     return  long(defVal)
+   elif typ == 'double':
+     return float(defVal)
+   elif defVal == '[]':
+     return []
+   else:
+     try:
+       if typ['type'] == 'enum':
+         return defVal
+     except:
+       raise Exception ('unrecognized type error',typ,defVal)
+
+def default_helper(inpt, args):
+   typ = inpt['type']
+   try:
+     if not isinstance(typ,list):
+       typ = typ.encode()
+     else:    
+       typ = typ[1].encode() #not null
+   except:
+     raise Exception('invalid type',inpt['type'],inpt['id'])
+   defVal = args['defaultValue'].encode()
+   print(typ,defVal)
+   #try:
+   #  to =  inpt['type'][1].encode()
+   #except:
+   #  to = inpt['type'].encode()
+   #inpt['default'] = to(args['defaultValue'].encode())
+   if '[]' in typ and typ != '[]':
+     #print(inpt['id'],inpt['type'])
+     typ = typ.strip('[]')
+     l = []
+     for elm in args['defaultValue']:
+       l.append(typcash(args,typ,elm))
+       #print(l)
+       inpt['default'] = l
+   else:
+     inpt['default'] = typcash(args,typ,defVal)
+#     print('##############',defVal,inpt)
+#         raise Exception('unrecognized type')
+#  print('pass', type(inpt), inpt)
+#  value = "$(commandLine_Handler('{}','{}','{}','{}'))".format(args['name'][1:],args['required'],args['defaultValue'],'inputs.'+args['name'].strip('-'))
+#  value = "$(commandLine_Handler('{}','{}','{}',self))".format(args['name'][1:],args['required'],args['defaultValue'])
+#  inpt['inputBinding'] =  {'valueFrom': value}  
+#  commandline_writer(args,inpt)
+
+
+
+
+
+
 
 
 def secondaryfiles_writer (args,inpt,inputs):
@@ -109,27 +177,7 @@ def output_writer(args,outputs):
     outpt = {'id': args['name'], 'type': ['null','File'], 'outputBinding':{'glob':'$(inputs.'+args['name'].strip('-')+')'}}
     outputs.append(outpt)
 
-
-def commandline_writer(args,comLine):
-  p = args['synonyms']
-  argument = args['name'].strip('-')
-  default = args['defaultValue']
-  if any(x in args['type'].lower() for x in ('file','rodbinding','variantcontextwriter','gatksamfilewriter')): 
-#    print(argument)
-    argument += '.path'
-  if args['name'] in ('--reference_sequence','--input_file'):
-    comLine += p  + " $(WDLCommandPart('NonNull(inputs."+ argument + ")', '')) "
-  elif args['required'] == 'yes':
-    comLine += p + " $(inputs."+argument+")"
-  elif need_def(args):
-    comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + args['name'].strip("-") + ")', " + str(args['defaultValue'])  + "))) "  
-  else:
-      if args['defaultValue'] != "NA" and args['defaultValue'] != "none":
-         comLine += args['synonyms'] + " $(WDLCommandPart('NonNull(inputs." + argument  + ")', '" + args['defaultValue'] + "')) "
-      elif args['synonyms'] == '-o':
-         comLine += "$(defHandler('" + p + "', WDLCommandPart('NonNull(inputs." + argument + ")', "+"'stdout'"+"))) "
-      else:
-        comLine += "$(WDLCommandPart('" + p  + "  NonNull(inputs." + argument + ")', ' ')) " 
-  return comLine 
-
+#def commandline_writer(args,comLine):
+#  comLine += "$(commandLine_Handler('{}','{}','{}','{}'))".format(args['name'][1:],args['required'],args['defaultValue'],'inputs.'+args['name'].strip('-'))
+#  return comLine
 
