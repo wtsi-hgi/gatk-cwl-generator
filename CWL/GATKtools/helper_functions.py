@@ -108,11 +108,7 @@ def input_writer(argument, inputs):
 
   type_writer(argument, cwl_desc) #CWL type of the input
   if argument['defaultValue'] != "NA": #if it has a default value
-    # TODO
-    #default_helper(inpt,args)
-    #inpt['default'] = args['defaultValue']
-    pass
-
+    default_helper(inpt,args)
   secondaryfiles_writer(argument,cwl_desc,inputs)
 
 def argument_writer(argument, inputs, outputs):
