@@ -6,16 +6,25 @@ import json
 import sys
 from bs4 import BeautifulSoup
 import pprint
+import argparse
 
 import json2cwl
 
+parser = argparse.ArgumentParser(description = 'take in GATK documentation version and specify output directory')
+parser.add_argument('-v',action='store',dest='gatkversion')
+parser.add_argument('-out',action='store',dest='outputdir')
+results = parser.parse_args()
+
 
 def prepare_json_links(version):
-    
-    url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" %(version)
+    if type(version) == "current":
+       url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" %(version)
+    else:
+       url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" %(version)
     data = requests.get(url).text
     soup = BeautifulSoup(data, "html.parser")
     url_list = []
+    print('getting files from: ',url)    
 
     ##parse the html to obtain all json file links
     for sub in soup.find_all('tr'):
@@ -53,13 +62,13 @@ def convert_json_files(fromdir, url_list, url):
         r = requests.get(json_1)
         # r = requests.get(json_1).json()
         fname = r.json()['name'] + '.json'
-        print(fname)
+#        print(fname)
         f = open(fname, 'w+')
         # f.write(json.dumps(r, indent = 4, sort_keys = False))
         f.write(r.text)
         f.close()
         json2cwl.make_cwl(directory, todir, fname)
-        print("made cwl")
+#        print("made cwl")
 
     print("success!!!!!!!!")
 
@@ -67,11 +76,15 @@ def convert_json_files(fromdir, url_list, url):
 def main():
     #default version is 3.5-0
     #default directory is current directory/cwlscripts
-    try:
-      version = sys.argv[1]
-      directory = sys.argv[2]
-    except:
+    
+    if results.gatkversion:
+      version = results.gatkversion
+    else:
       version = '3.5'
+    
+    if results.outputdir:
+      directory = results.outputdir
+    else:
       directory = os.getcwd()+'/cwlscripts'
 
     print("your chosen directory is: %s" %(directory))
