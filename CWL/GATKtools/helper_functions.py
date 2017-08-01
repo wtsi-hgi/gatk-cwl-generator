@@ -29,17 +29,17 @@ Gets the correct CWL type for an argument, given an argument's GATK type
 def GATK_to_CWL_type(argument, type_):
   # Remove list[...], set[...] or ...[] to get the inner type
   if 'list[' in type_ or 'set[' in type_:
-    inner_type = type_[type_.index('[')+1:-1]
+    type_ = type_[type_.index('[')+1:-1]
   elif '[]' in type_:
-    inner_type = type_.strip('[]')
+    type_ = type_.strip('[]')
 
-  if inner_type in ('long', 'double', 'int', 'string', 'float', 'boolean', 'bool'):
-    return inner_type
-  elif inner_type == 'file': 
+  if type_ in ('long', 'double', 'int', 'string', 'float', 'boolean', 'bool'):
+    return type_
+  elif type_ == 'file': 
     return 'File'
-  elif inner_type in ('byte', 'integer'):
+  elif type_ in ('byte', 'integer'):
     return 'int'
-  elif inner_type == 'set': #ig. -goodSM: name of sample(s) to keep
+  elif type_ == 'set': #ig. -goodSM: name of sample(s) to keep
     return 'string[]'
   elif argument['options']: # Check for enumerated types, and if they exist, ignore the specified type name
     return {
@@ -47,24 +47,24 @@ def GATK_to_CWL_type(argument, type_):
       'symbols': [x['name'] for x in argument['options']]
     }
   # Include enum types which are not included in the documentation
-  elif inner_type == 'validationtype':
+  elif type_ == 'validationtype':
     # Example: https://software.broadinstitute.org/gatk/gatkdocs/3.6-0/org_broadinstitute_gatk_tools_walkers_variantutils_ValidateVariants.php
     return {'type': 'enum', 'symbols': ["ALL", "REF", "IDS", "ALLELES", "CHR_COUNTS"]}
-  elif inner_type == 'contaminationruntype':
+  elif type_ == 'contaminationruntype':
     # Example: https://software.broadinstitute.org/gatk/gatkdocs/3.7-0/org_broadinstitute_gatk_tools_walkers_cancer_contamination_ContEst.php#--lane_level_contamination
-    return {'type': 'enum', 'symbols': ['META','SAMPLE','READGROUP']} #default is set to 'META'
-  elif inner_type == 'type':
+    return {'type': 'enum', 'symbols': ['META', 'SAMPLE', 'READGROUP']} #default is set to 'META'
+  elif type_ == 'type':
     return 'string'
   # any combination of those below enumerated types
   #  return {'type':'enum','symbols':['INDEL', 'SNP', 'MIXED', 'MNP', 'SYMBOLIC', 'NO_VARIATION']}
-  elif inner_type == 'partitionType':
+  elif type_ == 'partitionType':
     # Example: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php#--partitionType
     return 'string' #any combination of sample, readgroup and/or library (enum with combinations ?)
-  elif 'intervalbinding' in inner_type:
-    argument['type'] = inner_type
-    return ['null','string','string[]','File']
+  elif 'intervalbinding' in type_:
+    argument['type'] = type_
+    return ['null', 'string', 'string[]', 'File']
   else:
-     raise ValueError('unsupported type: {}'.format(typ))
+     raise ValueError('unsupported type: {}'.format(type_))
 ####
 
 
@@ -79,17 +79,17 @@ def type_writer(argument, cwl_desc):
   if argument['name'] == '--input_file':
     argument['type'] = 'File'
     cwl_desc['type'] = 'File'
-  if 'intervalbinding' in arg_type: # TODO: check this
+  if 'intervalbinding' in argument["type"].lower(): # TODO: check this
     cwl_desc['type'] = ['string[]?', 'File']
   else:
-    arg_type = GATK_to_CWL_type(argument, argument['type'].lower())
+    inner_type = GATK_to_CWL_type(argument, argument['type'].lower())
 
     if 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
-      arg_type += '[]'
+      inner_type += '[]'
 
     if argument['required'] == 'no':
-      arg_type = ['null', arg_type]
-    cwl_desc['type'] = arg_type
+      inner_type = ['null', inner_type]
+    cwl_desc['type'] = inner_type
 
 """
 Modifies the `inputs` parameter with the cwl syntax for expressing a given input argument
