@@ -1,34 +1,17 @@
+#!/bin/python
+
 """
 The code converts json files to cwl files.
 """
 
-import requests
-import os
 import json
+import os
 from helper_functions import *
-from cwl_generator import cwlf_generator
+from cwl_generator import cwl_generator
 
-#import the json url manually (gatk 3.5-0 version)
-r = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/3.5-0/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json').json()
-d = requests.get('https://software.broadinstitute.org/gatk/documentation/tooldocs/3.5-0/org_broadinstitute_gatk_engine_CommandLineGATK.php.json').json()
 
-def make_cwl(fromdir, todir, jsonfile):
-  try:
-    r = json.load(open(os.path.join(fromdir, jsonfile),'r'))
-    d = json.load(open(os.path.join(fromdir, 'CommandLineGATK.json'),'r'))
-  except Exception as e:
-    print e.message
-    raise e
-  
-  jsonf = {'arguments':r['arguments']+d['arguments'],'name':r['name']}
-
-  cwl = {'id':jsonf['name'],
-         'cwlVersion':'v1.0', 
-         'baseCommand':[], 
-         'class': 'CommandLineTool',
-         'requirements':[{ "class": "ShellCommandRequirement"},
-                         { "class": "InlineJavascriptRequirement",
-                           "expressionLib": ["""function commandLine_Handler(prefix, required, defval, item){
+javascript_expr = """
+function commandLine_Handler(prefix, required, defval, item){
     if (required == 'yes'){
 
         if (item != null){
@@ -53,21 +36,27 @@ def make_cwl(fromdir, todir, jsonfile):
         }        
     }    
       
-}"""] },
-                   { "dockerPull": "gatk:latest","class": "DockerRequirement"}]}
+}
+"""
 
+def make_cwl(json_dir, cwl_dir, json_file_path):
+    json_file = json.load(open(os.path.join(json_dir, json_file_path), 'r'))
+    commandlineGATK = json.load(open(os.path.join(json_dir, 'CommandLineGATK.json'), 'r'))
 
+    json_with_cmdlineGATK = {'arguments': json_file['arguments'] + commandlineGATK['arguments'], 'name': json_file['name']}
 
-  #create and write file
-  os.chdir(todir)
-  fname = jsonf['name']+'.cwl'
-  f = open(fname, 'a')
-  cwlf_generator(jsonf,cwl)
-  f.write(json.dumps(cwl, indent = 4, sort_keys = False)) #write the file
-  f.close()
+    skelleton_cwl = {'id': json_with_cmdlineGATK['name'],
+           'cwlVersion': 'v1.0',
+           'baseCommand': [],
+           'class': 'CommandLineTool',
+           'requirements': [{"class": "ShellCommandRequirement"},
+                            {"class": "InlineJavascriptRequirement",
+                             "expressionLib": [javascript_expr]},
+                            {"dockerPull": "gatk:latest", "class": "DockerRequirement"}]}
 
-
-
-
-
-
+    # Create and write the cwl file
+    fname = json_with_cmdlineGATK['name'] + '.cwl'
+    f = open(os.path.join(cwl_dir, fname), 'a')
+    cwl_generator(json_with_cmdlineGATK, skelleton_cwl)
+    f.write(json.dumps(skelleton_cwl, indent=4, sort_keys=False))  # write the file
+    f.close()

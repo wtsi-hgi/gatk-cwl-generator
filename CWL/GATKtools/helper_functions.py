@@ -1,13 +1,18 @@
+#!/bin/python
+
 """
 Collection of helper functions for cwl_generator.py and json2cwl.py
 """
+
 
 def need_def(arg):
     if 'List' in arg['type']:
         if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
             arg['defaultValue'] = []
         else:
-            arg['defaultValue'] = [str(a) for a in arg['defaultValue'][1:-1].split(',')]
+            arg['defaultValue'] = [
+                str(a) for a in arg['defaultValue'][1:-1].split(',')]
+
     if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
         return False
     if ('boolean' in arg['type'] or 'List' in arg['type']) or 'false' in arg['defaultValue']:
@@ -92,7 +97,9 @@ def input_writer(args,inputs):
     #inpt['default'] = args['defaultValue']
   secondaryfiles_writer(args,inpt,inputs)
 
-def typcash(args,typ,defVal): #takes in a CWL type and returns default value in that type
+# DON'T TOUCH
+
+def typcash(args,typ,defVal):
    if typ  == 'int':
      return int(defVal)
    elif typ == 'boolean':
@@ -190,3 +197,54 @@ def output_writer(args,outputs):
 #  comLine += "$(commandLine_Handler('{}','{}','{}','{}'))".format(args['name'][1:],args['required'],args['defaultValue'],'inputs.'+args['name'].strip('-'))
 #  return comLine
 
+def input_writer(args, inputs):
+    inpt = {'doc': args['summary'], 'id': args['name'][2:]}
+    type_writer(args, inpt)
+    secondaryfiles_writer(args, inpt, inputs)
+
+
+def secondaryfiles_writer(args, inpt, inputs):
+    if args['name'] == '--reference_sequence':
+        inpt['secondaryFiles'] = ['.fai', '^.dict']
+        inputs.insert(0, inpt)
+    elif 'requires' in args['fulltext'] and 'files' in args['fulltext']:
+        inpt['secondaryFiles'] = "$(self.location+'.'+self.basename.split('.').splice(-1)[0].replace('m','i'))"
+        inputs.insert(0, inpt)
+    else:
+        inputs.append(inpt)
+
+
+def output_writer(args, outputs):
+    if 'writer' in args['type'].lower():
+        outpt = {'id': args['name'], 'type': ['null', 'File'], 'outputBinding': {
+            'glob': '$(inputs.' + args['name'][2:] + ')'}}
+        outputs.append(outpt)
+
+
+def commandline_writer(args, comLine):
+    p = args['synonyms']
+    argument = args['name'].strip('-')
+    default = args['defaultValue']
+    if 'file' in args['type'].lower():
+        argument += '.path'
+    if args['name'] in ('--reference_sequence', '--input_file'):
+        comLine += p + \
+            " $(WDLCommandPart('NonNull(inputs." + argument + ")', '')) "
+    elif args['required'] == 'yes':
+        comLine += p + " $(inputs." + argument + ")"
+    elif need_def(args):
+        comLine += "$(defHandler('" + args['synonyms'] + "', WDLCommandPart('NonNull(inputs." + \
+            args['name'].strip("-") + ")', " + \
+            str(args['defaultValue']) + "))) "
+    else:
+        if args['defaultValue'] != "NA" and args['defaultValue'] != "none":
+            comLine += args['synonyms'] + \
+                " $(WDLCommandPart('NonNull(inputs." + argument + \
+                ")', '" + args['defaultValue'] + "')) "
+        elif args['synonyms'] == '-o':
+            comLine += "$(defHandler('" + p + "', WDLCommandPart('NonNull(inputs." + \
+                argument + ")', " + "'stdout'" + "))) "
+        else:
+            comLine += "$(WDLCommandPart('" + p + \
+                "  NonNull(inputs." + argument + ")', ' ')) "
+    return comLine
