@@ -19,16 +19,25 @@ def need_def(arg):
         return True
     return False
 
-
-"""
-Gets the correct CWL type for an argument, given an argument's GATK type 
-
-:param argument: The cwl argument, as specified in the json file
-:param type: The GATK type given
-"""
-
+# You cannot get the enumeration information for an enumeration in a nested type, so they are hard coded here
+enum_types = {
+    # Example: https://software.broadinstitute.org/gatk/gatkdocs/3.6-0/org_broadinstitute_gatk_tools_walkers_variantutils_ValidateVariants.php
+    "validationtype": ["ALL", "REF", "IDS", "ALLELES", "CHR_COUNTS"],
+    # Example: https://software.broadinstitute.org/gatk/gatkdocs/3.7-0/org_broadinstitute_gatk_tools_walkers_cancer_contamination_ContEst.php#--lane_level_contamination
+    "contaminationruntype": ['META', 'SAMPLE', 'READGROUP'], # default is META
+    # Example: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php#--partitionType
+    "partition": ["readgroup", "sample", "library", "platform", "center",
+        "sample_by_platform", "sample_by_center", "sample_by_platform_by_center"],
+    "type": ['INDEL', 'SNP', 'MIXED', 'MNP', 'SYMBOLIC', 'NO_VARIATION']
+}
 
 def GATK_to_CWL_type(argument, type_):
+    """
+    Gets the correct CWL type for an argument, given an argument's GATK type 
+
+    :param argument: The cwl argument, as specified in the json file
+    :param type: The GATK type given
+    """
     # Remove list[...], set[...] or ...[] to get the inner type
     if 'list[' in type_ or 'set[' in type_:
         type_ = type_[type_.index('[') + 1:-1]
@@ -49,28 +58,17 @@ def GATK_to_CWL_type(argument, type_):
             'type': 'enum',
             'symbols': [x['name'] for x in argument['options']]
         }
-    # Include enum types which are not included in the documentation
-    elif type_ == 'validationtype':
-        # Example: https://software.broadinstitute.org/gatk/gatkdocs/3.6-0/org_broadinstitute_gatk_tools_walkers_variantutils_ValidateVariants.php
-        return {'type': 'enum', 'symbols': ["ALL", "REF", "IDS", "ALLELES", "CHR_COUNTS"]}
-    elif type_ == 'contaminationruntype':
-        # Example: https://software.broadinstitute.org/gatk/gatkdocs/3.7-0/org_broadinstitute_gatk_tools_walkers_cancer_contamination_ContEst.php#--lane_level_contamination
-        # default is set to 'META'
-        return {'type': 'enum', 'symbols': ['META', 'SAMPLE', 'READGROUP']}
-    elif type_ == 'type':
-        return 'string'
-    # any combination of those below enumerated types
-    #  return {'type':'enum','symbols':['INDEL', 'SNP', 'MIXED', 'MNP', 'SYMBOLIC', 'NO_VARIATION']}
-    elif type_ == 'partitionType':
-        # Example: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php#--partitionType
-        # any combination of sample, readgroup and/or library (enum with combinations ?)
-        return 'string'
+    elif type_ in enum_types.keys():
+        return {
+            "type": "enum",
+            "symbols": enum_types[type_]
+        }
     elif 'intervalbinding' in type_:
-        argument['type'] = type_
+        argument['type'] = type_ # TODO: look into this
         return ['null', 'string', 'string[]', 'File']
     else:
         raise ValueError('unsupported type: {}'.format(type_))
-####
+
 
 
 """
@@ -178,7 +176,7 @@ def default_helper(inpt, args):
 def secondaryfiles_writer(args, inpt, inputs):
     if args['name'] == '--reference_sequence':
         inpt['secondaryFiles'] = ['.fai', '^.dict']
-        inputs.insert(0, inpt)
+        inputs.insert(0, inpt) # ... trying to get around a bug in CWL ...
     elif 'requires' in args['fulltext'] and 'files' in args['fulltext']:
         inpt['secondaryFiles'] = "$(self.location+'.'+self.basename.split('.').splice(-1)[0].replace('m','i'))"
         inputs.insert(0, inpt)
