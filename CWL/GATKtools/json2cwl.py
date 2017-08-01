@@ -9,36 +9,6 @@ import os
 from helper_functions import *
 from cwl_generator import cwl_generator
 
-
-javascript_expr = """
-function commandLine_Handler(prefix, required, defval, item){
-    if (required == 'yes'){
-
-        if (item != null){
-            return "".concat(prefix,' ',item);
-        } else {
-            if ( defval != "NA" ) {
-               return "".concat(prefix,' ', item);
-            } else {
-                throw new UserException('Required Input');
-            }
-        }
-    } else {
-        
-        if ( item != null ) {
-            return "".concat(prefix,' ',item);
-        }  else {
-            if ( defval != "NA" ) {
-                return "".concat(prefix,' ',defval);
-            } else {
-                return "";
-            }
-        }        
-    }    
-      
-}
-"""
-
 def make_cwl(json_dir, cwl_dir, json_file_path):
     json_file = json.load(open(os.path.join(json_dir, json_file_path), 'r'))
     commandlineGATK = json.load(open(os.path.join(json_dir, 'CommandLineGATK.json'), 'r'))
@@ -47,11 +17,10 @@ def make_cwl(json_dir, cwl_dir, json_file_path):
 
     skelleton_cwl = {'id': json_with_cmdlineGATK['name'],
            'cwlVersion': 'v1.0',
-           'baseCommand': [],
+           'baseCommand': ['java','-jar','/gatk/GenomeAnalysisTK.jar'],
            'class': 'CommandLineTool',
            'requirements': [{"class": "ShellCommandRequirement"},
-                            {"class": "InlineJavascriptRequirement",
-                             "expressionLib": [javascript_expr]},
+                            {"class": "InlineJavascriptRequirement"},
                             {"dockerPull": "gatk:latest", "class": "DockerRequirement"}]}
 
     # Create and write the cwl file

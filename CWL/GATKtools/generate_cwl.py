@@ -14,14 +14,13 @@ import json2cwl
 dev = True
 
 def get_json_links(version):
-    if type(version) == "current":
+    if version == "current":
        base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" % version
     else:
        base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" % version
     data = requests.get(base_url).text
     soup = BeautifulSoup(data, "html.parser")
     tool_urls = []
-    print('getting files from: ', base_url)    
 
     # Parse the html to obtain all json file links
     for link in soup.select("tr > td > a"):
@@ -62,8 +61,12 @@ def generate_cwl_and_json_files(out_dir, tool_urls, base_url):
     for tool_url in tool_urls:
         full_tool_url = base_url + tool_url
         tool_json = requests.get(full_tool_url)
-        tool_name = tool_json.json()['name']
+        try:
+          tool_name = tool_json.json()['name']
+        except:
+          print(tool_json)
         json_name = tool_name + ".json"
+
 
         f = open(os.path.join(json_dir, json_name), 'w+')
         f.write(tool_json.text)
