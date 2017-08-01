@@ -6,6 +6,8 @@ This script will generate the JSON files from the GATK documentation (found at h
 
 Build the gatk-3.5 docker from https://github.com/wtsi-hgi/arvados-pipelines/tree/master/docker/gatk-3.5.
 ```
+git clone https://github.com/wtsi-hgi/arvados-pipelines
+cd arvados-pipelines/docker
 docker build gatk-3.5 -t gatk
 ```
 If you want to enter the container, enter the gatk container with: 
@@ -40,7 +42,7 @@ The script will create two folders inside the specified directory called `jsonfo
 
 ## HaplotypeCaller
 
-Follow the instructions to install cwltools and cwl-runner: https://github.com/common-workflow-language/cwltool
+Follow the instructions to install cwltools and cwl-runner: https://github.com/common-workflow-language/cwltool, and install the docker container as shown above.
 
 To test generated HaplotypeCaller CWL files, invoke ```cwl-runner``` and provide the tool wrapper and the input object on the command line.
 ```
