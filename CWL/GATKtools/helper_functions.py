@@ -98,7 +98,7 @@ def input_writer(args,inputs):
 
 #possible types = []
 
-
+# DON'T TOUCH
 
 def typcash(args,typ,defVal):
    if typ  == 'int':
