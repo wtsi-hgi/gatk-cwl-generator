@@ -84,23 +84,15 @@ def type_writer(args,inpt):
 
 
 def input_writer(args,inputs):
-#  print(args['defaultValue'])
-  inpt = {'doc':args['summary'],'id':args['name'].strip('-')}
-  type_writer(args,inpt)
-  if args['defaultValue'] != "NA":
-#    print(args['defaultValue'],inpt['type'])
-  
-    default_helper(inpt,args)
+  inpt = {'doc':args['summary'],'id':args['name'].strip('-'),'inputBinding':{'prefix':args['name'][1:]}}
+  type_writer(args,inpt) #CWL type of the input
+  if args['defaultValue'] != "NA": #if it has a default value
+    # TODO
+    #default_helper(inpt,args)
     #inpt['default'] = args['defaultValue']
-  inpt['inputBinding'] = {'prefix':args['name'][1:]}
   secondaryfiles_writer(args,inpt,inputs)
 
-
-#possible types = []
-
-
-
-def typcash(args,typ,defVal):
+def typcash(args,typ,defVal): #takes in a CWL type and returns default value in that type
    if typ  == 'int':
      return int(defVal)
    elif typ == 'boolean':
@@ -113,46 +105,63 @@ def typcash(args,typ,defVal):
      return float(defVal)
    elif defVal == '[]':
      return []
+   #remaining types are File, enum, dictionary of enum
    else:
-     try:
-       if typ['type'] == 'enum':
-         return defVal
-     except:
-       raise Exception ('unrecognized type error',typ,defVal)
+     print('name: ',args['name'],'type to convert to : ',typ,'default value: ',args['defaultValue'])
+  # else:
+  #   try:
+  #     if typ['type'] == 'enum':
+  #       return defVal
+  #   except:
+  #     print('unrecognized type error',typ,defVal)
+
 
 def default_helper(inpt, args):
-   typ = inpt['type']
-   try:
-     if not isinstance(typ,list):
-       typ = typ.encode()
-     else:    
-       typ = typ[1].encode() #not null
-   except:
-     raise Exception('invalid type',inpt['type'],inpt['id'])
-   defVal = args['defaultValue'].encode()
-   print(typ,defVal)
+  typ = inpt['type'] #CWL type that has been inserted
+  defVal = args['defaultValue'].encode() #default Value in string
+
+ # try:
+  if not isinstance(typ,list): #if the type is not a list = 'string','bool'
+    typ = typ.encode() #convert to string from unicode
+  else: # if it is a list ['null', type]
+#       if not isinstance (typ[1],dict):   
+    typ = typ[1]  #not null, could be a type or a dictionary again
+#       else:
+#         typ = typ[1]['type']
+#   except:
+#     print('the type of the input is:',inpt['type'],args['defaultValue'])
+
+  # print(typ,defVal)
    #try:
    #  to =  inpt['type'][1].encode()
    #except:
    #  to = inpt['type'].encode()
    #inpt['default'] = to(args['defaultValue'].encode())
-   if '[]' in typ and typ != '[]':
+
+#   if '[]' in typ and typ != '[]':
      #print(inpt['id'],inpt['type'])
-     typ = typ.strip('[]')
-     l = []
-     for elm in args['defaultValue']:
-       l.append(typcash(args,typ,elm))
+#     typ = typ.strip('[]')
+#     l = []
+#     for elm in args['defaultValue']:
+#       l.append(typcash(args,typ,elm))
        #print(l)
-       inpt['default'] = l
-   else:
-     inpt['default'] = typcash(args,typ,defVal)
-#     print('##############',defVal,inpt)
-#         raise Exception('unrecognized type')
-#  print('pass', type(inpt), inpt)
-#  value = "$(commandLine_Handler('{}','{}','{}','{}'))".format(args['name'][1:],args['required'],args['defaultValue'],'inputs.'+args['name'].strip('-'))
-#  value = "$(commandLine_Handler('{}','{}','{}',self))".format(args['name'][1:],args['required'],args['defaultValue'])
-#  inpt['inputBinding'] =  {'valueFrom': value}  
-#  commandline_writer(args,inpt)
+#       inpt['default'] = l
+#   else:
+  inpt['default'] = typcash(args,typ,defVal)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
