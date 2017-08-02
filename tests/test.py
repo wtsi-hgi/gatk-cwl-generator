@@ -4,6 +4,7 @@ import subprocess
 import os
 from os import path
 import unittest
+from multiprocessing import Process
 
 # Assertions
 
@@ -83,10 +84,12 @@ class TestGeneratedCWLFiles(unittest.TestCase):
 
     def test_are_cwl_files_valid(self):
         exceptions = []
-        for cwl_file in ["CommandLineGATK.cwl"]:
+        for cwl_file in os.listdir("cwlscripts/cwlfiles"):
             try:
+                print("Validated " + cwl_file)
                 run_command("cwl-runner --validate " + path.join(self.base_cwl_path, cwl_file))
             except AssertionError as e:
+                print(e)
                 exceptions.append(e)
 
         if exceptions:
