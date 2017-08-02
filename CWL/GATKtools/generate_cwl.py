@@ -3,6 +3,7 @@
 import os
 import argparse
 import shutil
+import itertools
 
 from bs4 import BeautifulSoup
 import requests
@@ -61,6 +62,13 @@ def get_json_links(version):
         "resourcefile_urls": resourcefile_urls
     }]
 
+def check_annotators(urls):
+    for url in urls:
+        ann_json = requests.get(url).json()
+        if ann_json["argument"]:
+            print ann_json["argument"]
+            print url
+
 
 def generate_cwl_and_json_files(out_dir, grouped_urls, base_url, include_file):
     """
@@ -86,8 +94,6 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, base_url, include_file):
             os.makedirs(cwl_dir)
         else:
             raise e
-
-    group_names = set([])
 
     # Create json for each tool and convert to cwl
     for tool_url in grouped_urls["tool_urls"]:
@@ -135,6 +141,9 @@ def main():
 
     print("your chosen directory is: %s" % directory)
     [base_url, grouped_urls] = get_json_links(version)
+
+    check_annotators(grouped_urls["annotator_urls"])
+
     generate_cwl_and_json_files(directory, grouped_urls, base_url, results.include_file)
 
 
