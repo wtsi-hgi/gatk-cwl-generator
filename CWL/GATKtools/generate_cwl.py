@@ -14,19 +14,39 @@ import json2cwl
 dev = True
 
 def get_json_links(version):
+    """
+    Parses the tool docs HTML page to get links to the json resources
+    """
     if version == "current":
        base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" % version
     else:
        base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" % version
+    
     data = requests.get(base_url).text
     soup = BeautifulSoup(data, "html.parser")
+
     tool_urls = []
+
+    annotator_urls = []
+    readfile_urls = []
+    resourcefile_urls = []
 
     # Parse the html to obtain all json file links
     for link in soup.select("tr > td > a"):
         href = link['href']
         if href.startswith("org_broadinstitute_gatk") and "Exception" not in href:
-            tool_urls.append(href + ".json")
+            json_path = href + ".json"
+            striped_text = href.strip("org_broadinstitute_gatk_")
+
+            # Need to process these separately
+            if striped_text.startswith("tools_walkers_annotator"):
+                annotator_urls.append(json_path)
+            elif striped_text.startswith("engine_filters"):
+                readfile_urls.append(json_path)
+            elif striped_text.startswith("codecs_table"):
+                resourcefile_urls.append(json_path)
+            else:
+                tool_urls.append(json_path)
 
     # Remove duplicates
     tool_urls = list(set(tool_urls))
@@ -77,7 +97,11 @@ def generate_cwl_and_json_files(out_dir, tool_urls, base_url, include_file):
             f.close()
             print("Written jsonfolder/" + json_name)
 
-            json2cwl.make_cwl(json_dir, cwl_dir, json_name)
+            json2cwl.make_cwl(json_dir, cwl_dir, json_name,
+                not (tool_name == "CommandLineGATK" or tool_name == "CatVariants"))
+                # Don't append options for CommandLinkGATK or read filters for CatVariants
+                # it bypasses the GATK engine
+                # https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_CatVariants.php
             print("Written cwlfiles/" + tool_name + ".cwl")
 
     print("Success!")
@@ -91,7 +115,6 @@ def main():
     parser.add_argument('-v', action='store', dest='gatkversion')
     parser.add_argument('-out', action='store', dest='outputdir')
     parser.add_argument('-include', action='store', dest='include_file', help="Only generate this file (note, CommandLinkGATK has to be generated)")
-    # TODO: Implement this
     results = parser.parse_args()
 
     if results.gatkversion:
