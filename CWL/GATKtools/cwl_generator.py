@@ -30,5 +30,5 @@ def cwl_generator(json, cwl):
 
     cwl["inputs"] = inputs
     cwl["outputs"] = outputs
-    cwl["arguments"] = { "shellQuote": False,
-                         "valueFrom": com_line }
+#    cwl["arguments"] = { "shellQuote": False,
+#                         "valueFrom": com_line }
