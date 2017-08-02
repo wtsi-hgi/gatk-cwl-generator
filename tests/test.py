@@ -4,13 +4,13 @@ sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
 import CWL.GATKtools as GATKTools # TODO: Update this when I have better paths
 
-from __future__ import print_function
-
 import subprocess
 import os
 from os import path
 import unittest
 from multiprocessing import Process
+
+import requests
 
 # Assertions
 
@@ -84,14 +84,27 @@ def run_haplotype_caller(extra_info="", interval=1, filetext=None, expect_failur
 
 # Unit tests
 
-supported_versions = ["3.5-0", "current"]
+supported_versions = ["3.5", "current"]
 
 class TestGenerateCWL(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.links_by_version = {}
+
+        for version in supported_versions:
+            cls.links_by_version[version] = GATKTools.generate_cwl.get_json_links(version)
+
     def test_get_json_links(self):
         for version in supported_versions:
-            json_links = GATKTools.generate_cwl.get_json_links(version)
-            for links in json_links[1].items():
+            for links in TestGenerateCWL.links_by_version[version].items():
                 self.assertTrue(links) # assert it's not empty
+
+    def test_no_arguments_in_annotator(self):
+        # If arguments are in annotator modules, we probably need to add them to the CWL file
+        for version in supported_versions:
+            for url in TestGenerateCWL.links_by_version[version]["annotator_urls"]:
+                ann_json = requests.get(url).json()
+                self.assertFalse(ann_json["arguments"])
 
 # Integration tests
 

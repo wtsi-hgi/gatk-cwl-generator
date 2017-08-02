@@ -38,7 +38,9 @@ def get_json_links(version):
             rest_text = href[len("org_broadinstitute_gatk_"):]
 
             # Need to process these separately
-            if rest_text.startswith("tools_walkers_annotator"):
+            if rest_text.startswith("tools_walkers_annotator") \
+                    and "VariantAnnotator" not in rest_text:
+                    # VariantAnnotator is wrongly categorized in it's url (it's a tool)
                 annotator_urls.append(full_url)
             elif rest_text.startswith("engine_filters"):
                 readfile_urls.append(full_url)
@@ -51,7 +53,7 @@ def get_json_links(version):
     tool_urls = list(set(tool_urls))
     
     # Move CommandLine to the front of the list
-    i = tool_urls.index("org_broadinstitute_gatk_engine_CommandLineGATK.php.json")
+    i = find_index(tool_urls, lambda x: "CommandLineGATK" in x)
     tool_urls[0], tool_urls[i] = tool_urls[i], tool_urls[0]
     # print(url_list)
 
