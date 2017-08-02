@@ -1,3 +1,9 @@
+from os import sys, path
+# Use fix from https://stackoverflow.com/a/19190695 to import from the base directory
+sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+
+import CWL.GATKtools as GATKTools # TODO: Update this when I have better paths
+
 from __future__ import print_function
 
 import subprocess
@@ -75,6 +81,19 @@ def run_haplotype_caller(extra_info="", interval=1, filetext=None, expect_failur
     f.close()
 
     return run_command("cwl-runner cwlscripts/cwlfiles/HaplotypeCaller.cwl tests/test_haplotypecaller_input.yml", expect_failure=expect_failure)
+
+# Unit tests
+
+supported_versions = ["3.5-0", "current"]
+
+class TestGenerateCWL(unittest.TestCase):
+    def test_get_json_links(self):
+        for version in supported_versions:
+            json_links = GATKTools.generate_cwl.get_json_links(version)
+            for links in json_links[1].items():
+                self.assertTrue(links) # assert it's not empty
+
+# Integration tests
 
 class TestGeneratedCWLFiles(unittest.TestCase):
     base_cwl_path = path.join(base_dir, "cwlscripts/cwlfiles")
