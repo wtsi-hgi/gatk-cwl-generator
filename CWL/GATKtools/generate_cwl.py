@@ -4,6 +4,7 @@ import os
 import argparse
 import shutil
 import itertools
+import json
 
 from bs4 import BeautifulSoup
 import requests
@@ -11,6 +12,20 @@ import requests
 import json2cwl
 
 dev = True
+
+def find_index(lst, func):
+    for i, item in enumerate(lst):
+        if func(item):
+            return i
+    
+    raise ValueError("Item not found")
+
+class JSONLinks:
+    def __init__(self, tool_urls, annotator_urls, readfilter_urls, resourcefile_urls):
+        self.tool_urls = tool_urls
+        self.annotator_urls = annotator_urls
+        self.readfilter_urls = readfilter_urls
+        self.resourcefile_urls = resourcefile_urls
 
 def get_json_links(version):
     """
@@ -57,12 +72,7 @@ def get_json_links(version):
     tool_urls[0], tool_urls[i] = tool_urls[i], tool_urls[0]
     # print(url_list)
 
-    return {
-        "tool_urls": tool_urls,
-        "annotator_urls": annotator_urls,
-        "readfile_urls": readfile_urls,
-        "resourcefile_urls": resourcefile_urls
-    }
+    return JSONLinks(tool_urls, annotator_urls, readfile_urls, resourcefile_urls)
 
 
 def generate_cwl_and_json_files(out_dir, grouped_urls, include_file):
@@ -72,7 +82,9 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, include_file):
 
     :param include_files: if this is not None, only parse this file
     """
-    print("creating and converting json files...")
+    global_args = get_global_arguments(grouped_urls)
+
+    print("Creating and converting json files...")
     
     # Get current directory and make folders for files
     json_dir = os.path.join(out_dir, 'jsonfolder')
@@ -90,12 +102,14 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, include_file):
         else:
             raise e
 
+
     # Create json for each tool and convert to cwl
-    for tool_url in grouped_urls["tool_urls"]:
+    for tool_url in grouped_urls.tool_urls:
         if include_file is None or include_file in tool_url or "CommandLineGATK" in tool_url:
             tool_json = requests.get(tool_url)
             
-            tool_name = tool_json.json()['name'] # TODO: what happens if this doesn't parse correctly?
+            tool_json_json = tool_json.json()
+            tool_name = tool_json_json['name']
             json_name = tool_name + ".json"
             
             f = open(os.path.join(json_dir, json_name), 'w+')
@@ -103,15 +117,36 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, include_file):
             f.close()
             print("Written jsonfolder/" + json_name)
 
-            json2cwl.make_cwl(json_dir, cwl_dir, json_name,
-                not (tool_name == "CommandLineGATK" or tool_name == "CatVariants"))
-                # Don't append options for CommandLinkGATK or read filters for CatVariants,
-                # it bypasses the GATK engine
-                # https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_CatVariants.php
+            # Don't append options for CommandLinkGATK or read filters for CatVariants,
+            # it bypasses the GATK engine
+            # https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_CatVariants.php
+            if not (tool_name == "CommandLineGATK" or tool_name == "CatVariants"):
+                tool_json_json["arguments"].extend(global_args)
+
+            json2cwl.make_cwl(
+                tool_json_json,
+                cwl_dir
+            )
             print("Written cwlfiles/" + tool_name + ".cwl")
 
     print("Success!")
 
+def get_global_arguments(grouped_urls):
+    """
+    Get arguments (e.g. CommandLinkGATK and read filters) that should be avaliable to all CWL files
+    """
+    arguments = []
+
+    commandLineGATK = requests.get(grouped_urls.tool_urls[0]).json() # This should be CommandLinkGATK
+    arguments.extend(commandLineGATK["arguments"])
+
+    print("Getting read filter arguments ...")
+
+    for readfilter_url in grouped_urls.readfilter_urls:
+        args = requests.get(readfilter_url).json()["arguments"]
+        arguments.extend(args)
+
+    return arguments
 
 def main():
     #default version is 3.5-0
@@ -133,7 +168,7 @@ def main():
     else:
       directory = os.getcwd() + '/cwlscripts'
 
-    print("your chosen directory is: %s" % directory)
+    print("Your chosen directory is: %s" % directory)
     grouped_urls = get_json_links(version)
 
     generate_cwl_and_json_files(directory, grouped_urls, results.include_file)
