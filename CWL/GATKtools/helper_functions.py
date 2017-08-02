@@ -128,10 +128,10 @@ def input_writer(argument, inputs):
 
 def argument_writer(argument, inputs, outputs, com_line):
     if is_output_argument(argument):
-      output_commandline_writer(argument,com_line,inputs, outputs)
+      com_line =  output_commandline_writer(argument,com_line,inputs, outputs)
     else:
       input_writer(argument, inputs)
-
+    return com_line
 
 def typcash(args, typ, defVal):
     if typ == 'int':
@@ -218,24 +218,42 @@ def output_commandline_writer(argument,com_line,inputs,outputs):
   elif argument['type'] == 'VariantContextWriter':
     output_path = '{}.vcf'.format(name)
   else:
-    output_path = ''
-    pass
+    print('argument to fix',argument['name'],argument['type'])
+    output_path = '{}.txt'.format(name)
+    #pass
   argument['type'] = 'string' ################TEMPORARY####################
 
   if argument['required'] == "no":
     if argument['defaultValue'] == "NA":
-      input_writer(argument,inputs) # should be an input
-      output_writer(argument,outputs,'$(input.{})'.format(name),['null','File'])
-      # optional output with glob: inputs.inputname
-    else: #has a default
-      argument['defaultValue'] = output_path #reset the default
-      input_writer(argument,inputs) # add as an input
-      output_writer(argument, outputs,'$(input.{})'.format(name),'File')
-      #file will always be produced to default name if name not provided
-  else: #if input required, get rid of the requirement 
-    com_line += '{} {}'.format(prefix,output_path) # hardcode -o output.bam
-    output_writer(argument,outputs,output_path,'File') # glob=output.bam
+      """
+      if the argument is not required and doesn't have a default value
+      it is an optional input to which file is generated to
+      if specified, the outputbinding should be the specified value
+      """
+      input_writer(argument,inputs)                                               # input
+      output_writer(argument,outputs,'$(input.{})'.format(name),['null','File'])  # optional outputbinding
 
+    else:
+      """
+      if the argument is not required but has a default value
+      reset the default value to sth that isn't standard output
+      it is an optional input to which file is generated to
+      if specified, the outputbinding should be the specified value
+      else default
+      """
+      argument['defaultValue'] = output_path                                      # reset default
+      input_writer(argument,inputs)                                               # input
+      output_writer(argument, outputs,'$(input.{})'.format(name),'File')          # always an output
+
+  else: #if input required, get rid of the requirement 
+    """
+    if input is required, remove it as an input
+    hardcode the name of the file in and make it as a output
+    """
+    com_line += '{} {}'.format(prefix,output_path)                               # hardcode ie. -o output.bam
+    print("COOOOMMMMMMMMAND LINE GENERATED",'{} {}'.format(prefix,output_path))
+    output_writer(argument,outputs,output_path,'File')                           # hardcoded name, always an output
+  return com_line
 
 #  elif argument['type'] == "VariantContextWriter": #usually vcf files
 #    if argument['required'] == "no":
