@@ -24,8 +24,11 @@ def cwl_generator(json, cwl):
         if argument['name'] in invalid_args:
             continue
 
-        argument_writer(argument, inputs, outputs)
+        argument_writer(argument, inputs, outputs, com_line)
+#        output_commandline_writer(argument,com_line,inputs,outputs)
         # com_line = commandline_writer(argument, com_line)
 
     cwl["inputs"] = inputs
     cwl["outputs"] = outputs
+    cwl["arguments"] = { "shellQuote": False,
+                         "valueFrom": com_line }
