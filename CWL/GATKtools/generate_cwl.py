@@ -34,14 +34,14 @@ def get_json_links(version):
         href = link['href']
         if href.startswith("org_broadinstitute_gatk") and "Exception" not in href:
             json_path = href + ".json"
-            striped_text = href.strip("org_broadinstitute_gatk_")
+            rest_text = href[len("org_broadinstitute_gatk_"):]
 
             # Need to process these separately
-            if striped_text.startswith("tools_walkers_annotator"):
+            if rest_text.startswith("tools_walkers_annotator"):
                 annotator_urls.append(json_path)
-            elif striped_text.startswith("engine_filters"):
+            elif rest_text.startswith("engine_filters"):
                 readfile_urls.append(json_path)
-            elif striped_text.startswith("codecs_table"):
+            elif rest_text.startswith("utils_codecs"):
                 resourcefile_urls.append(json_path)
             else:
                 tool_urls.append(json_path)
