@@ -67,8 +67,9 @@ def GATK_to_CWL_type(argument, type_):
         argument['type'] = type_ # TODO: look into this
         return ['null', 'string', 'string[]', 'File']
     else:
-        raise ValueError('unsupported type: {}'.format(type_))
-
+         print('#################################unsupported type: {}'.format(type_)) 
+         return 'string'
+#        raise ValueError('unsupported type: {}'.format(type_))
 
 
 """
@@ -88,6 +89,7 @@ def type_writer(argument, cwl_desc):
         cwl_desc['type'] = ['string[]?', 'File']
     else:
         type_ = GATK_to_CWL_type(argument, argument['type'].lower())
+        #print('CWL TYPE IS',type_)
         if 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
             if isinstance(type_, str):
                 type_ += '[]'
@@ -124,12 +126,12 @@ def input_writer(argument, inputs):
       default_helper(cwl_desc,argument)
     secondaryfiles_writer(argument,cwl_desc,inputs)
 
-def argument_writer(argument, inputs, outputs):
+def argument_writer(argument, inputs, outputs, com_line):
     if is_output_argument(argument):
-#        print(argument)
-        output_writer(argument, outputs)
+      if argument['type'] not in ('GATKSAMFileWriter','PrintStream'):
+        output_commandline_writer(argument,com_line,inputs, outputs) ######################
     else:
-        input_writer(argument, inputs)
+      input_writer(argument, inputs)
 
 
 def typcash(args, typ, defVal):
@@ -148,17 +150,27 @@ def typcash(args, typ, defVal):
     elif defVal == '[]':
         return []
     else:
-        raise Exception('failed to cash type {}'.format(typ))
+        raise Exception('failed to cash type',args['name'],'               ',args['type'],'         ',typ)
 
 
 def default_helper(inpt, args):
+#    print(args['name'],inpt)
     typ = inpt['type']
+    print("ORGIGINAL TYLE",typ)
+#    print(type_)
     defVal = args['defaultValue'].encode()
     try:
         if isinstance(typ, list):
             typ = typ[1]
-        if isinstance(typ, dict):
-            typ = typ['type']
+        if isinstance(typ, dict):                      
+          if typ['type'] == 'array':
+            typ = typ['items']
+#            print(typ)
+          #else:
+          #  print(typ)
+          typ = typ['type']
+        #else:
+        #  typ = typ['type']
     except:
         raise Exception('Unverified type {}'.format(typ))
 
@@ -169,6 +181,8 @@ def default_helper(inpt, args):
         else:
             inpt['default'] = [typcash(args, typ, val)
                                for val in defVal[1:-1].replace(' ', '').split(',')]
+    elif typ == "array":
+        inpt['default'] = [typcash(args,item_type,val) for val in defVal[1:-1].replace(' ', '').split(',')]
     else:
         inpt['default'] = typcash(args, typ, defVal)
 
@@ -200,13 +214,56 @@ Modifies the `outputs` parameter with the cwl syntax for expressing a given outp
 :param outputs Object: The outputs object, to be written to with the correct information
 """
 
+def output_commandline_writer(argument,com_line,inputs,outputs):
+  
+  prefix = argument['name']
+  name = prefix.strip('-')
 
-def output_writer(argument, outputs):
+  if argument['type'] == "GATKSAMFileWriter":
+    output_path = '{}.bam'.format(name)
+  elif argument['type'] == "PrintStream":
+    output_path = '{}.txt'.format(name) 
+  elif argument['type'] == 'VariantContextWriter':
+    output_path = '{}.vcf'.format(name)
+  else:
+    output_path = ''
+    pass
+
+  if argument['required'] == "no":
+    if argument['defaultValue'] == "NA":
+      input_writer(argument,inputs) # should be an input
+      output_writer(argument,outputs,'$(input.{})'.format(name),['null','File'])
+      # optional output with glob: inputs.inputname
+    else: #has a default
+      argument['defaultValue'] = output_path #reset the default
+      input_writer(argument,inputs) # add as an input
+      output_writer(argument, outputs,'$(input.{})'.format(name),'File')
+      #file will always be produced to default name if name not provided
+  else: #if input required, get rid of the requirement 
+    com_line += '{} {}'.format(prefix,output_path) # hardcode -o output.bam
+    output_writer(argument,outputs,output_path,'File') # glob=output.bam
+
+
+#  elif argument['type'] == "VariantContextWriter": #usually vcf files
+#    if argument['required'] == "no":
+#      pass
+      # instead of stdout set a new default, hardcode
+      # if specified, we want -o 'name of the file'
+      # outputbinding should be coded in
+      # check descriptions for extensions
+      # else default should be .vcf
+#    else: 
+      # check 'description' synonyms for extension and set that as default
+      # else set .txt as default
+      # outputbinding coded in`
+  #if argument['type'] == 
+
+def output_writer(argument, outputs, globval, type_):
     outpt = {
         'id': argument['name'],
-        'type': ['null', 'File'],
+        'type': type_,
         'outputBinding': {
-            'glob': '$(inputs.' + argument['name'].strip('-') + ')'
+            'glob': globval
         }
     }
 
