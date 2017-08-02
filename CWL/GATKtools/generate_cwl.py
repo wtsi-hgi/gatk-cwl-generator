@@ -64,13 +64,6 @@ def get_json_links(version):
         "resourcefile_urls": resourcefile_urls
     }
 
-def check_annotators(urls):
-    for url in urls:
-        ann_json = requests.get(url).json()
-        if ann_json["argument"]:
-            print ann_json["argument"]
-            print url
-
 
 def generate_cwl_and_json_files(out_dir, grouped_urls, include_file):
     """
@@ -112,7 +105,7 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, include_file):
 
             json2cwl.make_cwl(json_dir, cwl_dir, json_name,
                 not (tool_name == "CommandLineGATK" or tool_name == "CatVariants"))
-                # Don't append options for CommandLinkGATK or read filters for CatVariants
+                # Don't append options for CommandLinkGATK or read filters for CatVariants,
                 # it bypasses the GATK engine
                 # https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_CatVariants.php
             print("Written cwlfiles/" + tool_name + ".cwl")
@@ -142,8 +135,6 @@ def main():
 
     print("your chosen directory is: %s" % directory)
     grouped_urls = get_json_links(version)
-
-    check_annotators(grouped_urls["annotator_urls"])
 
     generate_cwl_and_json_files(directory, grouped_urls, results.include_file)
 
