@@ -74,7 +74,7 @@ def generate_cwl_and_json_files(out_dir, tool_urls, base_url):
         print("Written jsonfolder/" + json_name)
 
         json2cwl.make_cwl(json_dir, cwl_dir, json_name)
-        print("Written cwlfiles/" + tool_name + ".cwl")
+#        print("Written cwlfiles/" + tool_name + ".cwl")
 
     print("Success!")
 
