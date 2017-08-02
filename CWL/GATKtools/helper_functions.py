@@ -89,7 +89,7 @@ def type_writer(argument, cwl_desc):
         cwl_desc['type'] = ['string[]?', 'File']
     else:
         type_ = GATK_to_CWL_type(argument, argument['type'].lower())
-        #print('CWL TYPE IS',type_)
+        
         if 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
             if isinstance(type_, str):
                 type_ += '[]'
@@ -117,7 +117,7 @@ def input_writer(argument, inputs):
         'doc': argument['summary'],
         'id': argument['name'].strip('-'),
         'inputBinding': {
-            'prefix': argument['name'][1:]
+            'prefix': argument['name']
         }
     }
 
@@ -128,8 +128,7 @@ def input_writer(argument, inputs):
 
 def argument_writer(argument, inputs, outputs, com_line):
     if is_output_argument(argument):
-      if argument['type'] not in ('GATKSAMFileWriter','PrintStream'):
-        output_commandline_writer(argument,com_line,inputs, outputs) ######################
+      output_commandline_writer(argument,com_line,inputs, outputs)
     else:
       input_writer(argument, inputs)
 
@@ -154,10 +153,7 @@ def typcash(args, typ, defVal):
 
 
 def default_helper(inpt, args):
-#    print(args['name'],inpt)
     typ = inpt['type']
-    print("ORGIGINAL TYLE",typ)
-#    print(type_)
     defVal = args['defaultValue'].encode()
     try:
         if isinstance(typ, list):
@@ -165,14 +161,10 @@ def default_helper(inpt, args):
         if isinstance(typ, dict):                      
           if typ['type'] == 'array':
             typ = typ['items']
-#            print(typ)
-          #else:
-          #  print(typ)
+            print(typ)
           typ = typ['type']
-        #else:
-        #  typ = typ['type']
     except:
-        raise Exception('Unverified type {}'.format(typ))
+       raise Exception('Unverified type {}'.format(typ))
 
     if '[]' in typ and typ != '[]':
         typ = typ.strip('[]')
@@ -228,6 +220,7 @@ def output_commandline_writer(argument,com_line,inputs,outputs):
   else:
     output_path = ''
     pass
+  argument['type'] = 'string' ################TEMPORARY####################
 
   if argument['required'] == "no":
     if argument['defaultValue'] == "NA":
