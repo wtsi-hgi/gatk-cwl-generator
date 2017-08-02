@@ -34,18 +34,18 @@ def get_json_links(version):
     for link in soup.select("tr > td > a"):
         href = link['href']
         if href.startswith("org_broadinstitute_gatk") and "Exception" not in href:
-            json_path = href + ".json"
+            full_url = base_url + href + ".json"
             rest_text = href[len("org_broadinstitute_gatk_"):]
 
             # Need to process these separately
             if rest_text.startswith("tools_walkers_annotator"):
-                annotator_urls.append(json_path)
+                annotator_urls.append(full_url)
             elif rest_text.startswith("engine_filters"):
-                readfile_urls.append(json_path)
+                readfile_urls.append(full_url)
             elif rest_text.startswith("utils_codecs"):
-                resourcefile_urls.append(json_path)
+                resourcefile_urls.append(full_url)
             else:
-                tool_urls.append(json_path)
+                tool_urls.append(full_url)
 
     # Remove duplicates
     tool_urls = list(set(tool_urls))
@@ -55,12 +55,12 @@ def get_json_links(version):
     tool_urls[0], tool_urls[i] = tool_urls[i], tool_urls[0]
     # print(url_list)
 
-    return [base_url, {
+    return {
         "tool_urls": tool_urls,
         "annotator_urls": annotator_urls,
         "readfile_urls": readfile_urls,
         "resourcefile_urls": resourcefile_urls
-    }]
+    }
 
 def check_annotators(urls):
     for url in urls:
@@ -70,7 +70,7 @@ def check_annotators(urls):
             print url
 
 
-def generate_cwl_and_json_files(out_dir, grouped_urls, base_url, include_file):
+def generate_cwl_and_json_files(out_dir, grouped_urls, include_file):
     """
     Generates the cwl and json files
     TODO: other params
@@ -98,8 +98,7 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, base_url, include_file):
     # Create json for each tool and convert to cwl
     for tool_url in grouped_urls["tool_urls"]:
         if include_file is None or include_file in tool_url or "CommandLineGATK" in tool_url:
-            full_tool_url = base_url + tool_url
-            tool_json = requests.get(full_tool_url)
+            tool_json = requests.get(tool_url)
             
             tool_name = tool_json.json()['name'] # TODO: what happens if this doesn't parse correctly?
             json_name = tool_name + ".json"
@@ -140,11 +139,11 @@ def main():
       directory = os.getcwd() + '/cwlscripts'
 
     print("your chosen directory is: %s" % directory)
-    [base_url, grouped_urls] = get_json_links(version)
+    grouped_urls = get_json_links(version)
 
     check_annotators(grouped_urls["annotator_urls"])
 
-    generate_cwl_and_json_files(directory, grouped_urls, base_url, results.include_file)
+    generate_cwl_and_json_files(directory, grouped_urls, results.include_file)
 
 
 if __name__ == '__main__':
