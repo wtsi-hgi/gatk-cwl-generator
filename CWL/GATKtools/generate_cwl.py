@@ -1,13 +1,11 @@
 #!/bin/python
 
-import requests
 import os
-import json
-import sys
-from bs4 import BeautifulSoup
-import pprint
 import argparse
 import shutil
+
+from bs4 import BeautifulSoup
+import requests
 
 import json2cwl
 
@@ -55,10 +53,16 @@ def get_json_links(version):
     i = tool_urls.index("org_broadinstitute_gatk_engine_CommandLineGATK.php.json")
     tool_urls[0], tool_urls[i] = tool_urls[i], tool_urls[0]
     # print(url_list)
-    return [base_url, tool_urls]
+
+    return [base_url, {
+        "tool_urls": tool_urls,
+        "annotator_urls": annotator_urls,
+        "readfile_urls": readfile_urls,
+        "resourcefile_urls": resourcefile_urls
+    }]
 
 
-def generate_cwl_and_json_files(out_dir, tool_urls, base_url, include_file):
+def generate_cwl_and_json_files(out_dir, grouped_urls, base_url, include_file):
     """
     Generates the cwl and json files
     TODO: other params
@@ -83,8 +87,10 @@ def generate_cwl_and_json_files(out_dir, tool_urls, base_url, include_file):
         else:
             raise e
 
+    group_names = set([])
+
     # Create json for each tool and convert to cwl
-    for tool_url in tool_urls:
+    for tool_url in grouped_urls["tool_urls"]:
         if include_file is None or include_file in tool_url or "CommandLineGATK" in tool_url:
             full_tool_url = base_url + tool_url
             tool_json = requests.get(full_tool_url)
@@ -128,8 +134,8 @@ def main():
       directory = os.getcwd() + '/cwlscripts'
 
     print("your chosen directory is: %s" % directory)
-    url_list = get_json_links(version)
-    generate_cwl_and_json_files(directory, url_list[1], url_list[0], results.include_file)
+    [base_url, grouped_urls] = get_json_links(version)
+    generate_cwl_and_json_files(directory, grouped_urls, base_url, results.include_file)
 
 
 if __name__ == '__main__':
