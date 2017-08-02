@@ -89,8 +89,8 @@ class TestGeneratedCWLFiles(unittest.TestCase):
             except AssertionError as e:
                 exceptions.append(e)
 
-        if not exceptions:
-            raise AssertionError("Not all cwl files are valid:/n" + "/n/n".join(exceptions))
+        if exceptions:
+            raise AssertionError("Not all cwl files are valid:\n" + "\n\n".join(exceptions))
 
     def test_haplotype_caller(self):
         run_command("cwl-runner cwlscripts/cwlfiles/HaplotypeCaller.cwl HaplotypeCaller_inputs.yml")
