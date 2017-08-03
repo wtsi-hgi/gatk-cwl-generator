@@ -127,7 +127,7 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, include_file):
                 tool_json_json,
                 cwl_dir
             )
-#            print("Written cwlfiles/" + tool_name + ".cwl")
+            print("Written cwlfiles/" + tool_name + ".cwl")
 
     print("Success!")
 
@@ -162,9 +162,7 @@ def get_global_arguments(grouped_urls):
         args = requests.get(readfilter_url).json()["arguments"]
 
         for arg in args:
-            if "default" in arg:
-                del arg["default"] # This argument is not necessarily valid, so we shouldn't set the default
-
+            arg["defaultValue"] = "NA" # This argument is not necessarily valid, so we shouldn't set the default
             arg["required"] = "no"
 
         arguments.extend(args)
