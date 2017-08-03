@@ -69,6 +69,9 @@ def GATK_to_CWL_type(argument, type_):
     elif type_ == 'rodbinding[variantcontext]': #.vcf .vcf2 .bcf2
         argument['type'] = 'File'
         return 'File'
+    elif type_ == 'rodbinding[feature]': # BCF2, BEAGLE, BED, BEDTABLE, EXAMPLEBINARY, GELITEXT, RAWHAPMAP, REFSEQ, SAMPILEUP, SAMREAD, TABLE, VCF, VCF3
+        argument['type'] = 'File'
+        return 'File'
     else:
          print('#################################unsupported arg type: {}   converted type {}'.format(argument['type'],type_)) 
          return 'string'
@@ -85,7 +88,7 @@ Fills the type in an incomplete cwl description, outputing to cwl_desc
 
 def type_writer(argument, cwl_desc):
     # Patch the incorrect description given by GATK for both --input_file and the type intervalbinding
-    if argument['name'] == '--input_file': #or argument['type'] == 'RodBinding[VariantContext]': # For type Rodbinding, input file must be in .vcf .vcf2 .bcf2
+    if argument['name'] == '--input_file': 
         argument['type'] = 'File'
         cwl_desc['type'] = 'File'
     elif 'intervalbinding' in argument["type"].lower():  
