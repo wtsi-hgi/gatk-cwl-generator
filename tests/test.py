@@ -143,7 +143,12 @@ class TestGeneratedCWLFiles(unittest.TestCase):
             "Specified name does not exist in input bam files")
 
     def test_file_type(self):
-        assert_contains(run_haplotype_caller("BQSR: /data/chr22_cwl_test.fa", expect_failure=True).stderr, 
+        BQSR_arg = """
+BQSR:
+   class: File
+   path: ../cwl-example-data/chr22_cwl_test.fa
+"""
+        assert_contains(run_haplotype_caller(BQSR_arg, expect_failure=True).stderr, 
             "Bad input: The GATK report has an unknown/unsupported version in the header")
 
     def test_enum_type(self):
