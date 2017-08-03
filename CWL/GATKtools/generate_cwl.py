@@ -162,6 +162,9 @@ def get_global_arguments(grouped_urls):
         args = requests.get(readfilter_url).json()["arguments"]
 
         for arg in args:
+            if "default" in arg:
+                del arg["default"] # This argument is not nessisaraly valid, so we shouldn't set the default
+
             arg["required"] = "no"
 
         arguments.extend(args)

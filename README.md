@@ -52,4 +52,4 @@ $ cwl-runner HaplotypeCaller.cwl HaplotypeCaller_inputs.yml
 ## Limitations:
 
 - The parameter `annotation` takes in a string, not an enumeration of all the possible options
-- All parameters in read filters that don't conflict with tool parameters are included as optional in every CWL file
+- All parameters in read filters that don't conflict with tool parameters are included and they are marked as optional with default argument application removed
