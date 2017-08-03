@@ -63,19 +63,27 @@ def GATK_to_CWL_type(argument, type_):
             "type": "enum",
             "symbols": enum_types[type_]
         }
-    elif 'intervalbinding' in type_: ############# repeats with type_writer elif 'intervalbinding' part #################
+    elif 'intervalbinding' in type_: 
         argument['type'] = type_ # TODO: look into this
         return ['null', 'string', 'string[]', 'File']
-    elif type_ == 'rodbinding[variantcontext]': #.vcf .vcf2 .bcf2
-        argument['type'] = 'File'
-        return 'File'
-    elif type_ == 'rodbinding[feature]': # BCF2, BEAGLE, BED, BEDTABLE, EXAMPLEBINARY, GELITEXT, RAWHAPMAP, REFSEQ, SAMPILEUP, SAMREAD, TABLE, VCF, VCF3
-        argument['type'] = 'File'
-        return 'File'
+
+    elif type_ == 'rodbinding[variantcontext]' or  type_ == 'rodbinding[feature]' \
+     or  type_ == 'rodbinding[bedfeature]' or type_ == 'rodbinding[sampileupfeature]' \
+     or  type_ == 'rodbindingcollection[variantcontext]': 
+        """
+         rodbinding
+          variantcontext                       # VCF VCF3 BCF2
+          feature                              # BCF2, BEAGLE, BED, BEDTABLE, EXAMPLEBINARY, GELITEXT, RAWHAPMAP, REFSEQ, SAMPILEUP, SAMREAD, TABLE, VCF, VCF3
+          BEDfeature                           # BED
+          SAMPileupFeature                     # files in SAMPILEUP format
+          RodBindingCollection[VariantContext] # List of files
+        """
+        argument['type'] = 'string'
+        return 'string'
+
     else:
-         print('#################################unsupported arg type: {}   converted type {}'.format(argument['type'],type_)) 
-         return 'string'
-#        raise ValueError('unsupported type: {}'.format(type_))
+#         return 'string'
+        raise ValueError('unsupported type: {}'.format(type_))
 
 
 """
@@ -91,8 +99,6 @@ def type_writer(argument, cwl_desc):
     if argument['name'] == '--input_file': 
         argument['type'] = 'File'
         cwl_desc['type'] = 'File'
-    elif 'intervalbinding' in argument["type"].lower():  
-        cwl_desc['type'] = ['string[]?', 'File']        
     else:
         type_ = GATK_to_CWL_type(argument, argument['type'].lower())
         
@@ -139,7 +145,9 @@ def argument_writer(argument, inputs, outputs, com_line):
     return com_line
 
 def typcash(args, typ, defVal):
-    if typ == 'int':
+    if defVal == '[]':
+        return []
+    elif typ == 'int':
         return int(defVal)
     elif typ == 'boolean':
         return bool(defVal)
@@ -151,8 +159,6 @@ def typcash(args, typ, defVal):
         return long(defVal)
     elif typ == 'double':
         return float(defVal)
-    elif defVal == '[]':
-        return []
     else:
         raise Exception('failed to cash argument: {}   unable to cash type: {}'.format(args['name'],typ))
 
@@ -164,9 +170,9 @@ def default_helper(inpt, args):
             typ = typ[1]
         if isinstance(typ, dict):                      
           if typ['type'] == 'array':
-            typ = typ['items']
-            print(typ)
-          typ = typ['type']
+            typ = typ['items'] 
+          else: 
+            typ = typ['type']
     except:
        raise Exception('Argument: {}   Unrecognized type: {}'.format(args['name'],typ))
 
