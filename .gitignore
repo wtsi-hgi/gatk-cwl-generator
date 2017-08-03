@@ -1,0 +1,7 @@
+cwlscripts
+cwl-example-data
+out.gvcf.gz
+.DS_STORE
+*.pyc
+cwlscripts_correct
+tests/test_haplotypecaller_input.yml

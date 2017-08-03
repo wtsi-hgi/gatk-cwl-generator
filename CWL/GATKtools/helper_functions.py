@@ -63,17 +63,11 @@ def GATK_to_CWL_type(argument, type_):
             "type": "enum",
             "symbols": enum_types[type_]
         }
-    elif 'intervalbinding' in type_: ############# repeats with type_writer elif 'intervalbinding' part #################
+    elif 'intervalbinding' in type_:
         argument['type'] = type_ # TODO: look into this
         return ['null', 'string', 'string[]', 'File']
-    elif type_ == 'rodbinding[variantcontext]': #.vcf .vcf2 .bcf2
-        argument['type'] = 'File'
-        return 'File'
-    elif type_ == 'rodbinding[feature]': # BCF2, BEAGLE, BED, BEDTABLE, EXAMPLEBINARY, GELITEXT, RAWHAPMAP, REFSEQ, SAMPILEUP, SAMREAD, TABLE, VCF, VCF3
-        argument['type'] = 'File'
-        return 'File'
     else:
-         print('#################################unsupported arg type: {}   converted type {}'.format(argument['type'],type_)) 
+         print('#################################unsupported type: {}'.format(type_)) 
          return 'string'
 #        raise ValueError('unsupported type: {}'.format(type_))
 
@@ -88,11 +82,11 @@ Fills the type in an incomplete cwl description, outputing to cwl_desc
 
 def type_writer(argument, cwl_desc):
     # Patch the incorrect description given by GATK for both --input_file and the type intervalbinding
-    if argument['name'] == '--input_file': 
+    if argument['name'] == '--input_file':
         argument['type'] = 'File'
         cwl_desc['type'] = 'File'
-    elif 'intervalbinding' in argument["type"].lower():  
-        cwl_desc['type'] = ['string[]?', 'File']        
+    if 'intervalbinding' in argument["type"].lower():  
+        cwl_desc['type'] = ['string[]?', 'File']
     else:
         type_ = GATK_to_CWL_type(argument, argument['type'].lower())
         
@@ -116,6 +110,7 @@ Modifies the `inputs` parameter with the cwl syntax for expressing a given input
 :param argument: The cwl argument, as specified in the json file
 :param inputs: The inputs object, to be written to with the correct information
 """
+
 
 def input_writer(argument, inputs):
     cwl_desc = {
@@ -154,7 +149,8 @@ def typcash(args, typ, defVal):
     elif defVal == '[]':
         return []
     else:
-        raise Exception('failed to cash argument: {}   unable to cash type: {}'.format(args['name'],typ))
+        raise Exception('failed to cash type',args['name'],'               ',args['type'],'         ',typ)
+
 
 def default_helper(inpt, args):
     typ = inpt['type']
@@ -168,7 +164,7 @@ def default_helper(inpt, args):
             print(typ)
           typ = typ['type']
     except:
-       raise Exception('Argument: {}   Unrecognized type: {}'.format(args['name'],typ))
+       raise Exception('Unverified type {}'.format(typ))
 
     if '[]' in typ and typ != '[]':
         typ = typ.strip('[]')
@@ -200,7 +196,7 @@ Returns whether this argument's type indicates it's an output argument
 
 
 def is_output_argument(argument):
-    return any(x in argument["type"].lower() for x in ('printstream', 'writer'))
+    return any(x in argument["type"].lower() for x in ('rodbinding', 'printstream', 'writer'))
 
 
 """
@@ -222,11 +218,11 @@ def output_commandline_writer(argument,com_line,inputs,outputs):
   elif argument['type'] == 'VariantContextWriter':
     output_path = '{}.vcf'.format(name)
   else:
-    print('################################3argument to fix',argument['name'],argument['type'])
+    print('argument to fix',argument['name'],argument['type'])
     output_path = '{}.txt'.format(name)
-                              # when not an required argument, 
-  argument['type'] = 'string' # option as an input so to specify path_to_file 
- 
+    #pass
+  argument['type'] = 'string' ################TEMPORARY####################
+
   if argument['required'] == "no":
     if argument['defaultValue'] == "NA":
       """
@@ -255,8 +251,23 @@ def output_commandline_writer(argument,com_line,inputs,outputs):
     hardcode the name of the file in and make it as a output
     """
     com_line += '{} {}'.format(prefix,output_path)                               # hardcode ie. -o output.bam
+    print("COOOOMMMMMMMMAND LINE GENERATED",'{} {}'.format(prefix,output_path))
     output_writer(argument,outputs,output_path,'File')                           # hardcoded name, always an output
   return com_line
+
+#  elif argument['type'] == "VariantContextWriter": #usually vcf files
+#    if argument['required'] == "no":
+#      pass
+      # instead of stdout set a new default, hardcode
+      # if specified, we want -o 'name of the file'
+      # outputbinding should be coded in
+      # check descriptions for extensions
+      # else default should be .vcf
+#    else: 
+      # check 'description' synonyms for extension and set that as default
+      # else set .txt as default
+      # outputbinding coded in`
+  #if argument['type'] == 
 
 def output_writer(argument, outputs, globval, type_):
     outpt = {

@@ -9,13 +9,8 @@ $ pip install -r requirements.txt
 
 To run, use the following command:
 ```
-$ python generate_cwl.py gatk_version /path/to/dir/for/generated/files
+$ python generate_cwl.py [-v gatk_version] [-out /path/to/desired/output/directory] 
 ```
 If the version of the GATKtools documentation or the directory to save generated files are unspecified, 
-the default is set to GATK version 3.5-0 (the most current version is 3.7-0) and the script will automatically create `cwlfiles` folder in current working directory.
-```
-$ python generate_cwl.py (3.5) (/current/working/directory/cwlfiles)
-```
-
-The script will create two folders inside the specified directory called `jsonfolder` with the json scripts and `cwlfiles` with translated cwl scripts.
-
+the default is set to GATK version 3.5-0 (type `current` for the most current version) and the default directory is set to current working directory.
+The script will automatically create a `cwlfiles` folder in the specified directory which contains two folders `jsonfolder` and `cwlfiles` each containing gatk tool documentations in json format and translations in cwl.
