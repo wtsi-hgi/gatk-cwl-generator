@@ -4,21 +4,6 @@
 Collection of helper functions for cwl_generator.py and json2cwl.py
 """
 
-
-def need_def(arg):
-    if 'List' in arg['type']:
-        if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
-            arg['defaultValue'] = []
-        else:
-            arg['defaultValue'] = [
-                str(a) for a in arg['defaultValue'][1:-1].split(',')]
-
-    if arg['defaultValue'] == '[]' or arg['defaultValue'] == 'NA':
-        return False
-    if ('boolean' in arg['type'] or 'List' in arg['type']) or 'false' in arg['defaultValue']:
-        return True
-    return False
-
 # You cannot get the enumeration information for an enumeration in a nested type, so they are hard coded here
 enum_types = {
     # Example: https://software.broadinstitute.org/gatk/gatkdocs/3.6-0/org_broadinstitute_gatk_tools_walkers_variantutils_ValidateVariants.php
