@@ -163,7 +163,7 @@ def get_global_arguments(grouped_urls):
 
         for arg in args:
             if "default" in arg:
-                del arg["default"] # This argument is not nessisaraly valid, so we shouldn't set the default
+                del arg["default"] # This argument is not necessarily valid, so we shouldn't set the default
 
             arg["required"] = "no"
 
