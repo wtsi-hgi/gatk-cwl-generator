@@ -49,6 +49,7 @@ To test generated HaplotypeCaller CWL files, invoke ```cwl-runner``` and provide
 $ cwl-runner HaplotypeCaller.cwl HaplotypeCaller_inputs.yml
 ```
 
-## Note:
+## Limitations:
 
-Note: at the moment, the --annotation takes in a string, not an enumeration of all the possible options
+- The parameter `annotation` takes in a string, not an enumeration of all the possible options
+- All parameters in read filters that don't conflict with tool parameters are included as optional in every CWL file
