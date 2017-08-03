@@ -256,7 +256,7 @@ def output_commandline_writer(argument,com_line,inputs,outputs):
       """
       argument['defaultValue'] = output_path                                      # reset default
       input_writer(argument,inputs)                                               # input
-      output_writer(argument, outputs,'$(input.{})'.format(name),'File')          # always an output
+      output_writer(argument, outputs,'$(inputs.{})'.format(name),'File')          # always an output
 
   else: #if input required, get rid of the requirement 
     """
