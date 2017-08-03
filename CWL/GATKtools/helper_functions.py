@@ -63,9 +63,9 @@ def GATK_to_CWL_type(argument, type_):
             "type": "enum",
             "symbols": enum_types[type_]
         }
-    elif 'intervalbinding' in type_: 
-        argument['type'] = type_ # TODO: look into this
-        return ['null', 'string', 'string[]', 'File']
+    #elif 'intervalbinding' in type_: 
+    #    argument['type'] = type_ # TODO: look into this
+    #    return ['null', 'string', 'string[]', 'File']
 
     elif type_ == 'rodbinding[variantcontext]' or  type_ == 'rodbinding[feature]' \
      or  type_ == 'rodbinding[bedfeature]' or type_ == 'rodbinding[sampileupfeature]' \
@@ -99,6 +99,8 @@ def type_writer(argument, cwl_desc):
     if argument['name'] == '--input_file': 
         argument['type'] = 'File'
         cwl_desc['type'] = 'File'
+    elif 'intervalbinding' in argument['type'].lower():
+        cwl_desc['type'] = ['null','string','string[]','File']
     else:
         type_ = GATK_to_CWL_type(argument, argument['type'].lower())
         
@@ -219,6 +221,7 @@ Modifies the `outputs` parameter with the cwl syntax for expressing a given outp
 def output_commandline_writer(argument,com_line,inputs,outputs):
   
   prefix = argument['name']
+
   name = prefix.strip('-')
 
   if argument['type'] == "GATKSAMFileWriter":
