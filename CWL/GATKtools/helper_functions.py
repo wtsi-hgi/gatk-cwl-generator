@@ -75,11 +75,11 @@ def GATK_to_CWL_type(argument, type_):
           variantcontext                       # VCF VCF3 BCF2
           feature                              # BCF2, BEAGLE, BED, BEDTABLE, EXAMPLEBINARY, GELITEXT, RAWHAPMAP, REFSEQ, SAMPILEUP, SAMREAD, TABLE, VCF, VCF3
           BEDfeature                           # BED
-          SAMPileupFeature                     #files in SAMPILEUP format
+          SAMPileupFeature                     # files in SAMPILEUP format
           RodBindingCollection[VariantContext] # List of files
         """
-        argument['type'] = 'File'
-        return 'File'
+        argument['type'] = 'string'
+        return 'string'
 
     else:
 #         return 'string'
@@ -145,7 +145,9 @@ def argument_writer(argument, inputs, outputs, com_line):
     return com_line
 
 def typcash(args, typ, defVal):
-    if typ == 'int':
+    if defVal == '[]':
+        return []
+    elif typ == 'int':
         return int(defVal)
     elif typ == 'boolean':
         return bool(defVal)
@@ -157,8 +159,6 @@ def typcash(args, typ, defVal):
         return long(defVal)
     elif typ == 'double':
         return float(defVal)
-    elif defVal == '[]':
-        return []
     else:
         raise Exception('failed to cash argument: {}   unable to cash type: {}'.format(args['name'],typ))
 
@@ -170,9 +170,9 @@ def default_helper(inpt, args):
             typ = typ[1]
         if isinstance(typ, dict):                      
           if typ['type'] == 'array':
-            typ = typ['items']
-            print(typ)
-          typ = typ['type']
+            typ = typ['items'] 
+          else: 
+            typ = typ['type']
     except:
        raise Exception('Argument: {}   Unrecognized type: {}'.format(args['name'],typ))
 
