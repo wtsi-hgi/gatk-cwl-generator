@@ -127,7 +127,7 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, include_file):
                 tool_json_json,
                 cwl_dir
             )
-            print("Written cwlfiles/" + tool_name + ".cwl")
+#            print("Written cwlfiles/" + tool_name + ".cwl")
 
     print("Success!")
 
@@ -165,7 +165,6 @@ def get_global_arguments(grouped_urls):
             arg["required"] = "no"
 
         arguments.extend(args)
-
     return arguments
 
 def main():
