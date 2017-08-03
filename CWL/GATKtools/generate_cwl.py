@@ -6,91 +6,102 @@ import json
 import sys
 from bs4 import BeautifulSoup
 import pprint
+import argparse
+import shutil
 
 import json2cwl
 
+dev = True
 
-def prepare_json_links(version):
-    
-    url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" %(version)
-    data = requests.get(url).text
+def get_json_links(version):
+    if version == "current":
+       base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" % version
+    else:
+       base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" % version
+    data = requests.get(base_url).text
     soup = BeautifulSoup(data, "html.parser")
-    url_list = []
+    tool_urls = []
 
-    ##parse the html to obtain all json file links
-    for sub in soup.find_all('tr'):
-        for child in sub.find_all('td'):
-            for a in child.find_all('a', href = True):
-                href = a['href']
-                if href.startswith("org_broadinstitute_gatk") and "Exception" not in href:
-                    url_list.append(href + ".json")
+    # Parse the html to obtain all json file links
+    for link in soup.select("tr > td > a"):
+        href = link['href']
+        if href.startswith("org_broadinstitute_gatk") and "Exception" not in href:
+            tool_urls.append(href + ".json")
 
-    ##remove duplicates
-    url_list = list(set(url_list))
+    # Remove duplicates
+    tool_urls = list(set(tool_urls))
     
-    ##move CommandLine to the front of the list
-    i = url_list.index("org_broadinstitute_gatk_engine_CommandLineGATK.php.json")
-    url_list[0], url_list[i] = url_list[i], url_list[0]
+    # Move CommandLine to the front of the list
+    i = tool_urls.index("org_broadinstitute_gatk_engine_CommandLineGATK.php.json")
+    tool_urls[0], tool_urls[i] = tool_urls[i], tool_urls[0]
     # print(url_list)
-    return [url, url_list]
+    return [base_url, tool_urls]
 
 
-def convert_json_files(fromdir, url_list, url):
-
+def generate_cwl_and_json_files(out_dir, tool_urls, base_url):
     print("creating and converting json files...")
     
-    ##get current directory and make folders for files
-    directory = os.path.join(fromdir, 'jsonfolder')
-    todir = os.path.join(fromdir, 'cwlfiles')
-    os.makedirs(directory)
-    os.makedirs(todir)
+    # Get current directory and make folders for files
+    json_dir = os.path.join(out_dir, 'jsonfolder')
+    cwl_dir = os.path.join(out_dir, 'cwlfiles')
 
-    #create json for each tool and conver to cwl
-    for tool in url_list:
-        #print(tool)
-        os.chdir(directory)
-        json_1 = url + tool
-        r = requests.get(json_1)
-        # r = requests.get(json_1).json()
-        fname = r.json()['name'] + '.json'
-        print(fname)
-        f = open(fname, 'w+')
-        # f.write(json.dumps(r, indent = 4, sort_keys = False))
-        f.write(r.text)
+    try:
+        os.makedirs(json_dir)
+        os.makedirs(cwl_dir)
+    except OSError, e:
+        if dev:
+            shutil.rmtree(json_dir) # Removing existing generated files if the folder already exists, for testing
+            shutil.rmtree(cwl_dir)
+            os.makedirs(json_dir)
+            os.makedirs(cwl_dir)
+        else:
+            raise e
+
+    # Create json for each tool and convert to cwl
+    for tool_url in tool_urls:
+        full_tool_url = base_url + tool_url
+        tool_json = requests.get(full_tool_url)
+        try:
+          tool_name = tool_json.json()['name']
+        except:
+          print(tool_json)
+        json_name = tool_name + ".json"
+
+
+        f = open(os.path.join(json_dir, json_name), 'w+')
+        f.write(tool_json.text)
         f.close()
-        json2cwl.make_cwl(directory, todir, fname)
-        print("made cwl")
+        print("Written jsonfolder/" + json_name)
 
-    print("success!!!!!!!!")
+        json2cwl.make_cwl(json_dir, cwl_dir, json_name)
+#        print("Written cwlfiles/" + tool_name + ".cwl")
+
+    print("Success!")
 
 
 def main():
     #default version is 3.5-0
     #default directory is current directory/cwlscripts
-    try:
-      version = sys.argv[1]
-      directory = sys.argv[2]
-    except:
-      version = '3.5'
-      directory = os.getcwd()+'/cwlscripts'
 
-    print("your chosen directory is: %s" %(directory))
-    url_list = prepare_json_links(version)
-    convert_json_files(directory, url_list[1], url_list[0])
+    parser = argparse.ArgumentParser(description = 'take in GATK documentation version and specify output directory')
+    parser.add_argument('-v', action='store', dest='gatkversion')
+    parser.add_argument('-out', action='store', dest='outputdir')
+    results = parser.parse_args()
+        
+    if results.gatkversion:
+      version = results.gatkversion
+    else:
+      version = '3.5'
+    
+    if results.outputdir:
+      directory = results.outputdir
+    else:
+      directory = os.getcwd() + '/cwlscripts'
+
+    print("your chosen directory is: %s" % directory)
+    url_list = get_json_links(version)
+    generate_cwl_and_json_files(directory, url_list[1], url_list[0])
 
 
 if __name__ == '__main__':
     main()
-    
-# current = os.getcwd()
-
-# url_list = prepare_json_links(3.5)
-# # print(url_list[1])
-# convert_json_files(current, url_list[1], url_list[0])
-
-
-# directory = sys.argv[1]
-# version = sys.argv[2]
-
-# dirFiles = os.listdir(directory)
-
