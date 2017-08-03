@@ -244,7 +244,7 @@ def output_commandline_writer(argument,com_line,inputs,outputs):
       if specified, the outputbinding should be the specified value
       """
       input_writer(argument,inputs)                                               # input
-      output_writer(argument,outputs,'$(input.{})'.format(name),['null','File'])  # optional outputbinding
+      output_writer(argument,outputs,'$(inputs.{})'.format(name),['null','File'])  # optional outputbinding
 
     else:
       """
