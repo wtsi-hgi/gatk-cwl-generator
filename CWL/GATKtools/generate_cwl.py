@@ -136,10 +136,15 @@ def apply_global_arguments(GATK_json, global_args):
     Adds globals arguments to the GATK json object, not adding arguments if they are duplicated
     in the GATK json file
 
+<<<<<<< HEAD
     :param GATK_json: The GATK json object to modify
     :param global_args: An array of arguments to add as global arguments
     """
     GATK_args_names = set(arg["name"] for arg in GATK_json["arguments"])
+=======
+        json2cwl.make_cwl(json_dir, cwl_dir, json_name)
+#        print("Written cwlfiles/" + tool_name + ".cwl")
+>>>>>>> 66a47c22466eabe5a77d98c6a3439e2d3c48976f
 
     for global_arg in global_args:
         if global_arg["name"] not in GATK_args_names:
