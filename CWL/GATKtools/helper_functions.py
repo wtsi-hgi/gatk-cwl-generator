@@ -141,32 +141,25 @@ def type_writer(argument, cwl_desc):
         }
         return type_
 
-    prefix = argument['name'][1:]
-
+    prefix = argument['name']
     # Patch the incorrect description given by GATK for both --input_file and the type intervalbinding
-    if argument['synonyms'] == '-I':
+    if prefix  == '--input_file' or prefix  == '--input':
         argument['type'] = 'File'
         cwl_desc['type'] = 'File'
-
+        cwl_desc['inputBinding'] = {'prefix':prefix}
     else:
         type_ = GATK_to_CWL_type(argument, argument['type'].lower())
 
-        if isinstance(type_, list):
-            type_dict = []
-            for elm in type_:
-                if 'list' in elm.lower():
-                    type_dict.append(helper(elm, prefix))
-                else:
-                    type_dict.append(elm)
-            type_ = type_dict
+        if isinstance(type_, list) or 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
+           type_ = helper(type_, prefix) 
         else:
-            if 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
-                type_ = helper(type_, prefix)
-            else:
-                cwl_desc['inputBinding'] = {'prefix': argument['name']}
+           cwl_desc['inputBinding'] = {'prefix': prefix}
 
         if argument['required'] == 'no':
-            type_ = ['null', type_]
+            if isinstance(type_, list):
+                type_.insert(0,'null')
+            else:
+                type_ = ['null', type_]
         cwl_desc['type'] = type_
 
 
