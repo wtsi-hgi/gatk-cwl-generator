@@ -12,12 +12,6 @@ from multiprocessing import Process
 
 import requests
 
-# Assertions
-
-def assert_contains(a, b, message=""):
-    if not b in a:
-        raise AssertionError("{}The text \"{}\" does not appear in:\n{}".format(message, b, a))
-
 """
 Runs the specified command and reports it as an AssertionError if it fails (can override this with
 expect_failure)
@@ -28,7 +22,6 @@ def run_command(command, fail_message=None, expect_failure=False):
     exitcode = process.returncode
 
     if exitcode != 0 and not expect_failure:
-
         raise AssertionError("{}\"{}\" fails with exit code {}\nstdout:\n{}\nstderr:\n{}".format(
             "" if fail_message is None else fail_message + ": ",
             command,
@@ -45,8 +38,7 @@ class CommandOutput():
         self.stderr = stderr
         self.exitcode = exitcode
 
-ht_caller_base_text = """
-analysis_type: HaplotypeCaller
+default_args = """
 reference_sequence:
    class: File
    #path: /path/to/fasta/ref/file
@@ -68,19 +60,22 @@ out: out.gvcf.gz"""
 base_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 os.chdir(base_dir) # Need to be in the base directory for the cwl-runner to pick up the correct files
 
+def run_haplotype_caller(extra_info="",interval=1, filetext=None, expect_failure=False):
+    return run_tool("HaplotypeCaller", extra_info, interval, filetext, expect_failure)
+
 """
 Runs the haplotype_caller tool with the specified data
 """
-def run_haplotype_caller(extra_info="", interval=1, filetext=None, expect_failure=False):
+def run_tool(toolname, extra_info="",interval=1, filetext=None, expect_failure=False):
     if filetext is None:
         extra_info += "\nintervals: [chr22:10591400-{}]".format(10591400 + interval)
-        filetext = ht_caller_base_text + "\n" + extra_info
+        filetext = "analysis_type: {}\n".format(toolname) + default_args + "\n" + extra_info
 
     f = open("tests/test_haplotypecaller_input.yml", "w")
     f.write(filetext)
     f.close()
 
-    return run_command("cwl-runner cwlscripts/cwlfiles/HaplotypeCaller.cwl tests/test_haplotypecaller_input.yml", expect_failure=expect_failure)
+    return run_command("cwl-runner cwlscripts/cwlfiles/{}.cwl tests/test_haplotypecaller_input.yml".format(toolname), expect_failure=expect_failure)
 
 # Unit tests
 
@@ -127,20 +122,37 @@ class TestGeneratedCWLFiles(unittest.TestCase):
         if exceptions:
             raise AssertionError("Not all cwl files are valid:\n" + "\n\n".join(exceptions))
 
+    def test_running_with_default_args(self):
+        exceptions = []
+        for cwl_file in os.listdir("cwlscripts/cwlfiles"):
+            try:
+                print("Running with default args " + cwl_file)
+                output = run_tool(path.basename(cwl_file).split(".")[0], expect_failure=True)
+                self.assertNotIn("is not valid because", output.stdout)
+
+                if output.exitcode != 0:
+                    print(output.stdout + "/n" + output.stderr)
+            except AssertionError as e:
+                print(e)
+                exceptions.append(e)
+
+        if exceptions:
+            raise AssertionError("Tests run incorrectly with default args:\n" + "\n\n".join(exceptions))
+
     def test_haplotype_caller(self):
         run_command("cwl-runner cwlscripts/cwlfiles/HaplotypeCaller.cwl HaplotypeCaller_inputs.yml")
 
     # Test if the haplotype caller accepts all the correct types
 
     def test_boolean_type(self):
-        assert_contains(run_haplotype_caller("monitorThreadEfficiency: True").stderr, "ThreadEfficiencyMonitor")
+        self.assertIn("ThreadEfficiencyMonitor", run_haplotype_caller("monitorThreadEfficiency: True").stderr)
 
     def test_integers_type(self):
-        assert_contains(run_haplotype_caller("num_threads: 42", expect_failure=True).stderr, "42 data thread")
+        self.assertIn("42 data thread", run_haplotype_caller("num_threads: 42", expect_failure=True).stderr)
 
     def test_string_type(self):
-        assert_contains(run_haplotype_caller("sample_name: invalid_sample_name", expect_failure=True).stderr,
-            "Specified name does not exist in input bam files")
+        self.assertIn("Specified name does not exist in input bam files", 
+            run_haplotype_caller("sample_name: invalid_sample_name", expect_failure=True).stderr)
 
     def test_file_type(self):
         BQSR_arg = """
@@ -148,20 +160,20 @@ BQSR:
    class: File
    path: ../cwl-example-data/chr22_cwl_test.fa
 """
-        assert_contains(run_haplotype_caller(BQSR_arg, expect_failure=True).stderr, 
-            "Bad input: The GATK report has an unknown/unsupported version in the header")
+        self.assertIn("Bad input: The GATK report has an unknown/unsupported version in the header", 
+            run_haplotype_caller(BQSR_arg, expect_failure=True).stderr)
 
     def test_enum_type(self):
-        assert_contains(run_haplotype_caller("validation_strictness: LENIENT").stderr, "Strictness is LENIENT")
+        self.assertIn("Strictness is LENIENT", run_haplotype_caller("validation_strictness: LENIENT").stderr)
 
     def test_list_type(self):
-        run_with_larger_intervals = run_haplotype_caller(filetext=ht_caller_base_text +
+        run_with_larger_intervals = run_haplotype_caller(filetext=default_args +
             "\nintervals: [chr22:10591400-10591500, chr22:10591500-10591645]")
 
-        assert_contains(run_with_larger_intervals.stderr, "Processing 246 bp from intervals")
+        self.assertIn(run_with_larger_intervals.stderr, "Processing 246 bp from intervals")
 
     def test_default_used(self):
-        assert_contains(run_haplotype_caller().stderr, "-indelHeterozygosity 1.25E-4")
+        self.assertIn("-indelHeterozygosity 1.25E-4", run_haplotype_caller().stderr)
 
 """
 The entry point for testing
