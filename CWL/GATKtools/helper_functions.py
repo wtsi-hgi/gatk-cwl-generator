@@ -124,7 +124,13 @@ def input_writer(argument, inputs):
       default_helper(cwl_desc,argument)
     secondaryfiles_writer(argument,cwl_desc,inputs)
 
-def argument_writer(argument, inputs, outputs, com_line):
+global cmd_line_args
+
+def argument_writer(argument, inputs, outputs, com_line, cmd_line_args_):
+    global cmd_line_args
+
+    cmd_line_args = cmd_line_args_
+
     if is_output_argument(argument):
       com_line =  output_commandline_writer(argument,com_line,inputs, outputs)
     else:
@@ -150,6 +156,9 @@ def typcash(args, typ, defVal):
         raise Exception('failed to cash argument: {}   unable to cash type: {}'.format(args['name'],typ))
 
 def default_helper(inpt, args):
+    if cmd_line_args.dont_generate_default:
+        return
+
     typ = inpt['type']
     defVal = args['defaultValue'].encode()
     try:

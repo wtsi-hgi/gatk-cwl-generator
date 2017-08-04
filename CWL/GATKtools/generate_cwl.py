@@ -31,7 +31,7 @@ def get_json_links(version):
     """
     Parses the tool docs HTML page to get links to the json resources
     """
-    if version == "current":
+    if version == "current" or version.startswith("4"):
        base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" % version
     else:
        base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" % version
@@ -75,12 +75,9 @@ def get_json_links(version):
     return JSONLinks(tool_urls, annotator_urls, readfile_urls, resourcefile_urls)
 
 
-def generate_cwl_and_json_files(out_dir, grouped_urls, include_file):
+def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
     """
     Generates the cwl and json files
-    TODO: other params
-
-    :param include_files: if this is not None, only parse this file
     """
     global_args = get_global_arguments(grouped_urls)
 
@@ -105,7 +102,7 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, include_file):
 
     # Create json for each tool and convert to cwl
     for tool_url in grouped_urls.tool_urls:
-        if include_file is None or include_file in tool_url or "CommandLineGATK" in tool_url:
+        if cmd_line_options.include_file is None or cmd_line_options.include_file in tool_url or "CommandLineGATK" in tool_url:
             tool_json = requests.get(tool_url)
             
             tool_json_json = tool_json.json()
@@ -125,7 +122,8 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, include_file):
 
             json2cwl.make_cwl(
                 tool_json_json,
-                cwl_dir
+                cwl_dir,
+                cmd_line_options
             )
             print("Written cwlfiles/" + tool_name + ".cwl")
 
@@ -168,7 +166,10 @@ def get_global_arguments(grouped_urls):
         arguments.extend(args)
     return arguments
 
+cmd_line_options = ""
+
 def main():
+    global cmd_line_options
     #default version is 3.5-0
     #default directory is current directory/cwlscripts
 
@@ -176,23 +177,26 @@ def main():
     parser.add_argument('-v', action='store', dest='gatkversion')
     parser.add_argument('-out', action='store', dest='outputdir')
     parser.add_argument('-include', action='store', dest='include_file', help="Only generate this file (note, CommandLinkGATK has to be generated)")
-    results = parser.parse_args()
+    parser.add_argument('-dont_generate_default', action='store', dest='dont_generate_default', type=bool,
+        help="If true, adds the CWL default arguments to the CWL file", default=True)
+    cmd_line_options = parser.parse_args()
 
-    if results.gatkversion:
-      version = results.gatkversion
+    if cmd_line_options.gatkversion:
+      version = cmd_line_options.gatkversion
     else:
       version = '3.5'
     
-    if results.outputdir:
-      directory = results.outputdir
+    if cmd_line_options.outputdir:
+      directory = cmd_line_options.outputdir
     else:
       directory = os.getcwd() + '/cwlscripts'
 
     print("Your chosen directory is: %s" % directory)
     grouped_urls = get_json_links(version)
 
-    generate_cwl_and_json_files(directory, grouped_urls, results.include_file)
+    generate_cwl_and_json_files(directory, grouped_urls, cmd_line_options)
 
 
 if __name__ == '__main__':
+    
     main()

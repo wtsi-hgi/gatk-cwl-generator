@@ -9,7 +9,7 @@ import os
 from helper_functions import *
 from cwl_generator import cwl_generator
 
-def make_cwl(GATK_json, cwl_dir):
+def make_cwl(GATK_json, cwl_dir, cmd_line_options):
     """
     Make a cwl file with a given GATK json file in the cwl directory
     """
@@ -28,7 +28,8 @@ def make_cwl(GATK_json, cwl_dir):
 
     cwl_generator(
         GATK_json,
-        skeleton_cwl
+        skeleton_cwl,
+        cmd_line_options
     )
     f.write(json.dumps(skeleton_cwl, indent=4, sort_keys=False))  # write the file
     f.close()

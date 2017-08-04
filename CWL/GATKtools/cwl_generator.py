@@ -14,7 +14,7 @@ Arguments below are classified as invalid for following reasons:
 :param json: The json file to convert
 :param cwl: A skeleton of the cwl file, which this function will complete.
 """
-def cwl_generator(json, cwl):
+def cwl_generator(json, cwl, cmd_line_options):
     com_line = ""
     outputs = []
     inputs = [{"doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
@@ -24,7 +24,7 @@ def cwl_generator(json, cwl):
         if argument['name'] in invalid_args:
             continue
 
-        com_line = argument_writer(argument, inputs, outputs, com_line)
+        com_line = argument_writer(argument, inputs, outputs, com_line, cmd_line_options)
 #        com_line = output_commandline_writer(argument,com_line,inputs,outputs)
         # com_line = commandline_writer(argument, com_line)
 
