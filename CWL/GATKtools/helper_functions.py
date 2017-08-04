@@ -35,8 +35,10 @@ def GATK_to_CWL_type(argument, type_):
         return 'File'
     elif type_ in ('byte', 'integer'):
         return 'int'
-    elif type_ == 'set':  # ig. -goodSM: name of sample(s) to keep
-        return 'string[]'
+    # ig. -goodSM: name of sample(s) to keep
+    elif type_ == 'set':  
+        argument['type'] = 'List[string]'
+        return 'string'
     # Check for enumerated types, and if they exist, ignore the specified type name
     elif argument['options']:
         return {
@@ -48,10 +50,10 @@ def GATK_to_CWL_type(argument, type_):
             "type": "enum",
             "symbols": enum_types[type_]
         }
-    #elif 'intervalbinding' in type_: 
-    #    argument['type'] = type_ # TODO: look into this
-    #    return ['null', 'string', 'string[]', 'File']
-
+    # type intervalbinding can be a list of strings or a list of files 
+    elif 'intervalbinding' in type_:
+       argument['type'] = ['List[File]','List[String]'] 
+       return ['File','string'] 
     elif type_ == 'rodbinding[variantcontext]' or  type_ == 'rodbinding[feature]' \
      or  type_ == 'rodbinding[bedfeature]' or type_ == 'rodbinding[sampileupfeature]' \
      or  type_ == 'rodbindingcollection[variantcontext]': 
@@ -67,8 +69,12 @@ def GATK_to_CWL_type(argument, type_):
         return 'string'
 
     else:
-#         return 'string'
         raise ValueError('unsupported type: {}'.format(type_))
+
+
+
+
+
 
 
 """
@@ -79,24 +85,42 @@ Fills the type in an incomplete cwl description, outputing to cwl_desc
 """
 
 
-def type_writer(argument, cwl_desc, prefix):
+def inputbinding_and_type_writer(argument, cwl_desc):
+    
+    def helper (item_type, prefix):
+      type_ = { "type": "array",
+                "items": item_type,
+                "inputBinding": {
+                      "prefix": prefix
+                }
+              }
+      return type_
+
+    prefix = argument['name'][1:]
+
     # Patch the incorrect description given by GATK for both --input_file and the type intervalbinding
     if argument['synonyms'] == '-I': 
         argument['type'] = 'File'
         cwl_desc['type'] = 'File'
-    elif 'intervalbinding' in argument['type'].lower():
-        cwl_desc['type'] = ['null','string','string[]','File'] # TODO: this line
+
     else:
         type_ = GATK_to_CWL_type(argument, argument['type'].lower())
-        
+
+        if isinstance(type_, list):
+          type_dict = []
+          for elm in type_:
+            if 'list' in elm.lower():
+              type_dict.append(helper(elm,prefix))
+            else:
+              type_dict.append(elm)
+          type_ = type_dict
+                
+
         if 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
-            type_ = {
-                "type": "array",
-                "items": type_,
-                "inputBinding": {
-                    "prefix": prefix
-                }
-            }
+            type_ = helper(type_,prefix) 
+        
+        else: 
+           cwl_desc['inputBinding'] = { 'prefix': argument['name'] }
 
         if argument['required'] == 'no':
             type_ = ['null', type_]
@@ -114,12 +138,9 @@ def input_writer(argument, inputs):
     cwl_desc = {
         'doc': argument['summary'],
         'id': argument['name'].strip('-'),
-        'inputBinding': {
-            'prefix': argument['name']
-        }
     }
 
-    type_writer(argument, cwl_desc)
+    inputbinding_and_type_writer(argument, cwl_desc)
     if argument['defaultValue'] != "NA": 
       default_helper(cwl_desc,argument)
     secondaryfiles_writer(argument,cwl_desc,inputs)
