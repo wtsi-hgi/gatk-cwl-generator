@@ -27,7 +27,7 @@ def input_writer(argument, inputs):
     }
 
     type_writer(argument, cwl_desc)
-    if argument['defaultValue'] != "NA": 
+    if argument['defaultValue'] != "NA" and argument['defaultValue'] != "None": 
       default_helper(cwl_desc,argument)
     secondaryfiles_writer(argument,cwl_desc,inputs)
 
@@ -65,7 +65,6 @@ def GATK_to_CWL_type(argument, type_):
         return 'int'
     # ig. -goodSM: name of sample(s) to keep
     elif type_ == 'set':  
-        argument['type'] = 'List[string]'
         return 'string'
     # Check for enumerated types, and if they exist, ignore the specified type name
     elif argument['options']:
@@ -80,7 +79,6 @@ def GATK_to_CWL_type(argument, type_):
         }
     # type intervalbinding can be a list of strings or a list of files 
     elif 'intervalbinding' in type_:
-       argument['type'] = ['List[File]','List[String]'] 
        return ['File','string'] 
     elif type_ == 'rodbinding[variantcontext]' or  type_ == 'rodbinding[feature]' or  \
          type_ == 'rodbinding[bedfeature]' or type_ == 'rodbinding[sampileupfeature]' or  \
@@ -115,9 +113,6 @@ def typcash(argument, typ, defVal):
         return float(defVal)
     else:
         raise ValueError('Failed to cash default value to assigned type. \n Argument: {}    Type: {}   DefaultValue: {}'.format(argument['name'],typ,defVal))
-
-
-
 
 
 
@@ -157,17 +152,15 @@ def type_writer(argument, cwl_desc):
             else:
               type_dict.append(elm)
           type_ = type_dict
-                
-        if 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
+        else:        
+          if 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
             type_ = helper(type_,prefix)      
-        else: 
-           cwl_desc['inputBinding'] = { 'prefix': argument['name'] }
+          else: 
+            cwl_desc['inputBinding'] = { 'prefix': argument['name'] }
 
         if argument['required'] == 'no':
             type_ = ['null', type_]
         cwl_desc['type'] = type_
-
-
 
 
 
@@ -183,9 +176,11 @@ def default_helper(inpt, argument):
             typ = typ[1]
         if isinstance(typ, dict):                      
           if typ['type'] == 'array':
-            typ = typ['items'] 
+            item_type = typ['items'] 
+            typ = typ['type']
           else:  # if type == 'enum'
             typ = typ['type']
+ 
     except:
        raise ValueError('Failed to identify the type of the input argument \n Input argument: {}    Input type: {}'.format( argument['name'], typ ))
 
@@ -223,7 +218,7 @@ def is_output_argument(argument):
     """
     Returns whether this argument's type indicates it's an output argument
     """
-    return any(x in argument["type"].lower() for x in ('printstream', 'writer'))
+    return any(x in argument["type"] for x in ('PrintStream', 'Writer'))
 
 
 
@@ -245,8 +240,8 @@ def output_commandline_writer(argument,com_line,inputs,outputs):
   elif argument['type'] == 'VariantContextWriter':
     output_path = '{}.vcf'.format(name)
   else:
-    print('################################ argument to fix',argument['name'],argument['type'])
     output_path = '{}.txt'.format(name)
+    print("The input argument '{}' with input type '{}' will create an output file to the following output path: {} ".format(argument['name'],argument['type'],output_path)) 
                               # when not an required argument, 
   argument['type'] = 'string' # option as an input to specify filepath
  
