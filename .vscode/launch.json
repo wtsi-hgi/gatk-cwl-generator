@@ -12,7 +12,8 @@
             "env": {},
             "args": [
                 "-include", "HaplotypeCaller",
-                "-v", "current"
+                "-v", "current",
+                "-dont_generate_default", "True"
             ],
             "envFile": "${workspaceRoot}/.env",
             "debugOptions": [
@@ -29,6 +30,9 @@
             "pythonPath": "${config:python.pythonPath}",
             "program": "${workspaceRoot}/CWL/GATKtools/generate_cwl.py",
             "cwd": "${workspaceRoot}",
+            "args": [
+                "-v", "4.beta-latest"
+            ],
             "env": {},
             "envFile": "${workspaceRoot}/.env",
             "debugOptions": [
