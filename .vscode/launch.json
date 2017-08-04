@@ -20,7 +20,7 @@
                 "WaitOnAbnormalExit",
                 "WaitOnNormalExit",
                 "RedirectOutput"
-            ]
+            ] 
         },
         {
             "name": "Python Generate All",
