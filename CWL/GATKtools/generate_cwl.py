@@ -186,7 +186,7 @@ def main():
     if results.outputdir:
       directory = results.outputdir
     else:
-      directory = os.getcwd() + '/cwlscripts'
+      directory = os.getcwd() + '/cwlscripts_%s' % version
 
     print("Your chosen directory is: %s" % directory)
     grouped_urls = get_json_links(version)
