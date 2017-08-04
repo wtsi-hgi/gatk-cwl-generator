@@ -79,24 +79,24 @@ Fills the type in an incomplete cwl description, outputing to cwl_desc
 """
 
 
-def type_writer(argument, cwl_desc):
+def type_writer(argument, cwl_desc, prefix):
     # Patch the incorrect description given by GATK for both --input_file and the type intervalbinding
-    if argument['name'] == '--input_file': 
+    if argument['synonyms'] == '-I': 
         argument['type'] = 'File'
         cwl_desc['type'] = 'File'
     elif 'intervalbinding' in argument['type'].lower():
-        cwl_desc['type'] = ['null','string','string[]','File']
+        cwl_desc['type'] = ['null','string','string[]','File'] # TODO: this line
     else:
         type_ = GATK_to_CWL_type(argument, argument['type'].lower())
         
         if 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
-            if isinstance(type_, str):
-                type_ += '[]'
-            else:
-                type_ = {
-                    "type": "array",
-                    "items": type_
+            type_ = {
+                "type": "array",
+                "items": type_,
+                "inputBinding": {
+                    "prefix": prefix
                 }
+            }
 
         if argument['required'] == 'no':
             type_ = ['null', type_]
