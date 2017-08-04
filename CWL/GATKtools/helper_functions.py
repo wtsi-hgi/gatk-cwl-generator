@@ -1,8 +1,36 @@
 #!/bin/python
 
-"""
-Collection of helper functions for cwl_generator.py and json2cwl.py
-"""
+
+
+def argument_writer(argument, inputs, outputs, com_line):
+    """
+    Collection of helper functions for cwl_generator.py and json2cwl.py
+    """
+
+    if is_output_argument(argument):
+      com_line =  output_commandline_writer(argument,com_line,inputs, outputs)
+    else:
+      input_writer(argument, inputs)
+    return com_line
+
+def input_writer(argument, inputs):
+    """
+    Modifies the `inputs` parameter with the cwl syntax for expressing a given input argument
+
+    :param argument: The cwl argument, as specified in the json file
+    :param inputs: The inputs object, to be written to with the correct information
+    """
+
+    cwl_desc = {
+        'doc': argument['summary'],
+        'id': argument['name'].strip('-'),
+    }
+
+    type_writer(argument, cwl_desc)
+    if argument['defaultValue'] != "NA" and argument['defaultValue'] != "None": 
+      default_helper(cwl_desc,argument)
+    secondaryfiles_writer(argument,cwl_desc,inputs)
+
 
 # You cannot get the enumeration information for an enumeration in a nested type, so they are hard coded here
 enum_types = {
@@ -35,8 +63,9 @@ def GATK_to_CWL_type(argument, type_):
         return 'File'
     elif type_ in ('byte', 'integer'):
         return 'int'
-    elif type_ == 'set':  # ig. -goodSM: name of sample(s) to keep
-        return 'string[]'
+    # ig. -goodSM: name of sample(s) to keep
+    elif type_ == 'set':  
+        return 'string'
     # Check for enumerated types, and if they exist, ignore the specified type name
     elif argument['options']:
         return {
@@ -48,99 +77,29 @@ def GATK_to_CWL_type(argument, type_):
             "type": "enum",
             "symbols": enum_types[type_]
         }
-    #elif 'intervalbinding' in type_: 
-    #    argument['type'] = type_ # TODO: look into this
-    #    return ['null', 'string', 'string[]', 'File']
-
-    elif type_ == 'rodbinding[variantcontext]' or  type_ == 'rodbinding[feature]' \
-     or  type_ == 'rodbinding[bedfeature]' or type_ == 'rodbinding[sampileupfeature]' \
-     or  type_ == 'rodbindingcollection[variantcontext]': 
+    # type intervalbinding can be a list of strings or a list of files 
+    elif 'intervalbinding' in type_:
+       return ['File','string'] 
+    elif type_ == 'rodbinding[variantcontext]' or  type_ == 'rodbinding[feature]' or  \
+         type_ == 'rodbinding[bedfeature]' or type_ == 'rodbinding[sampileupfeature]' or  \
+         type_ == 'rodbindingcollection[variantcontext]': 
         """
-         rodbinding
-          variantcontext                       # VCF VCF3 BCF2
-          feature                              # BCF2, BEAGLE, BED, BEDTABLE, EXAMPLEBINARY, GELITEXT, RAWHAPMAP, REFSEQ, SAMPILEUP, SAMREAD, TABLE, VCF, VCF3
-          BEDfeature                           # BED
-          SAMPileupFeature                     # files in SAMPILEUP format
-          RodBindingCollection[VariantContext] # List of files
+        rodbinding[options]
+          variantcontext                         # VCF VCF3 BCF2
+          feature                                # BCF2, BEAGLE, BED, BEDTABLE, EXAMPLEBINARY, GELITEXT, RAWHAPMAP, REFSEQ, SAMPILEUP, SAMREAD, TABLE, VCF, VCF3
+          BEDfeature                             # BED
+          SAMPileupFeature                       # files in SAMPILEUP format
+          RodBindingCollection[VariantContext]   # List of files
         """
         argument['type'] = 'string'
         return 'string'
 
     else:
-#         return 'string'
-        raise ValueError('unsupported type: {}'.format(type_))
+        raise ValueError('Unable to assign to a CWL type \n Argument: {}   Type: {}'.format(argument['name'][2:],type_))
 
 
-"""
-Fills the type in an incomplete cwl description, outputing to cwl_desc
-
-:param argument: The cwl argument, as specified in the json file
-:param cwl_desc: The inputs object, to be written to with the correct information
-"""
-
-
-def type_writer(argument, cwl_desc):
-    # Patch the incorrect description given by GATK for both --input_file and the type intervalbinding
-    if argument['name'] == '--input_file': 
-        argument['type'] = 'File'
-        cwl_desc['type'] = 'File'
-    elif 'intervalbinding' in argument['type'].lower():
-        cwl_desc['type'] = ['null','string','string[]','File']
-    else:
-        type_ = GATK_to_CWL_type(argument, argument['type'].lower())
-        
-        if 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
-            if isinstance(type_, str):
-                type_ += '[]'
-            else:
-                type_ = {
-                    "type": "array",
-                    "items": type_
-                }
-
-        if argument['required'] == 'no':
-            type_ = ['null', type_]
-        cwl_desc['type'] = type_
-
-
-"""
-Modifies the `inputs` parameter with the cwl syntax for expressing a given input argument
-
-:param argument: The cwl argument, as specified in the json file
-:param inputs: The inputs object, to be written to with the correct information
-"""
-
-def input_writer(argument, inputs):
-    cwl_desc = {
-        'doc': argument['summary'],
-        'id': argument['name'].strip('-'),
-        'inputBinding': {
-            'prefix': argument['name']
-        }
-    }
-
-    type_writer(argument, cwl_desc)
-    if argument['defaultValue'] != "NA": 
-      default_helper(cwl_desc,argument)
-    secondaryfiles_writer(argument,cwl_desc,inputs)
-
-global cmd_line_args
-
-def argument_writer(argument, inputs, outputs, com_line, cmd_line_args_):
-    global cmd_line_args
-
-    cmd_line_args = cmd_line_args_
-
-    if is_output_argument(argument):
-      com_line =  output_commandline_writer(argument,com_line,inputs, outputs)
-    else:
-      input_writer(argument, inputs)
-    return com_line
-
-def typcash(args, typ, defVal):
-    if defVal == '[]':
-        return []
-    elif typ == 'int':
+def typcash(argument, typ, defVal):
+    if typ == 'int':
         return int(defVal)
     elif typ == 'boolean':
         return bool(defVal)
@@ -153,69 +112,128 @@ def typcash(args, typ, defVal):
     elif typ == 'double':
         return float(defVal)
     else:
-        raise Exception('failed to cash argument: {}   unable to cash type: {}'.format(args['name'],typ))
+        raise ValueError('Failed to cash default value to assigned type. \n Argument: {}    Type: {}   DefaultValue: {}'.format(argument['name'],typ,defVal))
 
-def default_helper(inpt, args):
+
+
+def type_writer(argument, cwl_desc):
+    """
+    Fills the type in an incomplete cwl description, outputing to cwl_desc
+
+    :param argument: The cwl argument, as specified in the json file
+    :param cwl_desc: The inputs object, to be written to with the correct information
+    """
+
+    def helper (item_type, prefix):
+      type_ = { 
+                  "type": "array",
+                  "items": item_type,
+                  "inputBinding": {
+                        "prefix": prefix
+                  }
+              }
+      return type_
+
+    prefix = argument['name'][1:]
+
+    # Patch the incorrect description given by GATK for both --input_file and the type intervalbinding
+    if argument['synonyms'] == '-I': 
+        argument['type'] = 'File'
+        cwl_desc['type'] = 'File'
+
+    else:
+        type_ = GATK_to_CWL_type(argument, argument['type'].lower())
+
+        if isinstance(type_, list):
+          type_dict = []
+          for elm in type_:
+            if 'list' in elm.lower():
+              type_dict.append(helper(elm,prefix))
+            else:
+              type_dict.append(elm)
+          type_ = type_dict
+        else:        
+          if 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
+            type_ = helper(type_,prefix)      
+          else: 
+            cwl_desc['inputBinding'] = { 'prefix': argument['name'] }
+
+        if argument['required'] == 'no':
+            type_ = ['null', type_]
+        cwl_desc['type'] = type_
+
+
+
+def default_helper(inpt, argument):
+    """
+    Sets the default value as in its original type
+    """
     if cmd_line_args.dont_generate_default:
         return
 
     typ = inpt['type']
-    defVal = args['defaultValue'].encode()
+    defVal = argument['defaultValue']
+
     try:
         if isinstance(typ, list):
             typ = typ[1]
         if isinstance(typ, dict):                      
           if typ['type'] == 'array':
-            typ = typ['items'] 
-          else: 
+            item_type = typ['items'] 
             typ = typ['type']
+          else:  # if type == 'enum'
+            typ = typ['type']
+ 
     except:
-       raise Exception('Argument: {}   Unrecognized type: {}'.format(args['name'],typ))
+       raise ValueError('Failed to identify the type of the input argument \n Input argument: {}    Input type: {}'.format( argument['name'], typ ))
 
-    if '[]' in typ and typ != '[]':
-        typ = typ.strip('[]')
-        if defVal == '[]':
-            inpt['default'] = []
-        else:
-            inpt['default'] = [typcash(args, typ, val)
-                               for val in defVal[1:-1].replace(' ', '').split(',')]
-    elif typ == "array":
-        inpt['default'] = [typcash(args,item_type,val) for val in defVal[1:-1].replace(' ', '').split(',')]
+    if defVal == '[]':
+        inpt['default'] = []
     else:
-        inpt['default'] = typcash(args, typ, defVal)
+        if '[]' in typ and typ != '[]':
+            typ = typ.strip('[]')
+            inpt['default'] = [typcash(argument, typ, val) for val in defVal[1:-1].replace(' ', '').split(',')]
+        elif typ == "array":
+            inpt['default'] = [typcash(argument,item_type,val) for val in defVal[1:-1].replace(' ', '').split(',')]
+        else:
+            inpt['default'] = typcash(argument, typ, defVal)
 
 
-def secondaryfiles_writer(args, inpt, inputs):
-    if args['name'] == '--reference_sequence':
+
+
+def secondaryfiles_writer(argument, inpt, inputs):
+    """
+    Sets up file dependencies for certain input files
+    """
+    if argument['name'] == '--reference_sequence':
         inpt['secondaryFiles'] = ['.fai', '^.dict']
         inputs.insert(0, inpt) # ... trying to get around a bug in CWL ...
-    elif 'requires' in args['fulltext'] and 'files' in args['fulltext']:
+    elif 'requires' in argument['fulltext'] and 'files' in argument['fulltext']:
         inpt['secondaryFiles'] = "$(self.location+'.'+self.basename.split('.').splice(-1)[0].replace('m','i'))"
         inputs.insert(0, inpt)
     else:
         inputs.append(inpt)
 
 
-"""
-Returns whether this argument's type indicates it's an output argument
-"""
 
 
 def is_output_argument(argument):
-    return any(x in argument["type"].lower() for x in ('printstream', 'writer'))
+    """
+    Returns whether this argument's type indicates it's an output argument
+    """
+    return any(x in argument["type"] for x in ('PrintStream', 'Writer'))
 
 
-"""
-Modifies the `outputs` parameter with the cwl syntax for expressing a given output argument
-
-:param argument Object: The cwl argument, as specified in the json file
-:param outputs Object: The outputs object, to be written to with the correct information
-"""
 
 def output_commandline_writer(argument,com_line,inputs,outputs):
+  """
+  Modifies the `outputs` parameter with the cwl syntax for expressing a given output argument
+
+  :param argument Object: The cwl argument, as specified in the json file
+  :param outputs Object: The outputs object, to be written to with the correct information
+  """
   
   prefix = argument['name']
-
   name = prefix.strip('-')
 
   if argument['type'] == "GATKSAMFileWriter":
@@ -225,10 +243,10 @@ def output_commandline_writer(argument,com_line,inputs,outputs):
   elif argument['type'] == 'VariantContextWriter':
     output_path = '{}.vcf'.format(name)
   else:
-    print('################################3argument to fix',argument['name'],argument['type'])
     output_path = '{}.txt'.format(name)
+    print("The input argument '{}' with input type '{}' will create an output file to the following output path: {} ".format(argument['name'],argument['type'],output_path)) 
                               # when not an required argument, 
-  argument['type'] = 'string' # option as an input so to specify path_to_file 
+  argument['type'] = 'string' # option as an input to specify filepath
  
   if argument['required'] == "no":
     if argument['defaultValue'] == "NA":
@@ -237,7 +255,7 @@ def output_commandline_writer(argument,com_line,inputs,outputs):
       it is an optional input to which file is generated to
       if specified, the outputbinding should be the specified value
       """
-      input_writer(argument,inputs)                                               # input
+      input_writer(argument,inputs)                                                # input
       output_writer(argument,outputs,'$(inputs.{})'.format(name),['null','File'])  # optional outputbinding
 
     else:
@@ -248,18 +266,19 @@ def output_commandline_writer(argument,com_line,inputs,outputs):
       if specified, the outputbinding should be the specified value
       else default
       """
-      argument['defaultValue'] = output_path                                      # reset default
-      input_writer(argument,inputs)                                               # input
+      argument['defaultValue'] = output_path                                       # reset default
+      input_writer(argument,inputs)                                                # input
       output_writer(argument, outputs,'$(inputs.{})'.format(name),'File')          # always an output
 
-  else: #if input required, get rid of the requirement 
+  else: 
     """
     if input is required, remove it as an input
     hardcode the name of the file in and make it as a output
     """
-    com_line += '{} {}'.format(prefix,output_path)                               # hardcode ie. -o output.bam
-    output_writer(argument,outputs,output_path,'File')                           # hardcoded name, always an output
+    com_line += '{} {}'.format(prefix,output_path)                                 # hardcode ie. -o output.bam
+    output_writer(argument,outputs,output_path,'File')                             # hardcoded name, always an output
   return com_line
+
 
 def output_writer(argument, outputs, globval, type_):
     outpt = {
