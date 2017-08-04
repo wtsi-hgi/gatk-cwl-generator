@@ -31,5 +31,5 @@ def cwl_generator(json, cwl, cmd_line_options):
     cwl["inputs"] = inputs
     cwl["outputs"] = outputs
     if com_line:
-      cwl["arguments"] = { "shellQuote": False,
-                           "valueFrom": com_line }
+      cwl["arguments"] = [{ "shellQuote": False,
+                           "valueFrom": com_line }]
