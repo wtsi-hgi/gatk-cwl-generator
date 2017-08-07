@@ -4,7 +4,7 @@ The file converts the documentation's json files to cwl files
 
 import json
 import os
-from helper_functions import *
+from gen_cwl_arg import get_input_json, get_output_json
 
 invalid_args = ['--help', '--defaultBaseQualities']
 
