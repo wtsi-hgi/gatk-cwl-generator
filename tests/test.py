@@ -2,7 +2,7 @@ from os import sys, path
 # Use fix from https://stackoverflow.com/a/19190695 to import from the base directory
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
-import CWL.GATKtools as GATKTools # TODO: Update this when I have better paths
+import gatkcwlgenerator as cwl_gen # TODO: Update this when I have better paths
 
 import subprocess
 import os
@@ -87,7 +87,7 @@ class TestGenerateCWL(unittest.TestCase):
         cls.links_by_version = {}
 
         for version in supported_versions:
-            cls.links_by_version[version] = GATKTools.generate_cwl.get_json_links(version)
+            cls.links_by_version[version] = cwl_gen.generate_cwl.get_json_links(version)
 
     def test_get_json_links(self):
         for version in supported_versions:
