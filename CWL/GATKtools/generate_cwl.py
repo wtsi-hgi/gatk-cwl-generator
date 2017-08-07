@@ -45,12 +45,14 @@ def get_json_links(version):
     readfile_urls = []
     resourcefile_urls = []
 
+    starting_str = "org_broadinstitute_gatk" if is_version_3(version) else "org_broadinstitute_hellbender"
+
     # Parse the html to obtain all json file links
     for link in soup.select("tr > td > a"):
         href = link['href']
-        if href.startswith("org_broadinstitute_gatk") and "Exception" not in href:
+        if href.startswith(starting_str) and "Exception" not in href:
             full_url = base_url + href + ".json"
-            rest_text = href[len("org_broadinstitute_gatk_"):]
+            rest_text = href[len(starting_str + "_"):]
 
             # Need to process these separately
             if rest_text.startswith("tools_walkers_annotator") \
@@ -69,7 +71,7 @@ def get_json_links(version):
     
     # Move CommandLine to the front of the list
     # TODO: double check this
-    if should_apply_cmdlink_GATK(version):
+    if is_version_3(version):
         i = find_index(tool_urls, lambda x: "CommandLineGATK" in x)
         tool_urls[0], tool_urls[i] = tool_urls[i], tool_urls[0]
     # print(url_list)
@@ -77,14 +79,14 @@ def get_json_links(version):
     return JSONLinks(tool_urls, annotator_urls, readfile_urls, resourcefile_urls)
 
 
-def should_apply_cmdlink_GATK(version):
+def is_version_3(version):
     return not version.startswith("4")
 
 def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
     """
     Generates the cwl and json files
     """
-    global_args = get_global_arguments(grouped_urls, not should_apply_cmdlink_GATK(cmd_line_options.version))
+    global_args = get_global_arguments(grouped_urls, is_version_3(cmd_line_options.gatkversion))
 
     print("Creating and converting json files...")
     
@@ -164,19 +166,19 @@ def get_global_arguments(grouped_urls, apply_cmdlineGATK):
     print("Getting read filter arguments ...")
 
     for readfilter_url in grouped_urls.readfilter_urls:
-        args = requests.get(readfilter_url).json()["arguments"]
+        readfilter_json = requests.get(readfilter_url).json()
+        
+        if "arguments" in readfilter_json:
+            args = readfilter_json["arguments"]
 
-        for arg in args:
-            arg["defaultValue"] = "NA" # This argument is not necessarily valid, so we shouldn't set the default
-            arg["required"] = "no"
+            for arg in args:
+                arg["defaultValue"] = "NA" # This argument is not necessarily valid, so we shouldn't set the default
+                arg["required"] = "no"
 
-        arguments.extend(args)
+            arguments.extend(args)
     return arguments
 
-cmd_line_options = ""
-
 def main():
-    global cmd_line_options
     #default version is 3.5-0
     #default directory is current directory/cwlscripts
 

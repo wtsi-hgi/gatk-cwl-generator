@@ -4,3 +4,4 @@ out.gvcf.gz
 .DS_STORE
 *.pyc
 tests/test_haplotypecaller_input.yml
+tests/test_haplotypecaller_input.yml
