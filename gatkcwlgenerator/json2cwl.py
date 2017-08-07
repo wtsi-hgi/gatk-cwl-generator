@@ -8,7 +8,6 @@ from helper_functions import *
 
 invalid_args = ['--help', '--defaultBaseQualities']
 
-
 def cwl_generator(json_, cwl, cmd_line_options):
     """
     Converts GATK tools documented in .json to .cwl (this function changes the cwl parameter)
@@ -28,7 +27,16 @@ def cwl_generator(json_, cwl, cmd_line_options):
 
     for argument in json_['arguments']:
         if not argument['name'] in invalid_args:
-            argument_writer(argument, inputs, outputs, com_line, cmd_line_options)
+            if is_output_argument(argument):
+                input_json, output_json = get_output_json(argument)
+                outputs.append(output_json)
+            else:
+                input_json = input_writer(argument)
+
+            if "secondaryFiles" in input_json:
+                inputs.insert(0, input_json)
+            else:
+                inputs.append(output_json)
 
     cwl["inputs"] = inputs
     cwl["outputs"] = outputs

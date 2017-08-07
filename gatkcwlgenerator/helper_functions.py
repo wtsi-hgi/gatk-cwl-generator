@@ -3,30 +3,10 @@
 Collection of helper functions for cwl_generator.py and json2cwl.py
 """
 
-def get_argument_cwl(argument, cmd_line_options):
-    """
-    :returns: (input, output, commandLine)
-    """
 
-def argument_writer(argument, inputs, outputs, com_line, cmd_line_args_):
+def get_input_json(argument):
     """
-    Writes to inputs and outputs, returns com_line
-    """
-    global cmd_line_args
-
-    cmd_line_args = cmd_line_args_
-
-    if is_output_argument(argument):
-        output_commandline_writer(
-            argument, com_line, inputs, outputs)
-    else:
-        input_writer(argument, inputs)
-    return None
-
-
-def input_writer(argument, inputs):
-    """
-    Modifies the `inputs` parameter with the cwl syntax for expressing a given input argument
+    Returns the cwl syntax for expressing the given argument
 
     :param argument: The cwl argument, as specified in the json file
     :param inputs: The inputs object, to be written to with the correct information
@@ -45,12 +25,8 @@ def input_writer(argument, inputs):
 
     if argument['name'] == '--reference_sequence':
         cwl_desc['secondaryFiles'] = ['.fai', '^.dict']
-        inputs.insert(0, cwl_desc)  # ... trying to get around a bug in CWL ...
     elif 'requires' in argument['fulltext'] and 'files' in argument['fulltext']:
         cwl_desc['secondaryFiles'] = "$(self.location+'.'+self.basename.split('.').splice(-1)[0].replace('m','i'))"
-        inputs.insert(0, cwl_desc)
-    else:
-        inputs.append(cwl_desc)
 
     return cwl_desc
 
@@ -237,7 +213,7 @@ def is_output_argument(argument):
     return any(x in argument["type"] for x in ('PrintStream', 'Writer'))
 
 
-def output_commandline_writer(argument, com_line, inputs, outputs):
+def get_output_json(argument):
     """
     Modifies the `outputs` parameter with the cwl syntax for expressing a given output argument
 
@@ -245,7 +221,21 @@ def output_commandline_writer(argument, com_line, inputs, outputs):
 
     :param argument Object: The cwl argument, as specified in the json file
     :param outputs Object: The outputs object, to be written to with the correct information
+
+    :returns: (input_json, output_json)
     """
+
+    def helper(argument, globval, type_):
+        output_json = {
+            'id': argument['name'],
+            'type': type_,
+            'outputBinding': {
+                'glob': globval
+            }
+        }
+
+        return output_json
+
 
     prefix = argument['name']
     name = prefix.strip('-')
@@ -269,9 +259,8 @@ def output_commandline_writer(argument, com_line, inputs, outputs):
         it is an optional input to which file is generated to
         if specified, the outputbinding should be the specified value
         """
-        input_writer(
-            argument, inputs)                                                # input
-        output_writer(argument, outputs, '$(inputs.{})'.format(
+        input_json = get_input_json(argument)                                                # input
+        output_json = helper(argument, '$(inputs.{})'.format(
             name), ['null', 'File'])  # optional outputbinding
     else:
         """
@@ -283,18 +272,8 @@ def output_commandline_writer(argument, com_line, inputs, outputs):
         """
         argument['defaultValue'] = output_path                                       # reset default
         # input
-        input_writer(argument, inputs)
-        output_writer(argument, outputs, '$(inputs.{})'.format(
+        input_json = get_input_json(argument)
+        output_json = helper(argument, '$(inputs.{})'.format(
             name), 'File')          # always an output
 
-
-def output_writer(argument, outputs, globval, type_):
-    outpt = {
-        'id': argument['name'],
-        'type': type_,
-        'outputBinding': {
-            'glob': globval
-        }
-    }
-
-    outputs.append(outpt)
+    return (input_json, output_json)
