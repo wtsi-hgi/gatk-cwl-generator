@@ -20,7 +20,6 @@ def cwl_generator(json_, cwl, cmd_line_options):
     :param json: The json file to convert
     :param cwl: A skeleton of the cwl file, which this function will complete.
     """
-    com_line = ""
     outputs = []
     inputs = [
         {"doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
@@ -29,15 +28,10 @@ def cwl_generator(json_, cwl, cmd_line_options):
 
     for argument in json_['arguments']:
         if not argument['name'] in invalid_args:
-            com_line = argument_writer(argument, inputs, outputs, com_line, cmd_line_options)
+            argument_writer(argument, inputs, outputs, com_line, cmd_line_options)
 
     cwl["inputs"] = inputs
     cwl["outputs"] = outputs
-    if com_line:
-        cwl["arguments"] = [{
-            "shellQuote": False,
-            "valueFrom": com_line
-        }]
 
 
 def json2cwl(GATK_json, cwl_dir, cmd_line_options):

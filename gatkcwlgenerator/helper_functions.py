@@ -17,11 +17,11 @@ def argument_writer(argument, inputs, outputs, com_line, cmd_line_args_):
     cmd_line_args = cmd_line_args_
 
     if is_output_argument(argument):
-        com_line = output_commandline_writer(
+        output_commandline_writer(
             argument, com_line, inputs, outputs)
     else:
         input_writer(argument, inputs)
-    return com_line
+    return None
 
 
 def input_writer(argument, inputs):
@@ -263,42 +263,29 @@ def output_commandline_writer(argument, com_line, inputs, outputs):
         # when not an required argument,
     argument['type'] = 'string'  # option as an input to specify filepath
 
-    if argument['required'] == "no":
-        if argument['defaultValue'] == "NA":
-            """
-            if the argument is not required and doesn't have a default value
-            it is an optional input to which file is generated to
-            if specified, the outputbinding should be the specified value
-            """
-            input_writer(
-                argument, inputs)                                                # input
-            output_writer(argument, outputs, '$(inputs.{})'.format(
-                name), ['null', 'File'])  # optional outputbinding
-
-        else:
-            """
-            if the argument is not required but has a default value
-            reset the default value to sth that isn't standard output
-            it is an optional input to which file is generated to
-            if specified, the outputbinding should be the specified value
-            else default
-            """
-            argument['defaultValue'] = output_path                                       # reset default
-            # input
-            input_writer(argument, inputs)
-            output_writer(argument, outputs, '$(inputs.{})'.format(
-                name), 'File')          # always an output
-
+    if argument['defaultValue'] == "NA":
+        """
+        if the argument is not required and doesn't have a default value
+        it is an optional input to which file is generated to
+        if specified, the outputbinding should be the specified value
+        """
+        input_writer(
+            argument, inputs)                                                # input
+        output_writer(argument, outputs, '$(inputs.{})'.format(
+            name), ['null', 'File'])  # optional outputbinding
     else:
         """
-        if input is required, remove it as an input
-        hardcode the name of the file in and make it as a output
+        if the argument is not required but has a default value
+        reset the default value to sth that isn't standard output
+        it is an optional input to which file is generated to
+        if specified, the outputbinding should be the specified value
+        else default
         """
-        com_line += '{} {}'.format(
-            prefix, output_path)                                 # hardcode ie. -o output.bam
-        # hardcoded name, always an output
-        output_writer(argument, outputs, output_path, 'File')
-    return com_line
+        argument['defaultValue'] = output_path                                       # reset default
+        # input
+        input_writer(argument, inputs)
+        output_writer(argument, outputs, '$(inputs.{})'.format(
+            name), 'File')          # always an output
 
 
 def output_writer(argument, outputs, globval, type_):
