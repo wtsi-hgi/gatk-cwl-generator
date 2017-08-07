@@ -91,7 +91,7 @@ class TestGenerateCWL(unittest.TestCase):
 
     def test_get_json_links(self):
         for version in supported_versions:
-            for links in TestGenerateCWL.links_by_version[version].__dict__.items():
+            for links in TestGenerateCWL.links_by_version[version].__dict__.values():
                 self.assertTrue(links) # assert it's not empty
 
     def test_no_arguments_in_annotator(self):
