@@ -19,7 +19,14 @@ def get_input_json(argument):
         'id': argument['name'].strip('-'),
     }
 
-    type_writer(argument, cwl_desc)
+    typ, is_array_type = type_writer(argument)
+    if not is_array_type:
+        cwl_desc["inputBinding"] = {
+            "prefix": argument["name"]
+        }
+
+    cwl_desc["type"] = typ
+
     if argument['defaultValue'] != "NA" and argument['defaultValue'] != "None":
         default_helper(cwl_desc, argument)
 
@@ -119,60 +126,50 @@ def typcash(argument, typ, defVal):
             argument['name'], typ, defVal))
 
 
-def type_writer(argument, cwl_desc):
+def type_writer(argument):
     """
     Fills the type in an incomplete cwl description, outputing to cwl_desc
 
     :param argument: The cwl argument, as specified in the json file
     :param cwl_desc: The inputs object, to be written to with the correct information
+
+    :returns: (type_json, is_array_type)
+    If is_array_type is true, the caller shouldn't output inputBinding's prefix
     """
 
-    def get_input_binding(prefix, type):
-        ob = {
-            "prefix": prefix
-        }
-
-        #if type == "File":
-        #    ob["separate"] = False
-        #    ob["valueFrom"] = "$(getFileArgs(self.location, self))"
-
-        return ob
-
-    def helper(item_type, prefix):
-        type_ = {
-            "type": "array",
-            "items": item_type,
-            "inputBinding": get_input_binding(prefix, item_type)
-        }
-        return type_
+    is_array_type = False
 
     prefix = argument['name']
     # Patch the incorrect description given by GATK for both --input_file and the type intervalbinding
-    if prefix  == '--input_file' or prefix  == '--input':
-        argument['type'] = 'File'
-        cwl_desc['type'] = 'File'
-        cwl_desc['inputBinding'] = get_input_binding(prefix, "File")
+    if prefix == '--input_file' or prefix == '--input':
+        type_ = 'File'
     else:
         type_ = GATK_to_CWL_type(argument, argument['type'].lower())
 
         if isinstance(type_, list) or 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
-           type_ = helper(type_, prefix) 
-        else:
-           cwl_desc['inputBinding'] = get_input_binding(prefix, type_)
+           type_ = {
+                "type": "array",
+                "items": type_,
+                "inputBinding": {
+                    "prefix": prefix
+                }
+            }
+           is_array_type = True
 
         if argument['required'] == 'no':
             if isinstance(type_, list):
-                type_.insert(0,'null')
+                type_.insert(0, 'null')
             else:
                 type_ = ['null', type_]
-        cwl_desc['type'] = type_
+
+    return (type_, is_array_type) # TODO: in caller function, output inputBinding when not an array type
 
 
 def default_helper(inpt, argument):
     """
     Sets the default value as in its original type
     """
-    if cmd_line_args.dont_generate_default:
+    if False:#cmd_line_args.dont_generate_default:
         return
 
     typ = inpt['type']
@@ -226,16 +223,13 @@ def get_output_json(argument):
     """
 
     def helper(argument, globval, type_):
-        output_json = {
+        return {
             'id': argument['name'],
             'type': type_,
             'outputBinding': {
                 'glob': globval
             }
         }
-
-        return output_json
-
 
     prefix = argument['name']
     name = prefix.strip('-')
