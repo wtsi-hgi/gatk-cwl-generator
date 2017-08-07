@@ -5,3 +5,4 @@ out.gvcf.gz
 *.pyc
 tests/test_haplotypecaller_input.yml
 tests/test_haplotypecaller_input.yml
+cache.sqlite

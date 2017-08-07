@@ -8,6 +8,7 @@ import json
 
 from bs4 import BeautifulSoup
 import requests
+import requests_cache
 
 import json2cwl
 
@@ -167,6 +168,7 @@ def get_global_arguments(grouped_urls, apply_cmdlineGATK):
 
     for readfilter_url in grouped_urls.readfilter_urls:
         readfilter_json = requests.get(readfilter_url).json()
+        print("Fetched " + readfilter_url)
         
         if "arguments" in readfilter_json:
             args = readfilter_json["arguments"]
@@ -179,6 +181,9 @@ def get_global_arguments(grouped_urls, apply_cmdlineGATK):
     return arguments
 
 def main():
+    if dev:
+        requests_cache.install_cache() # Increases the time to run dramatically
+
     parser = argparse.ArgumentParser(description = 'take in GATK documentation version and specify output directory')
     parser.add_argument('-v', action='store', dest='gatkversion', default="3.5")
     parser.add_argument('-out', action='store', dest='outputdir')
