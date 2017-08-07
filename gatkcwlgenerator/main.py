@@ -127,7 +127,7 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
             if not (tool_name == "CommandLineGATK" or tool_name == "CatVariants"):
                 apply_global_arguments(tool_json_json, global_args)
 
-            json2cwl.make_cwl(
+            json2cwl.json2cwl(
                 tool_json_json,
                 cwl_dir,
                 cmd_line_options
@@ -179,31 +179,21 @@ def get_global_arguments(grouped_urls, apply_cmdlineGATK):
     return arguments
 
 def main():
-    #default version is 3.5-0
-    #default directory is current directory/cwlscripts
-
     parser = argparse.ArgumentParser(description = 'take in GATK documentation version and specify output directory')
-    parser.add_argument('-v', action='store', dest='gatkversion')
+    parser.add_argument('-v', action='store', dest='gatkversion', default="3.5")
     parser.add_argument('-out', action='store', dest='outputdir')
     parser.add_argument('-include', action='store', dest='include_file', help="Only generate this file (note, CommandLinkGATK has to be generated)")
     parser.add_argument('-dont_generate_default', action='store', dest='dont_generate_default', type=bool,
         help="If true, adds the CWL default arguments to the CWL file", default=True)
     cmd_line_options = parser.parse_args()
-
-    if cmd_line_options.gatkversion:
-      version = cmd_line_options.gatkversion
-    else:
-      version = '3.5'
     
-    if cmd_line_options.outputdir:
-      directory = cmd_line_options.outputdir
-    else:
-      directory = os.getcwd() + '/cwlscripts_%s' % version
+    if not cmd_line_options.outputdir:
+      cmd_line_options.outputdir = os.getcwd() + '/cwlscripts_%s' % cmd_line_options.gatkversion
 
-    print("Your chosen directory is: %s" % directory)
-    grouped_urls = get_json_links(version)
+    print("Your chosen directory is: %s" % cmd_line_options.outputdir)
+    grouped_urls = get_json_links(cmd_line_options.gatkversion)
 
-    generate_cwl_and_json_files(directory, grouped_urls, cmd_line_options)
+    generate_cwl_and_json_files(cmd_line_options.outputdir, grouped_urls, cmd_line_options)
 
 
 if __name__ == '__main__':
