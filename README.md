@@ -36,7 +36,9 @@ generate_cwl.py [-h] [-v GATKVERSION] [-out OUTPUTDIR]
 
 The version defaults to 3.5 and the default out directory is `/cwlscript_[VERSION]/`, where `[VERSION]` is the version of GATK you are using.
 
-The cwl files will be outputted to `cwlfiles` and the JSON files given by the documentation to `jsonfolder`
+This has been tested on versions 3.5-3.8 and generates files for version 4 (though some parameters are unknown and default to outputting a string).
+
+The cwl files will be outputted to `cwlfiles` and the JSON files given by the documentation to `jsonfolder`.
 
 ## Examples
 
@@ -45,7 +47,15 @@ To test the generated CWL files, provided are inputs to the HaplotypeCaller tool
 cwl-runner cwlscripts_3.5/HaplotypeCaller.cwl HaplotypeCaller_inputs.yml
 ```
 
+## Tests
+
+To run the tests, run:
+
+```bash
+python tests/test.py
+```
+
 ## Limitations:
 
-- The parameter `annotation` (for example in [HaplotypeCaller](https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php#--annotation)) is specified to take in a string in the generated CWL file, not an enumeration of all the possible options
+- The parameter `annotation` (for example, in [HaplotypeCaller](https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php#--annotation)) is specified to take in a string in the generated CWL file, not an enumeration of all the possible options
 - All parameters that you can pass to read filters that don't conflict with tool parameters are included and they are marked as optional and no default arguments are specified
