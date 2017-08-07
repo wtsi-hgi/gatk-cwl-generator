@@ -19,7 +19,11 @@ def make_cwl(GATK_json, cwl_dir, cmd_line_options):
            'baseCommand': ['java','-jar','/gatk/GenomeAnalysisTK.jar'],
            'class': 'CommandLineTool',
            'requirements': [{"class": "ShellCommandRequirement"},
-                            {"class": "InlineJavascriptRequirement"},
+                            {"class": "InlineJavascriptRequirement",
+                            "expressionLib": [
+                                "function getFileArgs(f, a){if(a == undefined){return ' ' + f}else{return ':' + a + ' ' + f}}" # Allows you to add annotations
+                                # TODO: make this more readable
+                            ]},
                             {"dockerPull": "gatk:latest", "class": "DockerRequirement"}]}
 
     # Create and write the cwl file

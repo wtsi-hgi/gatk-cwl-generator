@@ -101,8 +101,10 @@ def GATK_to_CWL_type(argument, type_):
         return 'string'
 
     else:
-        raise ValueError('Unable to assign to a CWL type \n Argument: {}   Type: {}'.format(
+        print('WARNING: Unable to assign to a CWL type, defaulting to string\n Argument: {}   Type: {}'.format(
             argument['name'][2:], type_))
+        
+        return "string"
 
 
 def typcash(argument, typ, defVal):
@@ -131,13 +133,22 @@ def type_writer(argument, cwl_desc):
     :param cwl_desc: The inputs object, to be written to with the correct information
     """
 
+    def get_input_binding(prefix, type):
+        ob = {
+            "prefix": prefix
+        }
+
+        if type == "File":
+            ob["separate"] = False
+            ob["valueFrom"] = "$(getFileArgs(self.location, self))"
+
+        return ob
+
     def helper(item_type, prefix):
         type_ = {
             "type": "array",
-                    "items": item_type,
-                    "inputBinding": {
-                        "prefix": prefix
-                    }
+            "items": item_type,
+            "inputBinding": get_input_binding(prefix, item_type)
         }
         return type_
 
@@ -146,14 +157,14 @@ def type_writer(argument, cwl_desc):
     if prefix  == '--input_file' or prefix  == '--input':
         argument['type'] = 'File'
         cwl_desc['type'] = 'File'
-        cwl_desc['inputBinding'] = {'prefix':prefix}
+        cwl_desc['inputBinding'] = get_input_binding(prefix, "File")
     else:
         type_ = GATK_to_CWL_type(argument, argument['type'].lower())
 
         if isinstance(type_, list) or 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
            type_ = helper(type_, prefix) 
         else:
-           cwl_desc['inputBinding'] = {'prefix': prefix}
+           cwl_desc['inputBinding'] = get_input_binding(prefix, type_)
 
         if argument['required'] == 'no':
             if isinstance(type_, list):
