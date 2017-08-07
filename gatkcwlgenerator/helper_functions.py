@@ -19,7 +19,12 @@ def get_input_json(argument):
         'id': argument['name'].strip('-'),
     }
 
-    typ, is_array_type = type_writer(argument)
+    prefix = argument['name']
+    # Patch the incorrect description given by GATK for both --input_file
+    if prefix == '--input_file' or prefix == '--input':
+        argument['name'] = 'File'
+
+    typ, is_array_type = get_CWL_type(argument)
     if not is_array_type:
         cwl_desc["inputBinding"] = {
             "prefix": argument["name"]
@@ -51,61 +56,56 @@ enum_types = {
 }
 
 
-def GATK_to_CWL_type(argument, type_):
+def basic_GATK_type_to_CWL(argument, typ):
     """
-    Gets the correct CWL type for an argument, given an argument's GATK type 
+    Gets the correct CWL type for an argument, given an argument's GATK type excluding List[...]
+
+    typ may not be the same as the arguments type if you are overriding the type
 
     :param argument: The cwl argument, as specified in the json file
-    :param type: The GATK type given
-    """
-    # Remove list[...], set[...] or ...[] to get the inner type
-    if 'list[' in type_ or 'set[' in type_:
-        type_ = type_[type_.index('[') + 1:-1]
-    elif '[]' in type_:
-        type_ = type_.strip('[]')
+    :param typ: The GATK type given
 
-    if type_ in ('long', 'double', 'int', 'string', 'float', 'boolean', 'bool'):
-        return type_
-    elif type_ == 'file':
-        return 'File'
-    elif type_ in ('byte', 'integer'):
-        return 'int'
-    # ig. -goodSM: name of sample(s) to keep
-    elif type_ == 'set':
-        return 'string'
-    # Check for enumerated types, and if they exist, ignore the specified type name
+    :returns: (cwl_type, is_array_type)
+    """
+
+    is_array_type = False
+
+    if typ in ('long', 'double', 'int', 'string', 'float', 'boolean', 'bool'):
+        cwl_type = typ
+    elif typ == 'file':
+        cwl_type = 'File'
+    elif typ in ('byte', 'integer'):
+        cwl_type = 'int'
+    elif typ == 'set':
+        # The caller function will turn this into an array of sets
+        # Example of this -goodSM
+        is_array_type = True
+        cwl_type = 'string'
     elif argument['options']:
-        return {
+        # Check for enumerated types, and if they exist, ignore the specified type name
+        cwl_type = {
             'type': 'enum',
             'symbols': [x['name'] for x in argument['options']]
         }
-    elif type_ in enum_types.keys():
-        return {
+    elif typ in enum_types.keys():
+        cwl_type = {
             "type": "enum",
-            "symbols": enum_types[type_]
+            "symbols": enum_types[typ]
         }
-    # type intervalbinding can be a list of strings or a list of files
-    elif 'intervalbinding' in type_:
-        return ['File', 'string']
-    elif type_ == 'rodbinding[variantcontext]' or type_ == 'rodbinding[feature]' or  \
-            type_ == 'rodbinding[bedfeature]' or type_ == 'rodbinding[sampileupfeature]' or  \
-            type_ == 'rodbindingcollection[variantcontext]':
-        """
-        rodbinding[options]
-          variantcontext                         # VCF VCF3 BCF2
-          feature                                # BCF2, BEAGLE, BED, BEDTABLE, EXAMPLEBINARY, GELITEXT, RAWHAPMAP, REFSEQ, SAMPILEUP, SAMREAD, TABLE, VCF, VCF3
-          BEDfeature                             # BED
-          SAMPileupFeature                       # files in SAMPILEUP format
-          RodBindingCollection[VariantContext]   # List of files
-        """
-        argument['type'] = 'string'
-        return 'string'
-
+    elif 'intervalbinding' in typ:
+        # Type intervalbinding can be a list of strings or a list of files
+        is_array_type = True
+        cwl_type = 'File'
+    elif "rodbinding" in typ:
+         # Possible options: https://gist.github.com/ThomasHickman/b4a0552231f4963520927812ad29eac8
+        cwl_type = 'File'
     else:
-        print('WARNING: Unable to assign to a CWL type, defaulting to string\n Argument: {}   Type: {}'.format(
-            argument['name'][2:], type_))
+        print('\033[93m'+ 'WARNING: Unable to assign to a CWL type, defaulting to string\n Argument: {}   Type: {}'.format(
+            argument['name'][2:], typ))
         
-        return "string"
+        cwl_type = "string"
+
+    return (cwl_type, is_array_type)
 
 
 def typcash(argument, typ, defVal):
@@ -126,9 +126,9 @@ def typcash(argument, typ, defVal):
             argument['name'], typ, defVal))
 
 
-def type_writer(argument):
+def get_CWL_type(argument):
     """
-    Fills the type in an incomplete cwl description, outputing to cwl_desc
+    Returns the CWL type of an argument, indicating if it is an array type
 
     :param argument: The cwl argument, as specified in the json file
     :param cwl_desc: The inputs object, to be written to with the correct information
@@ -142,27 +142,42 @@ def type_writer(argument):
     prefix = argument['name']
     # Patch the incorrect description given by GATK for both --input_file and the type intervalbinding
     if prefix == '--input_file' or prefix == '--input':
-        type_ = 'File'
+        typ = 'File'
     else:
-        type_ = GATK_to_CWL_type(argument, argument['type'].lower())
+        outer_type = argument['type'].lower()
 
-        if isinstance(type_, list) or 'list' in argument['type'].lower() or '[]' in argument['type'].lower():
-           type_ = {
+        if 'list[' in outer_type or 'set[' in outer_type:
+            inner_type = outer_type[outer_type.index('[') + 1 : -1]
+            is_array_type = True
+        elif '[]' in outer_type:
+            inner_type = outer_type.strip('[]')
+            is_array_type = True
+        else:
+            inner_type = outer_type
+
+        typ, is_array_type2 = basic_GATK_type_to_CWL(argument, inner_type)
+
+        if is_array_type2:
+            is_array_type = True
+
+        if is_array_type:
+            # This needs to be done instead of adding [], as you can do correct
+            # inputBinding prefixes and it works with object types
+            typ = {
                 "type": "array",
-                "items": type_,
+                "items": typ,
                 "inputBinding": {
                     "prefix": prefix
                 }
             }
-           is_array_type = True
 
         if argument['required'] == 'no':
-            if isinstance(type_, list):
-                type_.insert(0, 'null')
+            if isinstance(typ, list):
+                typ.insert(0, 'null')
             else:
-                type_ = ['null', type_]
+                typ = ['null', typ]
 
-    return (type_, is_array_type) # TODO: in caller function, output inputBinding when not an array type
+    return (typ, is_array_type)
 
 
 def default_helper(inpt, argument):
@@ -222,10 +237,10 @@ def get_output_json(argument):
     :returns: (input_json, output_json)
     """
 
-    def helper(argument, globval, type_):
+    def helper(argument, globval, typ):
         return {
             'id': argument['name'],
-            'type': type_,
+            'type': typ,
             'outputBinding': {
                 'glob': globval
             }
