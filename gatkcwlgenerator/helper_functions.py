@@ -1,6 +1,7 @@
-#!/bin/python
 """
-Collection of helper functions for cwl_generator.py and json2cwl.py
+Functions to generate the CWL descriptions for GATK arguments.
+
+The main exported functions are get_output_json and get_input_json
 """
 
 
@@ -33,7 +34,7 @@ def get_input_json(argument, options):
     cwl_desc["type"] = cwl_type
 
     if is_arg_with_default(argument, options):
-        default_helper(argument, cwl_type)
+        get_default_arg(argument, cwl_type)
 
     if argument['name'] == '--reference_sequence':
         cwl_desc['secondaryFiles'] = ['.fai', '^.dict']
@@ -188,9 +189,9 @@ def parse_default_value(def_val, typ):
     else:
         raise InvalidDefaultArg()
 
-def default_helper(argument, cwl_type):
+def get_default_arg(argument, cwl_type):
     """
-    Returns the default CWL argument for a given GATK argument
+    Returns the default CWL argument for a given GATK argument, in a parsed form
     """
 
     def unrecognised_type():
