@@ -4,7 +4,7 @@ Collection of helper functions for cwl_generator.py and json2cwl.py
 """
 
 
-def get_input_json(argument):
+def get_input_json(argument, options):
     """
     Returns the cwl syntax for expressing the given argument
 
@@ -24,16 +24,16 @@ def get_input_json(argument):
     if prefix == '--input_file' or prefix == '--input':
         argument['name'] = 'File'
 
-    typ, is_array_type = get_CWL_type(argument)
+    cwl_type, is_array_type = get_CWL_type(argument)
     if not is_array_type:
         cwl_desc["inputBinding"] = {
             "prefix": argument["name"]
         }
 
-    cwl_desc["type"] = typ
+    cwl_desc["type"] = cwl_type
 
-    if argument['defaultValue'] != "NA" and argument['defaultValue'] != "None":
-        default_helper(cwl_desc, argument)
+    if is_arg_with_default(argument, options):
+        default_helper(argument, cwl_type)
 
     if argument['name'] == '--reference_sequence':
         cwl_desc['secondaryFiles'] = ['.fai', '^.dict']
@@ -42,6 +42,11 @@ def get_input_json(argument):
 
     return cwl_desc
 
+
+def is_arg_with_default(argument, cmd_line_options):
+    return  argument['defaultValue'] != "NA" \
+        and argument['defaultValue'] != "none" \
+        and not cmd_line_options.dont_generate_default
 
 # You cannot get the enumeration information for an enumeration in a nested type, so they are hard coded here
 enum_types = {
@@ -108,24 +113,6 @@ def basic_GATK_type_to_CWL(argument, typ):
     return (cwl_type, is_array_type)
 
 
-def typcash(argument, typ, defVal):
-    if typ == 'int':
-        return int(defVal)
-    elif typ == 'boolean':
-        return bool(defVal)
-    elif typ == 'string':
-        return defVal
-    elif typ == 'enum':
-        return defVal
-    elif typ == 'long':
-        return long(defVal)
-    elif typ == 'double':
-        return float(defVal)
-    else:
-        raise ValueError('Failed to cash default value to assigned type. \n Argument: {}    Type: {}   DefaultValue: {}'.format(
-            argument['name'], typ, defVal))
-
-
 def get_CWL_type(argument):
     """
     Returns the CWL type of an argument, indicating if it is an array type
@@ -179,43 +166,68 @@ def get_CWL_type(argument):
 
     return (typ, is_array_type)
 
+class InvalidDefaultArg(Exception):
+    pass
 
-def default_helper(inpt, argument):
+def parse_default_value(def_val, typ):
     """
-    Sets the default value as in its original type
+    Given a default value as a string and a type, parses it
     """
-    if False:#cmd_line_args.dont_generate_default:
-        return
-
-    typ = inpt['type']
-    defVal = argument['defaultValue']
-
-    try:
-        if isinstance(typ, list):
-            typ = typ[1]
-        if isinstance(typ, dict):
-            if typ['type'] == 'array':
-                item_type = typ['items']
-                typ = typ['type']
-            else:  # if type == 'enum'
-                typ = typ['type']
-
-    except:
-        raise ValueError('Failed to identify the type of the input argument \n Input argument: {}    Input type: {}'.format(
-            argument['name'], typ))
-
-    if defVal == '[]':
-        inpt['default'] = []
+    if typ == 'int':
+        return int(def_val)
+    elif typ == 'boolean':
+        return bool(def_val)
+    elif typ == 'string':
+        return def_val
+    elif typ == 'enum':
+        return def_val.upper()
+    elif typ == 'long':
+        return long(def_val)
+    elif typ == 'double':
+        return float(def_val)
     else:
-        if '[]' in typ and typ != '[]':
-            typ = typ.strip('[]')
-            inpt['default'] = [typcash(argument, typ, val)
-                               for val in defVal[1:-1].replace(' ', '').split(',')]
-        elif typ == "array":
-            inpt['default'] = [typcash(argument, item_type, val)
-                               for val in defVal[1:-1].replace(' ', '').split(',')]
+        raise InvalidDefaultArg()
+
+def default_helper(argument, cwl_type):
+    """
+    Returns the default CWL argument for a given GATK argument
+    """
+
+    def unrecognised_type():
+        raise ValueError("Unrecognised type '{}', for argument '{}'".format(cwl_type, argument["name"]))
+
+    def_val = argument['defaultValue']
+
+    if isinstance(cwl_type, list):
+        # Need to handle added null types - strip the null
+        if cwl_type[0] == "null" and len(cwl_type) == 2:
+            cwl_type = cwl_type[1]
         else:
-            inpt['default'] = typcash(argument, typ, defVal)
+            unrecognised_type()
+
+    if isinstance(cwl_type, dict):
+        if cwl_type['type'] == 'array':
+            item_type = cwl_type['items']
+            cwl_type = cwl_type['type'] # Set this parse_default_value
+        elif cwl_type["type"] == "enum":
+            cwl_type = cwl_type['type']
+        else:
+            unrecognised_type()
+
+    if def_val == '[]':
+        cwl_default = []
+    else:
+        try:
+            if cwl_type == "array":
+                array_parts = def_val[1:-1].replace(' ', '').split(',')
+
+                cwl_default = [parse_default_value(val, item_type) for val in array_parts]
+            else:
+                cwl_default = parse_default_value(def_val, cwl_type)
+        except InvalidDefaultArg, e: # From parse_default_value
+            unrecognised_type()
+
+    return cwl_default
 
 
 def is_output_argument(argument):
@@ -225,7 +237,7 @@ def is_output_argument(argument):
     return any(x in argument["type"] for x in ('PrintStream', 'Writer'))
 
 
-def get_output_json(argument):
+def get_output_json(argument, cmd_line_options):
     """
     Modifies the `outputs` parameter with the cwl syntax for expressing a given output argument
 
@@ -262,13 +274,13 @@ def get_output_json(argument):
         # when not an required argument,
     argument['type'] = 'string'  # option as an input to specify filepath
 
-    if argument['defaultValue'] == "NA":
+    if not is_arg_with_default(argument, cmd_line_options):
         """
         if the argument is not required and doesn't have a default value
         it is an optional input to which file is generated to
         if specified, the outputbinding should be the specified value
         """
-        input_json = get_input_json(argument)                                                # input
+        input_json = get_input_json(argument, cmd_line_options)
         output_json = helper(argument, '$(inputs.{})'.format(
             name), ['null', 'File'])  # optional outputbinding
     else:
@@ -279,9 +291,9 @@ def get_output_json(argument):
         if specified, the outputbinding should be the specified value
         else default
         """
-        argument['defaultValue'] = output_path                                       # reset default
+        argument['defaultValue'] = output_path
         # input
-        input_json = get_input_json(argument)
+        input_json = get_input_json(argument, cmd_line_options)
         output_json = helper(argument, '$(inputs.{})'.format(
             name), 'File')          # always an output
 

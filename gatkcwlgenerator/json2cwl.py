@@ -28,10 +28,10 @@ def cwl_generator(json_, cwl, cmd_line_options):
     for argument in json_['arguments']:
         if not argument['name'] in invalid_args:
             if is_output_argument(argument):
-                input_json, output_json = get_output_json(argument)
+                input_json, output_json = get_output_json(argument, cmd_line_options)
                 outputs.append(output_json)
             else:
-                input_json = get_input_json(argument)
+                input_json = get_input_json(argument, cmd_line_options)
 
             if "secondaryFiles" in input_json: # Arguments with secondary files need to be at the front of the list, TODO: check this
                 inputs.insert(0, input_json)
