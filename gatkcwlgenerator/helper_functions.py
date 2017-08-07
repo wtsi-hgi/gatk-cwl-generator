@@ -1,11 +1,17 @@
 #!/bin/python
+"""
+Collection of helper functions for cwl_generator.py and json2cwl.py
+"""
 
+def get_argument_cwl(argument, cmd_line_options):
+    """
+    :returns: (input, output, commandLine)
+    """
 
 def argument_writer(argument, inputs, outputs, com_line, cmd_line_args_):
     """
-    Collection of helper functions for cwl_generator.py and json2cwl.py
+    Writes to inputs and outputs, returns com_line
     """
-
     global cmd_line_args
 
     cmd_line_args = cmd_line_args_
@@ -24,6 +30,8 @@ def input_writer(argument, inputs):
 
     :param argument: The cwl argument, as specified in the json file
     :param inputs: The inputs object, to be written to with the correct information
+
+    :returns: CWL object to describe the given argument
     """
 
     cwl_desc = {
@@ -34,7 +42,17 @@ def input_writer(argument, inputs):
     type_writer(argument, cwl_desc)
     if argument['defaultValue'] != "NA" and argument['defaultValue'] != "None":
         default_helper(cwl_desc, argument)
-    secondaryfiles_writer(argument, cwl_desc, inputs)
+
+    if argument['name'] == '--reference_sequence':
+        cwl_desc['secondaryFiles'] = ['.fai', '^.dict']
+        inputs.insert(0, cwl_desc)  # ... trying to get around a bug in CWL ...
+    elif 'requires' in argument['fulltext'] and 'files' in argument['fulltext']:
+        cwl_desc['secondaryFiles'] = "$(self.location+'.'+self.basename.split('.').splice(-1)[0].replace('m','i'))"
+        inputs.insert(0, cwl_desc)
+    else:
+        inputs.append(cwl_desc)
+
+    return cwl_desc
 
 
 # You cannot get the enumeration information for an enumeration in a nested type, so they are hard coded here
@@ -138,9 +156,9 @@ def type_writer(argument, cwl_desc):
             "prefix": prefix
         }
 
-        if type == "File":
-            ob["separate"] = False
-            ob["valueFrom"] = "$(getFileArgs(self.location, self))"
+        #if type == "File":
+        #    ob["separate"] = False
+        #    ob["valueFrom"] = "$(getFileArgs(self.location, self))"
 
         return ob
 
@@ -212,20 +230,6 @@ def default_helper(inpt, argument):
             inpt['default'] = typcash(argument, typ, defVal)
 
 
-def secondaryfiles_writer(argument, inpt, inputs):
-    """
-    Sets up file dependencies for certain input files
-    """
-    if argument['name'] == '--reference_sequence':
-        inpt['secondaryFiles'] = ['.fai', '^.dict']
-        inputs.insert(0, inpt)  # ... trying to get around a bug in CWL ...
-    elif 'requires' in argument['fulltext'] and 'files' in argument['fulltext']:
-        inpt['secondaryFiles'] = "$(self.location+'.'+self.basename.split('.').splice(-1)[0].replace('m','i'))"
-        inputs.insert(0, inpt)
-    else:
-        inputs.append(inpt)
-
-
 def is_output_argument(argument):
     """
     Returns whether this argument's type indicates it's an output argument
@@ -236,6 +240,8 @@ def is_output_argument(argument):
 def output_commandline_writer(argument, com_line, inputs, outputs):
     """
     Modifies the `outputs` parameter with the cwl syntax for expressing a given output argument
+
+    The default for output files is guessed based on the file type e.g. GATKSamFileWriter generates <NAME>.bam
 
     :param argument Object: The cwl argument, as specified in the json file
     :param outputs Object: The outputs object, to be written to with the correct information
