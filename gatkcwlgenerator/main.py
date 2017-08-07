@@ -184,7 +184,7 @@ def main():
     parser.add_argument('-out', action='store', dest='outputdir')
     parser.add_argument('-include', action='store', dest='include_file', help="Only generate this file (note, CommandLinkGATK has to be generated)")
     parser.add_argument('-dont_generate_default', action='store', dest='dont_generate_default', type=bool,
-        help="If true, adds the CWL default arguments to the CWL file", default=True)
+        help="If true, doesn't adds the CWL default arguments to the CWL file", default=False)
     cmd_line_options = parser.parse_args()
     
     if not cmd_line_options.outputdir:
