@@ -46,7 +46,7 @@ def get_input_json(argument, options):
 
 def is_arg_with_default(argument, cmd_line_options):
     return  argument['defaultValue'] != "NA" \
-        and argument['defaultValue'] != "none" \
+        and argument['defaultValue'].lower() != "none"
 
 # You cannot get the enumeration information for an enumeration in a nested type, so they are hard coded here
 enum_types = {
