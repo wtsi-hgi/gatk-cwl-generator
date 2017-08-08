@@ -82,22 +82,20 @@ def run_tool(toolname, extra_info="",interval=1, filetext=None, expect_failure=F
 supported_versions = ["3.5", "current", "4.beta-latest"]
 
 class TestGenerateCWL(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.links_by_version = {}
-
-        for version in supported_versions:
-            cls.links_by_version[version] = cwl_gen.generate_cwl.get_json_links(version)
-
     def test_get_json_links(self):
         for version in supported_versions:
-            for links in TestGenerateCWL.links_by_version[version].__dict__.values():
-                self.assertTrue(links) # assert it's not empty
+            json_links = cwl_gen.get_json_links(version)
+            for link_type, links in json_links.__dict__.items():
+                self.assertTrue(links, 
+                    "There are no links of type '{}' in gatk version {}".format(
+                        link_type,
+                        version
+                    ))
 
     def test_no_arguments_in_annotator(self):
         # If arguments are in annotator modules, we probably need to add them to the CWL file
         for version in supported_versions:
-            for url in TestGenerateCWL.links_by_version[version].annotator_urls:
+            for url in cwl_gen.get_json_links(version).annotator_urls:
                 ann_json = requests.get(url).json()
                 self.assertFalse(ann_json["arguments"])
 
@@ -141,7 +139,7 @@ class TestGeneratedCWLFiles(unittest.TestCase):
             raise AssertionError("Tests run incorrectly with default args:\n" + "\n\n".join(exceptions))
 
     def test_haplotype_caller(self):
-        run_command("cwl-runner cwlscripts_current/cwlfiles/HaplotypeCaller.cwl HaplotypeCaller_inputs.yml")
+        run_command("cwl-runner cwlscripts_3.5/cwlfiles/HaplotypeCaller.cwl HaplotypeCaller_inputs.yml")
 
     # Test if the haplotype caller accepts all the correct types
 
