@@ -1,4 +1,3 @@
-import generate_cwl
-import cwl_generator
-import helper_functions
+from main import *
 import json2cwl
+import gen_cwl_arg

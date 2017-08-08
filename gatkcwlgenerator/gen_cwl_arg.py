@@ -23,7 +23,7 @@ def get_input_json(argument, options):
     prefix = argument['name']
     # Patch the incorrect description given by GATK for both --input_file
     if prefix == '--input_file' or prefix == '--input':
-        argument['name'] = 'File'
+        argument['type'] = 'File'
 
     cwl_type, is_array_type = get_CWL_type(argument)
     if not is_array_type:
@@ -34,7 +34,7 @@ def get_input_json(argument, options):
     cwl_desc["type"] = cwl_type
 
     if is_arg_with_default(argument, options):
-        get_default_arg(argument, cwl_type)
+        cwl_desc["default"] = get_default_arg(argument, cwl_type)
 
     if argument['name'] == '--reference_sequence':
         cwl_desc['secondaryFiles'] = ['.fai', '^.dict']
@@ -61,6 +61,8 @@ enum_types = {
     "type": ['INDEL', 'SNP', 'MIXED', 'MNP', 'SYMBOLIC', 'NO_VARIATION']
 }
 
+warning_colour = '\033[93m'
+
 
 def basic_GATK_type_to_CWL(argument, typ):
     """
@@ -80,6 +82,8 @@ def basic_GATK_type_to_CWL(argument, typ):
         cwl_type = typ
     elif typ == 'file':
         cwl_type = 'File'
+    elif is_output_argument(argument):
+        cwl_type = "string"
     elif typ in ('byte', 'integer'):
         cwl_type = 'int'
     elif typ == 'set':
@@ -101,12 +105,13 @@ def basic_GATK_type_to_CWL(argument, typ):
     elif 'intervalbinding' in typ:
         # Type intervalbinding can be a list of strings or a list of files
         is_array_type = True
-        cwl_type = 'File'
+        cwl_type = ['File', "string"]
     elif "rodbinding" in typ:
          # Possible options: https://gist.github.com/ThomasHickman/b4a0552231f4963520927812ad29eac8
         cwl_type = 'File'
     else:
-        print('\033[93m'+ 'WARNING: Unable to assign to a CWL type, defaulting to string\n Argument: {}   Type: {}'.format(
+        print(warning_colour + 'WARNING: Unable to assign to a CWL type, defaulting to string\n'
+            + warning_colour + 'Argument: {}   Type: {}'.format(
             argument['name'][2:], typ))
         
         cwl_type = "string"
@@ -180,14 +185,19 @@ def parse_default_value(def_val, typ):
         return bool(def_val)
     elif typ == 'string':
         return def_val
-    elif typ == 'enum':
-        return def_val.upper()
     elif typ == 'long':
         return long(def_val)
     elif typ == 'double':
         return float(def_val)
     else:
         raise InvalidDefaultArg()
+
+# A dict of output type's file extentions
+output_types_file_ext = {
+    "GATKSAMFileWriter": ".bam",
+    "PrintStream": '.txt',
+    'VariantContextWriter': '.vcf'
+}
 
 def get_default_arg(argument, cwl_type):
     """
@@ -203,32 +213,40 @@ def get_default_arg(argument, cwl_type):
         # Need to handle added null types - strip the null
         if cwl_type[0] == "null" and len(cwl_type) == 2:
             cwl_type = cwl_type[1]
+        elif cwl_type == ['File', "string"]:
+            # For IntervalBinding
+            cwl_type = "string"
         else:
             unrecognised_type()
 
     if isinstance(cwl_type, dict):
         if cwl_type['type'] == 'array':
-            item_type = cwl_type['items']
-            cwl_type = cwl_type['type'] # Set this parse_default_value
+            array_parts = def_val[1:-1].replace(' ', '').split(',')
+
+            return [parse_default_value(val, cwl_type['items']) for val in array_parts]
         elif cwl_type["type"] == "enum":
-            cwl_type = cwl_type['type']
+            return def_val.upper()
         else:
             unrecognised_type()
 
+    if is_output_argument(argument):
+        arg_name = argument["name"].strip("-")
+
+        if argument["type"] in output_types_file_ext.keys():
+            return arg_name + output_types_file_ext[argument["type"]]
+        else:
+            cwl_default = arg_name + ".txt"
+            print("Unknown output type '{}', making the default argument '{}'".format(argument["type"], cwl_default))
+
+            return cwl_default
+
     if def_val == '[]':
-        cwl_default = []
+        return []
     else:
         try:
-            if cwl_type == "array":
-                array_parts = def_val[1:-1].replace(' ', '').split(',')
-
-                cwl_default = [parse_default_value(val, item_type) for val in array_parts]
-            else:
-                cwl_default = parse_default_value(def_val, cwl_type)
-        except InvalidDefaultArg, e: # From parse_default_value
+            return parse_default_value(def_val, cwl_type)
+        except InvalidDefaultArg: # From parse_default_value
             unrecognised_type()
-
-    return cwl_default
 
 
 def is_output_argument(argument):
@@ -238,64 +256,11 @@ def is_output_argument(argument):
     return any(x in argument["type"] for x in ('PrintStream', 'Writer'))
 
 
-def get_output_json(argument, cmd_line_options):
-    """
-    Modifies the `outputs` parameter with the cwl syntax for expressing a given output argument
-
-    The default for output files is guessed based on the file type e.g. GATKSamFileWriter generates <NAME>.bam
-
-    :param argument Object: The cwl argument, as specified in the json file
-    :param outputs Object: The outputs object, to be written to with the correct information
-
-    :returns: (input_json, output_json)
-    """
-
-    def helper(argument, globval, typ):
-        return {
-            'id': argument['name'],
-            'type': typ,
-            'outputBinding': {
-                'glob': globval
-            }
+def get_output_json(argument):
+    return {
+        'id': argument['name'],
+        'type': ['null', 'File'] if argument["required"] == "no" else "File",
+        'outputBinding': {
+            'glob': '$(inputs.{})'.format(argument['name'].strip("-"))
         }
-
-    prefix = argument['name']
-    name = prefix.strip('-')
-
-    if argument['type'] == "GATKSAMFileWriter":
-        output_path = '{}.bam'.format(name)
-    elif argument['type'] == "PrintStream":
-        output_path = '{}.txt'.format(name)
-    elif argument['type'] == 'VariantContextWriter':
-        output_path = '{}.vcf'.format(name)
-    else:
-        output_path = '{}.txt'.format(name)
-        print("The input argument '{}' with input type '{}' will create an output file to the following output path: {} ".format(
-            argument['name'], argument['type'], output_path))
-        # when not an required argument,
-    argument['type'] = 'string'  # option as an input to specify filepath
-
-    if not is_arg_with_default(argument, cmd_line_options):
-        """
-        if the argument is not required and doesn't have a default value
-        it is an optional input to which file is generated to
-        if specified, the outputbinding should be the specified value
-        """
-        input_json = get_input_json(argument, cmd_line_options)
-        output_json = helper(argument, '$(inputs.{})'.format(
-            name), ['null', 'File'])  # optional outputbinding
-    else:
-        """
-        if the argument is not required but has a default value
-        reset the default value to sth that isn't standard output
-        it is an optional input to which file is generated to
-        if specified, the outputbinding should be the specified value
-        else default
-        """
-        argument['defaultValue'] = output_path
-        # input
-        input_json = get_input_json(argument, cmd_line_options)
-        output_json = helper(argument, '$(inputs.{})'.format(
-            name), 'File')          # always an output
-
-    return (input_json, output_json)
+    }
