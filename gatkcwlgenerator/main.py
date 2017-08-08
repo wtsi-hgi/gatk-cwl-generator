@@ -179,15 +179,15 @@ def get_global_arguments(grouped_urls, apply_cmdlineGATK):
 
 def main():
     parser = argparse.ArgumentParser(description='Generates CWL files from the GATK documentation')
-    parser.add_argument("--version", dest='gatkversion', default="3.5",
+    parser.add_argument("--version", "-v", dest='gatkversion', default="3.5",
         help="Sets the version of GATK to parse documentation for. Default is 3.5.")
-    parser.add_argument('--out', dest='outputdir',
+    parser.add_argument('--out', "-o", dest='outputdir',
         help="Sets the output directory for generated files. Default is ./cwlscripts_<VERSION>.")
     parser.add_argument('--include', dest='include_file',
         help="Only generate this file (note, CommandLinkGATK has to be generated for v3.x)")
     parser.add_argument("--dev", dest="dev", type=bool, default=False,
         help="Enable network caching and overwriting of the generated files (for development purposes)")
-    parser.add_argument("--docker_image_name", dest="docker_image_name", default="gatk",
+    parser.add_argument("--docker_container_name", "-c", dest="docker_container_name", default="gatk",
         help="Enable network caching and overwriting of the generated files (for development purposes). " + 
         "Default is 'gatk'.")
     cmd_line_options = parser.parse_args()
@@ -195,7 +195,7 @@ def main():
 
     if cmd_line_options.dev:
         import requests_cache
-        requests_cache.install_cache() # Increases the time to run dramatically
+        requests_cache.install_cache() # Decreases the time to run dramatically
     
     if not cmd_line_options.outputdir:
       cmd_line_options.outputdir = os.getcwd() + '/cwlscripts_%s' % cmd_line_options.gatkversion
