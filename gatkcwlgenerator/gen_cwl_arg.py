@@ -5,6 +5,21 @@ The main exported functions are get_output_json and get_input_json
 """
 
 
+def get_input_bindings(argument, is_file_type):
+    input_binding = {
+        "prefix": argument["name"]
+    }
+
+    if is_file_type:
+        input_binding["valueFrom"] = "$(parseTags(self.path, inputs.{}_tags))".format(get_arg_id(argument))
+        input_binding["shellQuote"] = False
+        input_binding["separate"] = False
+    
+    return input_binding
+
+def get_arg_id(argument):
+    return argument["name"].strip("-")
+
 def get_input_json(argument, options):
     """
     Returns the cwl syntax for expressing the given argument
@@ -17,7 +32,7 @@ def get_input_json(argument, options):
 
     cwl_desc = {
         'doc': argument['summary'],
-        'id': argument['name'].strip('-'),
+        'id': get_arg_id(argument),
     }
 
     prefix = argument['name']
@@ -27,9 +42,7 @@ def get_input_json(argument, options):
 
     cwl_type, is_array_type = get_CWL_type(argument)
     if not is_array_type:
-        cwl_desc["inputBinding"] = {
-            "prefix": argument["name"]
-        }
+        cwl_desc["inputBinding"] = get_input_bindings(argument, cwl_type == "File")
 
     cwl_desc["type"] = cwl_type
 
@@ -158,9 +171,7 @@ def get_CWL_type(argument):
             typ = {
                 "type": "array",
                 "items": typ,
-                "inputBinding": {
-                    "prefix": prefix
-                }
+                "inputBinding": get_input_bindings(argument, typ == "File")
             }
 
         if argument['required'] == 'no':
@@ -182,7 +193,7 @@ def get_output_default_arg(argument, cwl_type):
     """
     Returns the default CWL argument for a given GATK argument, in a parsed form
     """
-    arg_name = argument["name"].strip("-")
+    arg_name = get_arg_id(argument)
 
     if argument["type"] in output_types_file_ext.keys():
         return arg_name + output_types_file_ext[argument["type"]]

@@ -32,6 +32,13 @@ def cwl_generator(json_, cwl, cmd_line_options):
                 outputs.append(output_json)
             
             input_json = get_input_json(argument, cmd_line_options)
+
+            if input_json["type"] == "File":
+                inputs.append({
+                    "type": "string[]?",
+                    "doc": "A argument to set the tags of '{}'".format(input_json["id"]),
+                    "id": input_json["id"] + "_tags"
+                })
             
             if "secondaryFiles" in input_json: # Arguments with secondary files need to be at the front of the list, TODO: check this
                 inputs.insert(0, input_json)
@@ -59,12 +66,19 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
                 "class": "InlineJavascriptRequirement",
                 "expressionLib": [
                     # Allows you to add annotations
-                    "function getFileArgs(f, a){if(a == undefined){return ' ' + f}else{return ':' + a + ' ' + f}}"
+                    """function parseTags(param, tags){
+                        if(tags == undefined){
+                            return ' ' + param
+                        }
+                        else{
+                            return ':' + tags.join(',') + ' ' + param
+                        }
+                    }""".replace("    ", "").replace("\n", "")
                     # TODO: make this more readable
                 ]
             },
             {
-                "dockerPull": cmd_line_options.docker_image_name + ":latest",
+                "dockerPull": cmd_line_options.docker_container_name + ":latest",
                 "class": "DockerRequirement"
             }
         ]

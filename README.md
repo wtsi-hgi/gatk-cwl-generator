@@ -38,6 +38,15 @@ The version defaults to 3.5 and the default out directory is `/cwlscript_[VERSIO
 
 This has been tested on versions 3.5-3.8 and generates files for version 4 (though some parameters are unknown and default to outputting a string).
 
+To add tags to arguments that have a file type, add to the parameter `<NAME>_tags`. e.g. to output the parameter `--varient:vcf path\to\file`, use the input:
+```yml
+varient:
+   class: File
+   path: path\to\file
+
+varient_tags: [vcf]
+```
+
 The cwl files will be outputted to `cwlfiles` and the JSON files given by the documentation to `jsonfolder`.
 
 ## Examples
