@@ -62,8 +62,9 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
                     "function getFileArgs(f, a){if(a == undefined){return ' ' + f}else{return ':' + a + ' ' + f}}"
                     # TODO: make this more readable
                 ]
-            }, {
-                "dockerPull": "gatk:latest",
+            },
+            {
+                "dockerPull": cmd_line_options.docker_image_name + ":latest",
                 "class": "DockerRequirement"
             }
         ]

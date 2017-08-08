@@ -221,9 +221,14 @@ def get_default_arg(argument, cwl_type):
 
     if isinstance(cwl_type, dict):
         if cwl_type['type'] == 'array':
-            array_parts = def_val[1:-1].replace(' ', '').split(',')
+            if def_val == "[]":
+                return "[]"
 
-            return [parse_default_value(val, cwl_type['items']) for val in array_parts]
+            array_parts = def_val[1:-1].replace(' ', '').split(',')
+            try:
+                return [parse_default_value(val, cwl_type['items']) for val in array_parts]
+            except InvalidDefaultArg:
+                unrecognised_type()
         elif cwl_type["type"] == "enum":
             return def_val.upper()
         else:
@@ -240,13 +245,10 @@ def get_default_arg(argument, cwl_type):
 
             return cwl_default
 
-    if def_val == '[]':
-        return []
-    else:
-        try:
-            return parse_default_value(def_val, cwl_type)
-        except InvalidDefaultArg: # From parse_default_value
-            unrecognised_type()
+    try:
+        return parse_default_value(def_val, cwl_type)
+    except InvalidDefaultArg:
+        unrecognised_type()
 
 
 def is_output_argument(argument):

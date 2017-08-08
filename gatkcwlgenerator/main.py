@@ -8,11 +8,8 @@ import json
 
 from bs4 import BeautifulSoup
 import requests
-import requests_cache
 
 import json2cwl
-
-dev = True
 
 def find_index(lst, func):
     for i, item in enumerate(lst):
@@ -99,7 +96,7 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
         os.makedirs(json_dir)
         os.makedirs(cwl_dir)
     except OSError, e:
-        if dev:
+        if cmd_line_options.dev:
             shutil.rmtree(json_dir) # Removing existing generated files if the folder already exists, for testing
             shutil.rmtree(cwl_dir)
             os.makedirs(json_dir)
@@ -181,16 +178,26 @@ def get_global_arguments(grouped_urls, apply_cmdlineGATK):
     return arguments
 
 def main():
-    if dev:
-        requests_cache.install_cache() # Increases the time to run dramatically
-
-    parser = argparse.ArgumentParser(description = 'take in GATK documentation version and specify output directory')
-    parser.add_argument('-v', action='store', dest='gatkversion', default="3.5")
-    parser.add_argument('-out', action='store', dest='outputdir')
-    parser.add_argument('-include', action='store', dest='include_file', help="Only generate this file (note, CommandLinkGATK has to be generated)")
-    parser.add_argument('-dont_generate_default', action='store', dest='dont_generate_default', type=bool,
-        help="If true, doesn't adds the CWL default arguments to the CWL file", default=False)
+    parser = argparse.ArgumentParser(description='Generates CWL files from the GATK documentation')
+    parser.add_argument("--version", dest='gatkversion', default="3.5",
+        help="Sets the version of GATK to parse documentation for. Default is 3.5.")
+    parser.add_argument('--out', dest='outputdir',
+        help="Sets the output directory for generated files. Default is ./cwlscripts_<VERSION>.")
+    parser.add_argument('--include', dest='include_file',
+        help="Only generate this file (note, CommandLinkGATK has to be generated for v3.x)")
+    parser.add_argument('--dont_generate_default', dest='dont_generate_default', type=bool, default=False,
+        help="If true, doesn't adds the CWL default arguments to the CWL file.")
+    parser.add_argument("--dev", dest="dev", type=bool, default=False,
+        help="Enable network caching and overwriting of the generated files (for development purposes)")
+    parser.add_argument("--docker_image_name", dest="docker_image_name", default="gatk",
+        help="Enable network caching and overwriting of the generated files (for development purposes). " + 
+        "Default is 'gatk'.")
     cmd_line_options = parser.parse_args()
+
+
+    if cmd_line_options.dev:
+        import requests_cache
+        requests_cache.install_cache() # Increases the time to run dramatically
     
     if not cmd_line_options.outputdir:
       cmd_line_options.outputdir = os.getcwd() + '/cwlscripts_%s' % cmd_line_options.gatkversion
