@@ -75,15 +75,14 @@ def run_tool(toolname, extra_info="",interval=1, filetext=None, expect_failure=F
     f.write(filetext)
     f.close()
 
-    return run_command("cwl-runner cwlscripts_current/cwlfiles/{}.cwl tests/test_haplotypecaller_input.yml".format(toolname), expect_failure=expect_failure)
+    return run_command("cwl-runner cwlscripts_3.5/cwlfiles/{}.cwl tests/test_haplotypecaller_input.yml".format(toolname), expect_failure=expect_failure)
 
 # Unit tests
 
-supported_versions = ["3.5", "current", "4.beta-latest"]
-
 class TestGenerateCWL(unittest.TestCase):
+    supported_versions = ["3.5", "current"]
     def test_get_json_links(self):
-        for version in supported_versions:
+        for version in self.supported_versions:
             json_links = cwl_gen.get_json_links(version)
             for link_type, links in json_links.__dict__.items():
                 self.assertTrue(links, 
@@ -94,22 +93,28 @@ class TestGenerateCWL(unittest.TestCase):
 
     def test_no_arguments_in_annotator(self):
         # If arguments are in annotator modules, we probably need to add them to the CWL file
-        for version in supported_versions:
+        for version in self.supported_versions:
             for url in cwl_gen.get_json_links(version).annotator_urls:
                 ann_json = requests.get(url).json()
                 self.assertFalse(ann_json["arguments"])
 
 # Integration tests
 
+class TestRunsCorrectly(unittest.TestCase):
+    supported_versions = ["3.5", "current", "4.beta-latest"]
+    def test_runs(self):
+        for version in self.supported_versions:
+            run_command("python2 gatkcwlgenerator/main.py -v {} --dev True".format(version))
+
 class TestGeneratedCWLFiles(unittest.TestCase):
-    base_cwl_path = path.join(base_dir, "cwlscripts_current/cwlfiles")
+    base_cwl_path = path.join(base_dir, "cwlscripts_3.5/cwlfiles")
 
     def is_cwlfile_valid(self, cwl_file):
         run_command("cwl-runner --validate " + path.join(self.base_cwl_path, cwl_file))
 
     def test_are_cwl_files_valid(self):
         exceptions = []
-        for cwl_file in os.listdir("cwlscripts_current/cwlfiles"):
+        for cwl_file in os.listdir(self.base_cwl_path):
             try:
                 print("Validated " + cwl_file)
                 run_command("cwl-runner --validate " + path.join(self.base_cwl_path, cwl_file))
@@ -119,24 +124,6 @@ class TestGeneratedCWLFiles(unittest.TestCase):
 
         if exceptions:
             raise AssertionError("Not all cwl files are valid:\n" + "\n\n".join(exceptions))
-
-    @unittest.skip("")
-    def test_running_with_default_args(self):
-        exceptions = []
-        for cwl_file in os.listdir("cwlscripts_current/cwlfiles"):
-            try:
-                print("Running with default args " + cwl_file)
-                output = run_tool(path.basename(cwl_file).split(".")[0], expect_failure=True)
-                self.assertNotIn("is not valid because", output.stdout)
-
-                if output.exitcode != 0:
-                    print(output.stdout + "/n" + output.stderr)
-            except AssertionError as e:
-                print(e)
-                exceptions.append(e)
-
-        if exceptions:
-            raise AssertionError("Tests run incorrectly with default args:\n" + "\n\n".join(exceptions))
 
     def test_haplotype_caller(self):
         run_command("cwl-runner cwlscripts_3.5/cwlfiles/HaplotypeCaller.cwl HaplotypeCaller_inputs.yml")
@@ -166,13 +153,10 @@ BQSR:
         self.assertIn("Strictness is LENIENT", run_haplotype_caller("validation_strictness: LENIENT").stderr)
 
     def test_list_type(self):
-        run_with_larger_intervals = run_haplotype_caller(filetext=default_args +
-            "\nintervals: [chr22:10591400-10591500, chr22:10591500-10591645]")
+        run_with_larger_intervals = run_haplotype_caller(
+            filetext="analysis_type: HaplotypeCaller\n" + default_args + "\nintervals: [chr22:10591400-10591500, chr22:10591500-10591645]")
 
-        self.assertIn(run_with_larger_intervals.stderr, "Processing 246 bp from intervals")
-
-    def test_default_used(self):
-        self.assertIn("-indelHeterozygosity 1.25E-4", run_haplotype_caller().stderr)
+        self.assertIn("Processing 246 bp from intervals", run_with_larger_intervals.stderr)
 
 """
 The entry point for testing
