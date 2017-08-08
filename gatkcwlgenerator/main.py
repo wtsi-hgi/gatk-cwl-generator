@@ -185,8 +185,6 @@ def main():
         help="Sets the output directory for generated files. Default is ./cwlscripts_<VERSION>.")
     parser.add_argument('--include', dest='include_file',
         help="Only generate this file (note, CommandLinkGATK has to be generated for v3.x)")
-    parser.add_argument('--dont_generate_default', dest='dont_generate_default', type=bool, default=False,
-        help="If true, doesn't adds the CWL default arguments to the CWL file.")
     parser.add_argument("--dev", dest="dev", type=bool, default=False,
         help="Enable network caching and overwriting of the generated files (for development purposes)")
     parser.add_argument("--docker_image_name", dest="docker_image_name", default="gatk",

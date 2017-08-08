@@ -33,8 +33,8 @@ def get_input_json(argument, options):
 
     cwl_desc["type"] = cwl_type
 
-    if is_arg_with_default(argument, options):
-        cwl_desc["default"] = get_default_arg(argument, cwl_type)
+    if is_arg_with_default(argument, options) and is_output_argument(argument):
+        cwl_desc["default"] = get_output_default_arg(argument, cwl_type)
 
     if argument['name'] == '--reference_sequence':
         cwl_desc['secondaryFiles'] = ['.fai', '^.dict']
@@ -47,7 +47,6 @@ def get_input_json(argument, options):
 def is_arg_with_default(argument, cmd_line_options):
     return  argument['defaultValue'] != "NA" \
         and argument['defaultValue'] != "none" \
-        and not cmd_line_options.dont_generate_default
 
 # You cannot get the enumeration information for an enumeration in a nested type, so they are hard coded here
 enum_types = {
@@ -172,26 +171,6 @@ def get_CWL_type(argument):
 
     return (typ, is_array_type)
 
-class InvalidDefaultArg(Exception):
-    pass
-
-def parse_default_value(def_val, typ):
-    """
-    Given a default value as a string and a type, parses it
-    """
-    if typ == 'int':
-        return int(def_val)
-    elif typ == 'boolean':
-        return bool(def_val)
-    elif typ == 'string':
-        return def_val
-    elif typ == 'long':
-        return long(def_val)
-    elif typ == 'double':
-        return float(def_val)
-    else:
-        raise InvalidDefaultArg()
-
 # A dict of output type's file extentions
 output_types_file_ext = {
     "GATKSAMFileWriter": ".bam",
@@ -199,56 +178,19 @@ output_types_file_ext = {
     'VariantContextWriter': '.vcf'
 }
 
-def get_default_arg(argument, cwl_type):
+def get_output_default_arg(argument, cwl_type):
     """
     Returns the default CWL argument for a given GATK argument, in a parsed form
     """
+    arg_name = argument["name"].strip("-")
 
-    def unrecognised_type():
-        raise ValueError("Unrecognised type '{}', for argument '{}'".format(cwl_type, argument["name"]))
+    if argument["type"] in output_types_file_ext.keys():
+        return arg_name + output_types_file_ext[argument["type"]]
+    else:
+        cwl_default = arg_name + ".txt"
+        print("Unknown output type '{}', making the default argument '{}'".format(argument["type"], cwl_default))
 
-    def_val = argument['defaultValue']
-
-    if isinstance(cwl_type, list):
-        # Need to handle added null types - strip the null
-        if cwl_type[0] == "null" and len(cwl_type) == 2:
-            cwl_type = cwl_type[1]
-        elif cwl_type == ['File', "string"]:
-            # For IntervalBinding
-            cwl_type = "string"
-        else:
-            unrecognised_type()
-
-    if isinstance(cwl_type, dict):
-        if cwl_type['type'] == 'array':
-            if def_val == "[]":
-                return "[]"
-
-            array_parts = def_val[1:-1].replace(' ', '').split(',')
-            try:
-                return [parse_default_value(val, cwl_type['items']) for val in array_parts]
-            except InvalidDefaultArg:
-                unrecognised_type()
-        elif cwl_type["type"] == "enum":
-            return def_val.upper()
-        else:
-            unrecognised_type()
-
-    if is_output_argument(argument):
-        arg_name = argument["name"].strip("-")
-
-        if argument["type"] in output_types_file_ext.keys():
-            return arg_name + output_types_file_ext[argument["type"]]
-        else:
-            cwl_default = arg_name + ".txt"
-            print("Unknown output type '{}', making the default argument '{}'".format(argument["type"], cwl_default))
-
-            return cwl_default
-
-    try:
-        return parse_default_value(def_val, cwl_type)
-    except InvalidDefaultArg:
-        unrecognised_type()
+        return cwl_default
 
 
 def is_output_argument(argument):
