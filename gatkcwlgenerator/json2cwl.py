@@ -22,7 +22,7 @@ def cwl_generator(json_, cwl, cmd_line_options):
     outputs = []
     inputs = [
         {"doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
-        {"doc": "dict file of reference genome", "type": "File", "id": "refDict"}
+        {"doc": "Dict file of reference genome", "type": "File", "id": "refDict"}
     ]
 
     for argument in json_['arguments']:

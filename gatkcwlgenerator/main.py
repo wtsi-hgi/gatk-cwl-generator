@@ -87,8 +87,8 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
     print("Creating and converting json files...")
     
     # Get current directory and make folders for files
-    json_dir = os.path.join(out_dir, 'jsonfolder')
-    cwl_dir = os.path.join(out_dir, 'cwlfiles')
+    json_dir = os.path.join(out_dir, 'json')
+    cwl_dir = os.path.join(out_dir, 'cwl')
 
     try:
         os.makedirs(json_dir)
@@ -115,7 +115,7 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
             f = open(os.path.join(json_dir, json_name), 'w+')
             f.write(tool_json.text)
             f.close()
-            print("Written jsonfolder/" + json_name)
+            print("Written json/" + json_name)
 
             # Don't append options for CommandLinkGATK or read filters for CatVariants,
             # it bypasses the GATK engine
@@ -128,7 +128,7 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
                 cwl_dir,
                 cmd_line_options
             )
-            print("Written cwlfiles/" + tool_name + ".cwl")
+            print("Written cwl/" + tool_name + ".cwl")
 
     print("Success!")
 
@@ -178,16 +178,16 @@ def get_global_arguments(grouped_urls, apply_cmdlineGATK):
 def main():
     parser = argparse.ArgumentParser(description='Generates CWL files from the GATK documentation')
     parser.add_argument("--version", "-v", dest='gatkversion', default="3.5",
-        help="Sets the version of GATK to parse documentation for. Default is 3.5.")
+        help="Sets the version of GATK to parse documentation for. Default is 3.5")
     parser.add_argument('--out', "-o", dest='outputdir',
-        help="Sets the output directory for generated files. Default is ./cwlscripts_<VERSION>.")
+        help="Sets the output directory for generated files. Default is ./cwl_files_<VERSION>")
     parser.add_argument('--include', dest='include_file',
         help="Only generate this file (note, CommandLinkGATK has to be generated for v3.x)")
-    parser.add_argument("--dev", dest="dev", type=bool, default=False,
+    parser.add_argument("--dev", dest="dev", action="store_true",
         help="Enable network caching and overwriting of the generated files (for development purposes)")
     parser.add_argument("--docker_container_name", "-c", dest="docker_container_name", default="gatk",
         help="Enable network caching and overwriting of the generated files (for development purposes). " + 
-        "Default is 'gatk'.")
+        "Default is 'gatk'")
     cmd_line_options = parser.parse_args()
 
 
@@ -196,7 +196,7 @@ def main():
         requests_cache.install_cache() # Decreases the time to run dramatically
     
     if not cmd_line_options.outputdir:
-      cmd_line_options.outputdir = os.getcwd() + '/cwlscripts_%s' % cmd_line_options.gatkversion
+      cmd_line_options.outputdir = os.getcwd() + '/cwl_files_%s' % cmd_line_options.gatkversion
 
     print("Your chosen directory is: %s" % cmd_line_options.outputdir)
     grouped_urls = get_json_links(cmd_line_options.gatkversion)

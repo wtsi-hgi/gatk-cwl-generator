@@ -1,4 +1,4 @@
-cwlscripts*
+cwl_files*
 cwl-example-data
 out.gvcf.gz
 .DS_STORE

@@ -75,7 +75,7 @@ def run_tool(toolname, extra_info="",interval=1, filetext=None, expect_failure=F
     f.write(filetext)
     f.close()
 
-    return run_command("cwl-runner cwlscripts_3.5/cwlfiles/{}.cwl tests/test_haplotypecaller_input.yml".format(toolname), expect_failure=expect_failure)
+    return run_command("cwl-runner cwl_files_3.5/cwl/{}.cwl tests/test_haplotypecaller_input.yml".format(toolname), expect_failure=expect_failure)
 
 # Unit tests
 
@@ -104,10 +104,10 @@ class TestRunsCorrectly(unittest.TestCase):
     supported_versions = ["3.5", "current", "4.beta-latest"]
     def test_runs(self):
         for version in self.supported_versions:
-            run_command("python2 gatkcwlgenerator/main.py -v {} --dev True".format(version))
+            run_command("python2 gatkcwlgenerator/main.py -v {} --dev".format(version))
 
 class TestGeneratedCWLFiles(unittest.TestCase):
-    base_cwl_path = path.join(base_dir, "cwlscripts_3.5/cwlfiles")
+    base_cwl_path = path.join(base_dir, "cwl_files_3.5/cwl")
 
     def is_cwlfile_valid(self, cwl_file):
         run_command("cwl-runner --validate " + path.join(self.base_cwl_path, cwl_file))
@@ -126,7 +126,7 @@ class TestGeneratedCWLFiles(unittest.TestCase):
             raise AssertionError("Not all cwl files are valid:\n" + "\n\n".join(exceptions))
 
     def test_haplotype_caller(self):
-        run_command("cwl-runner cwlscripts_3.5/cwlfiles/HaplotypeCaller.cwl examples/HaplotypeCaller_inputs.yml")
+        run_command("cwl-runner cwl_files_3.5/cwl/HaplotypeCaller.cwl examples/HaplotypeCaller_inputs.yml")
 
     # Test if the haplotype caller accepts all the correct types
 
