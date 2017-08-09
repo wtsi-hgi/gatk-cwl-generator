@@ -80,6 +80,8 @@ To test the generated CWL files, provided are inputs to the HaplotypeCaller tool
 cwl-runner cwl_files_3.5/HaplotypeCaller.cwl examples/HaplotypeCaller_inputs.yml
 ```
 
+The generated CWL files can also be found in the [releases](https://github.com/wtsi-hgi/gatk-cwl-generator/releases)
+
 ## Tests
 
 First install the test requirements
