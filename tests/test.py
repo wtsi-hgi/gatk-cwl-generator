@@ -2,7 +2,7 @@ from os import sys, path
 # Use fix from https://stackoverflow.com/a/19190695 to import from the base directory
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
-import gatkcwlgenerator as cwl_gen # TODO: Update this when I have better paths
+import gatkcwlgenerator as cwl_gen
 
 import subprocess
 import os

@@ -40,7 +40,7 @@ def cwl_generator(json_, cwl, cmd_line_options):
                     "id": input_json["id"] + "_tags"
                 })
             
-            if "secondaryFiles" in input_json: # Arguments with secondary files need to be at the front of the list, TODO: check this
+            if "secondaryFiles" in input_json: # So reference_sequence doesn't conflict with refIndex and refDict
                 inputs.insert(0, input_json)
             else:
                 inputs.append(input_json)
@@ -74,7 +74,6 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
                             return ':' + tags.join(',') + ' ' + param
                         }
                     }""".replace("    ", "").replace("\n", "")
-                    # TODO: make this more readable
                 ]
             },
             {

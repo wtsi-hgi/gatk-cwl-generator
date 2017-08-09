@@ -68,11 +68,9 @@ def get_json_links(version):
     tool_urls = list(set(tool_urls))
     
     # Move CommandLine to the front of the list
-    # TODO: double check this
     if is_version_3(version):
         i = find_index(tool_urls, lambda x: "CommandLineGATK" in x)
         tool_urls[0], tool_urls[i] = tool_urls[i], tool_urls[0]
-    # print(url_list)
 
     return JSONLinks(tool_urls, annotator_urls, readfile_urls, resourcefile_urls)
 
