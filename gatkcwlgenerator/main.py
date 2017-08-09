@@ -93,7 +93,7 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
     try:
         os.makedirs(json_dir)
         os.makedirs(cwl_dir)
-    except OSError, e:
+    except OSError as e:
         if cmd_line_options.dev:
             shutil.rmtree(json_dir) # Removing existing generated files if the folder already exists, for testing
             shutil.rmtree(cwl_dir)
