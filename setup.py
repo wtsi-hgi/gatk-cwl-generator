@@ -13,6 +13,7 @@ setup(
     version="1.0.0",
     packages=find_packages(exclude=["tests"]),
     install_requires=open("requirements.txt", "r").readlines(),
+    tests_require=open("test_requirements.txt", "r").readlines(),
     url="https://github.com/wtsi-hgi/gatk-cwl-generator",
     license="MIT",
     description="Generates CWL files from the GATK documentation Edit",

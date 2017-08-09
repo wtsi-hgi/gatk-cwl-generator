@@ -82,11 +82,17 @@ cwl-runner cwl_files_3.5/HaplotypeCaller.cwl examples/HaplotypeCaller_inputs.yml
 
 ## Tests
 
-To run the tests, add example data to `cwl-example-data` such that `examples/HaplotypeCaller_inputs.yml` will run, then:
+First install the test requirements
+```
+pip install -r test_requirements.txt
+```
+Then add example data to `cwl-example-data` such that `examples/HaplotypeCaller_inputs.yml` will run, then:
 
 ```bash
-python gatkcwlgenerator/tests/test.py
+py.test gatkcwlgenerator/tests/test.py
 ```
+
+You can also run the tests in parallel with `-n` to improve performance
 
 ## Limitations:
 

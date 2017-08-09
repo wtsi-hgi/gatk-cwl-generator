@@ -7,9 +7,9 @@ import gatkcwlgenerator as cwl_gen
 import subprocess
 import os
 from os import path
-import unittest
 from multiprocessing import Process
 import tempfile
+import pytest
 
 import requests
 
@@ -62,13 +62,13 @@ input_file: #must be BAM or CRAM
    path: {0}/cwl-example-data/chr22_cwl_test.cram
 out: out.gvcf.gz""".format(base_dir)
 
-def run_haplotype_caller(extra_info="",interval=1, filetext=None, expect_failure=False):
-    return run_tool("HaplotypeCaller", extra_info, interval, filetext, expect_failure)
+def run_haplotype_caller(extra_info, version, interval=1, filetext=None, expect_failure=False):
+    return run_tool("HaplotypeCaller", extra_info, version, interval, filetext, expect_failure)
 
 """
 Runs the haplotype_caller tool with the specified data
 """
-def run_tool(toolname, extra_info="",interval=1, filetext=None, expect_failure=False):
+def run_tool(toolname, extra_info, version, interval=1, filetext=None, expect_failure=False):
     if filetext is None:
         extra_info += "\nintervals: [chr22:10591400-{}]".format(10591400 + interval)
         filetext = "analysis_type: {}\n".format(toolname) + default_args + "\n" + extra_info
@@ -76,53 +76,49 @@ def run_tool(toolname, extra_info="",interval=1, filetext=None, expect_failure=F
     with tempfile.NamedTemporaryFile() as f:
         f.write(filetext)
         f.flush()
-        return run_command("cwl-runner cwl_files_3.5/cwl/{}.cwl {}".format(
+        return run_command("cwl-runner cwl_files_{}/cwl/{}.cwl {}".format(
+            version,
             toolname,
             f.name
         ), expect_failure=expect_failure)
 
 # Unit tests
 
-class TestGenerateCWL(unittest.TestCase):
-    supported_versions = ["3.5", "current"]
-    def test_get_json_links(self):
-        for version in self.supported_versions:
-            json_links = cwl_gen.get_json_links(version)
-            for link_type, links in json_links.__dict__.items():
-                self.assertTrue(links, 
-                    "There are no links of type '{}' in gatk version {}".format(
-                        link_type,
-                        version
-                    ))
+supported_versions = ["3.5", "3.6", "3.7", "3.8"]
 
-    def test_no_arguments_in_annotator(self):
+@pytest.mark.parametrize("version", supported_versions)
+class TestGenerateCWL:
+    def test_get_json_links(self, version):
+        json_links = cwl_gen.get_json_links(version)
+        for link_type, links in json_links.__dict__.items():
+            assert links, "There are no links of type '{}' in gatk version {}".format(
+                    link_type,
+                    version
+                )
+
+    def test_no_arguments_in_annotator(self, version):
         # If arguments are in annotator modules, we probably need to add them to the CWL file
-        for version in self.supported_versions:
-            for url in cwl_gen.get_json_links(version).annotator_urls:
-                ann_json = requests.get(url).json()
-                self.assertFalse(ann_json["arguments"])
+        for url in cwl_gen.get_json_links(version).annotator_urls:
+            ann_json = requests.get(url).json()
+            assert not ann_json["arguments"]
 
 # Integration tests
 
-class TestRunsCorrectly(unittest.TestCase):
-    supported_versions = ["3.5", "current", "4.beta-latest"]
-    def test_runs(self):
-        for version in self.supported_versions:
-            run_command("python2 gatkcwlgenerator/main.py -v {} --dev".format(version))
+@pytest.mark.parametrize("version", supported_versions + ["4.beta-latest"])
+def test_runs(version):
+    run_command("python2 gatkcwlgenerator/main.py -v {} --dev".format(version))
 
-class TestGeneratedCWLFiles(unittest.TestCase):
-    base_cwl_path = path.join(base_dir, "cwl_files_3.5/cwl")
-
-    def is_cwlfile_valid(self, cwl_file):
-        run_command("cwl-runner --validate " + path.join(self.base_cwl_path, cwl_file))
-
-    @unittest.skip("")
-    def test_are_cwl_files_valid(self):
+@pytest.mark.parametrize("version", supported_versions)
+class TestGeneratedCWLFiles:
+    def get_base_cwl_path(self, version):
+        return path.join(base_dir, "cwl_files_{}/cwl".format(version))
+    
+    def test_are_cwl_files_valid(self, version):
         exceptions = []
-        for cwl_file in os.listdir(self.base_cwl_path):
+        for cwl_file in os.listdir(self.get_base_cwl_path(version)):
             try:
                 print("Validated " + cwl_file)
-                run_command("cwl-runner --validate " + path.join(self.base_cwl_path, cwl_file))
+                run_command("cwl-runner --validate " + path.join(self.get_base_cwl_path(version), cwl_file))
             except AssertionError as e:
                 print(e)
                 exceptions.append(e)
@@ -130,44 +126,35 @@ class TestGeneratedCWLFiles(unittest.TestCase):
         if exceptions:
             raise AssertionError("Not all cwl files are valid:\n" + "\n\n".join(exceptions))
 
-    def test_haplotype_caller(self):
+    def test_haplotype_caller(self, version):
         run_command("cwl-runner cwl_files_3.5/cwl/HaplotypeCaller.cwl examples/HaplotypeCaller_inputs.yml")
 
     # Test if the haplotype caller accepts all the correct types
 
-    def test_boolean_type(self):
-        self.assertIn("ThreadEfficiencyMonitor", run_haplotype_caller("monitorThreadEfficiency: True").stderr)
+    def test_boolean_type(self, version):
+        assert "ThreadEfficiencyMonitor" in run_haplotype_caller("monitorThreadEfficiency: True", version).stderr
 
-    def test_integers_type(self):
-        self.assertIn("42 data thread", run_haplotype_caller("num_threads: 42", expect_failure=True).stderr)
+    def test_integers_type(self, version):
+        assert "42 data thread" in run_haplotype_caller("num_threads: 42", version, expect_failure=True).stderr
 
-    def test_string_type(self):
-        self.assertIn("Specified name does not exist in input bam files", 
-            run_haplotype_caller("sample_name: invalid_sample_name", expect_failure=True).stderr)
+    def test_string_type(self, version):
+        assert "Specified name does not exist in input bam files" in \
+            run_haplotype_caller("sample_name: invalid_sample_name", version, expect_failure=True).stderr
 
-    def test_file_type(self):
+    def test_file_type(self, version):
         BQSR_arg = """
 BQSR:
    class: File
    path: {0}/cwl-example-data/chr22_cwl_test.fa
 """.format(base_dir)
-        self.assertIn("Bad input: The GATK report has an unknown/unsupported version in the header", 
-            run_haplotype_caller(BQSR_arg, expect_failure=True).stderr)
+        assert "Bad input: The GATK report has an unknown/unsupported version in the header" in \
+            run_haplotype_caller(BQSR_arg, version, expect_failure=True).stderr
 
-    def test_enum_type(self):
-        self.assertIn("Strictness is LENIENT", run_haplotype_caller("validation_strictness: LENIENT").stderr)
+    def test_enum_type(self, version):
+        assert "Strictness is LENIENT" in run_haplotype_caller("validation_strictness: LENIENT", version).stderr
 
-    def test_list_type(self):
-        run_with_larger_intervals = run_haplotype_caller(
+    def test_list_type(self, version):
+        run_with_larger_intervals = run_haplotype_caller(extra_info="", version=version,
             filetext="analysis_type: HaplotypeCaller\n" + default_args + "\nintervals: [chr22:10591400-10591500, chr22:10591500-10591645]")
 
-        self.assertIn("Processing 246 bp from intervals", run_with_larger_intervals.stderr)
-
-"""
-The entry point for testing
-"""
-def test():
-    unittest.main()
-
-if __name__ == "__main__":
-    test()
+        assert "Processing 246 bp from intervals" in run_with_larger_intervals.stderr
