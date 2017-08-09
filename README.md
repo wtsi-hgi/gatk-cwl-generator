@@ -77,7 +77,7 @@ The cwl files will be outputted to `cwl_files_<VERSION>/cwl` and the JSON files 
 
 To test the generated CWL files, provided are inputs to the HaplotypeCaller tool. To test assuming you have used the default options and have installed everything as above, run:
 ```bash
-cwl-runner cwl_files_3.5/HaplotypeCaller.cwl HaplotypeCaller_inputs.yml
+cwl-runner cwl_files_3.5/HaplotypeCaller.cwl examples/HaplotypeCaller_inputs.yml
 ```
 
 ## Tests
