@@ -101,5 +101,4 @@ ENV/
 cwl_files*
 cwl-example-data
 out.gvcf.gz
-tests/test_haplotypecaller_input.yml
 cache.sqlite

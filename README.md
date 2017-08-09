@@ -6,8 +6,8 @@ Generates [CWL](http://www.commonwl.org/v1.0/) files from the [GATK documentatio
 
 First, install the module 
 ```bash
-git clone https://github.com/wtsi-hgi/openstack-tenant-cleaner.git
-cd openstack-tenant-cleaner
+git clone https://github.com/wtsi-hgi/gatk-cwl-generator
+cd gatk-cwl-generator
 python setup.py install
 ```
 
@@ -17,10 +17,11 @@ You may also want to install [cwltool](https://github.com/common-workflow-langua
 
 The generated CWL files have a dependency on a GATK docker container. These can be found at https://github.com/wtsi-hgi/arvados-pipelines/tree/master/docker/
 
-To build the gatk-3.5 docker container, run:
+As Oracle have discontinued public downloading of JDK 7, to install the docker image you need to install jdk-7u25-linux-x64.tar.gz from http://www.oracle.com/technetwork/java/javase/downloads/java-archive-downloads-javase7-521261.html and put it in the same directory as the Dockerfile (see https://github.com/wtsi-hgi/arvados-pipelines/blob/master/docker/gatk-3.5/Dockerfile#L44)
 ```bash
 git clone https://github.com/wtsi-hgi/arvados-pipelines
 cd arvados-pipelines/docker
+... add jdk-7u25-linux-x64.tar to the directory ...
 docker build gatk-3.5 -t gatk
 ```
 
