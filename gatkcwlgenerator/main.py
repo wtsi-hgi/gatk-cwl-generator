@@ -9,7 +9,7 @@ import json
 from bs4 import BeautifulSoup
 import requests
 
-import json2cwl
+import gatkcwlgenerator.json2cwl as json2cwl
 
 def find_index(lst, func):
     for i, item in enumerate(lst):

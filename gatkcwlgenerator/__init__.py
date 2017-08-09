@@ -1,3 +1,3 @@
-from main import *
-import json2cwl
-import gen_cwl_arg
+from .main import *
+import gatkcwlgenerator.json2cwl
+import gatkcwlgenerator.gen_cwl_arg
