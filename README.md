@@ -62,13 +62,13 @@ This has been tested on versions 3.5-3.8 and generates files for version 4 (thou
 
 The input parameters are the same as in the documentation, with the addition of `refIndex` and `refDict` which are required parameters that specify the index and dict file of the reference genome. 
 
-To add tags to arguments that have a file type, add to the parameter `<NAME>_tags`. e.g. to output the parameter `--varient:vcf path\to\file`, use the input:
+To add tags to arguments that have a file type, add to the parameter `<NAME>_tags`. e.g. to output the parameter `--variant:vcf path\to\file`, use the input:
 ```yml
-varient:
+variant:
    class: File
    path: path\to\file
 
-varient_tags: [vcf]
+variant_tags: [vcf]
 ```
 
 The cwl files will be outputted to `cwl_files_<VERSION>/cwl` and the JSON files given by the documentation to `cwl_files_<VERSION>/json`.
