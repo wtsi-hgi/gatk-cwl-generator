@@ -184,7 +184,8 @@ def main():
     parser.add_argument('--include', dest='include_file',
         help="Only generate this file (note, CommandLinkGATK has to be generated for v3.x)")
     parser.add_argument("--dev", dest="dev", action="store_true",
-        help="Enable network caching and overwriting of the generated files (for development purposes)")
+        help="Enable network caching and overwriting of the generated files (for development purposes). " + 
+        "Requires requests_cache to be installed")
     parser.add_argument("--docker_container_name", "-c", dest="docker_container_name", default="gatk",
         help="Enable network caching and overwriting of the generated files (for development purposes). " + 
         "Default is 'gatk'")

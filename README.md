@@ -4,9 +4,11 @@ Generates [CWL](http://www.commonwl.org/v1.0/) files from the [GATK documentatio
 
 ## Installation
 
-First, install the required dependencies by running the following command:
+First, install the module 
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/wtsi-hgi/openstack-tenant-cleaner.git
+cd openstack-tenant-cleaner
+python setup.py install
 ```
 
 You may also want to install [cwltool](https://github.com/common-workflow-language/cwltool) to run the generated CWL files
