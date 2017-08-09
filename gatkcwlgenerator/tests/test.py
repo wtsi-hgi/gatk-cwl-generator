@@ -9,6 +9,7 @@ import os
 from os import path
 import unittest
 from multiprocessing import Process
+import tempfile
 
 import requests
 
@@ -71,11 +72,12 @@ def run_tool(toolname, extra_info="",interval=1, filetext=None, expect_failure=F
         extra_info += "\nintervals: [chr22:10591400-{}]".format(10591400 + interval)
         filetext = "analysis_type: {}\n".format(toolname) + default_args + "\n" + extra_info
 
-    f = open("tests/test_haplotypecaller_input.yml", "w")
-    f.write(filetext)
-    f.close()
-
-    return run_command("cwl-runner cwl_files_3.5/cwl/{}.cwl tests/test_haplotypecaller_input.yml".format(toolname), expect_failure=expect_failure)
+    with tempfile.TemporaryFile() as f:
+        f.write(filetext)
+        return run_command("cwl-runner cwl_files_3.5/cwl/{}.cwl {}".format(
+            toolname,
+            f.name
+        ), expect_failure=expect_failure)
 
 # Unit tests
 
@@ -99,6 +101,8 @@ class TestGenerateCWL(unittest.TestCase):
                 self.assertFalse(ann_json["arguments"])
 
 # Integration tests
+
+run_command("gatkcwlgenerator")
 
 class TestRunsCorrectly(unittest.TestCase):
     supported_versions = ["3.5", "current", "4.beta-latest"]
