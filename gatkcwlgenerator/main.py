@@ -5,6 +5,8 @@ import argparse
 import shutil
 import itertools
 import json
+from multiprocessing.pool import Pool
+import functools
 
 from bs4 import BeautifulSoup
 import requests
@@ -78,6 +80,32 @@ def get_json_links(version):
 def is_version_3(version):
     return not version.startswith("4")
 
+def write_cwl_file(cmd_line_options, json_dir, global_args, cwl_dir, tool_url):
+    if cmd_line_options.include_file is None or cmd_line_options.include_file in tool_url or "CommandLineGATK" in tool_url:
+        tool_json = requests.get(tool_url)
+        
+        tool_json_json = tool_json.json()
+        tool_name = tool_json_json['name']
+        json_name = tool_name + ".json"
+        
+        f = open(os.path.join(json_dir, json_name), 'w+')
+        f.write(tool_json.text)
+        f.close()
+        print("Written json/" + json_name)
+
+        # Don't append options for CommandLinkGATK or read filters for CatVariants,
+        # it bypasses the GATK engine
+        # https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_CatVariants.php
+        if not (tool_name == "CommandLineGATK" or tool_name == "CatVariants"):
+            apply_global_arguments(tool_json_json, global_args)
+
+        json2cwl.json2cwl(
+            tool_json_json,
+            cwl_dir,
+            cmd_line_options
+        )
+        print("Written cwl/" + tool_name + ".cwl")
+
 def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
     """
     Generates the cwl and json files
@@ -104,31 +132,12 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
 
 
     # Create json for each tool and convert to cwl
-    for tool_url in grouped_urls.tool_urls:
-        if cmd_line_options.include_file is None or cmd_line_options.include_file in tool_url or "CommandLineGATK" in tool_url:
-            tool_json = requests.get(tool_url)
-            
-            tool_json_json = tool_json.json()
-            tool_name = tool_json_json['name']
-            json_name = tool_name + ".json"
-            
-            f = open(os.path.join(json_dir, json_name), 'w+')
-            f.write(tool_json.text)
-            f.close()
-            print("Written json/" + json_name)
+    
 
-            # Don't append options for CommandLinkGATK or read filters for CatVariants,
-            # it bypasses the GATK engine
-            # https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_CatVariants.php
-            if not (tool_name == "CommandLineGATK" or tool_name == "CatVariants"):
-                apply_global_arguments(tool_json_json, global_args)
-
-            json2cwl.json2cwl(
-                tool_json_json,
-                cwl_dir,
-                cmd_line_options
-            )
-            print("Written cwl/" + tool_name + ".cwl")
+    pool = Pool(8)
+    partial_func = functools.partial(write_cwl_file, cmd_line_options, json_dir, global_args, cwl_dir)
+    pool.map(partial_func, grouped_urls.tool_urls)
+    pool.close()
 
     print("Success!")
 
