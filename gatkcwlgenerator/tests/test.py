@@ -127,7 +127,7 @@ class TestGeneratedCWLFiles:
             raise AssertionError("Not all cwl files are valid:\n" + "\n\n".join(exceptions))
 
     def test_haplotype_caller(self, version):
-        run_command("cwl-runner cwl_files_3.5/cwl/HaplotypeCaller.cwl examples/HaplotypeCaller_inputs.yml")
+        run_command("cwl-runner cwl_files_{}/cwl/HaplotypeCaller.cwl examples/HaplotypeCaller_inputs.yml".format(version))
 
     # Test if the haplotype caller accepts all the correct types
 
