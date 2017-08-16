@@ -71,7 +71,7 @@ variant:
 variant_tags: [vcf]
 ```
 
-The cwl files will be outputted to `cwl_files_<VERSION>/cwl` and the JSON files given by the documentation to `cwl_files_<VERSION>/json`.
+The cwl files will be outputted to `gatk_cmdline_tools/<VERSION>/cwl` and the JSON files given by the documentation to `gatk_cmdline_tools/<VERSION>/json`.
 
 ## Examples
 
