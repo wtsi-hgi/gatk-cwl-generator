@@ -98,7 +98,8 @@ ENV/
 # mypy
 .mypy_cache/
 
-cwl_files*
+gatk_cmdline_tools
+gatk_cmdline_tools.zip
 cwl-example-data
 out.gvcf.gz
 cache.sqlite

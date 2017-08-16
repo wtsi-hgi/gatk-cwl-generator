@@ -197,7 +197,7 @@ def main():
         requests_cache.install_cache() # Decreases the time to run dramatically
     
     if not cmd_line_options.outputdir:
-      cmd_line_options.outputdir = os.getcwd() + '/cwl_files_%s' % cmd_line_options.gatkversion
+      cmd_line_options.outputdir = os.getcwd() + '/gatk_cmdline_tools/%s' % cmd_line_options.gatkversion
 
     print("Your chosen directory is: %s" % cmd_line_options.outputdir)
     grouped_urls = get_json_links(cmd_line_options.gatkversion)

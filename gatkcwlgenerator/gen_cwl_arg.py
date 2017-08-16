@@ -213,7 +213,7 @@ def is_output_argument(argument):
 
 def get_output_json(argument):
     return {
-        'id': argument['name'],
+        'id': get_arg_id(argument) + "Output",
         'type': ['null', 'File'] if argument["required"] == "no" else "File",
         'outputBinding': {
             'glob': '$(inputs.{})'.format(argument['name'].strip("-"))
