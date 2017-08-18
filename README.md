@@ -46,12 +46,13 @@ optional arguments:
                         Default is 3.5
   --out OUTPUTDIR, -o OUTPUTDIR
                         Sets the output directory for generated files. Default
-                        is ./cwl_files_<VERSION>
+                        is ./gatk_cmdline_tools/<VERSION>/
   --include INCLUDE_FILE
                         Only generate this file (note, CommandLinkGATK has to
                         be generated for v3.x)
   --dev                 Enable network caching and overwriting of the
-                        generated files (for development purposes)
+                        generated files (for development purposes). Requires
+                        requests_cache to be installed
   --docker_container_name DOCKER_CONTAINER_NAME, -c DOCKER_CONTAINER_NAME
                         Enable network caching and overwriting of the
                         generated files (for development purposes). Default is
@@ -86,7 +87,7 @@ The cwl files will be outputted to `gatk_cmdline_tools/<VERSION>/cwl` and the JS
 
 To test the generated CWL files, provided are inputs to the HaplotypeCaller tool. To test assuming you have used the default options and have installed everything as above, run:
 ```bash
-cwl-runner cwl_files_3.5/HaplotypeCaller.cwl examples/HaplotypeCaller_inputs.yml
+cwl-runner gatk_cmdline_tools/3.5/HaplotypeCaller.cwl examples/HaplotypeCaller_inputs.yml
 ```
 
 The generated CWL files can also be found in the [releases](https://github.com/wtsi-hgi/gatk-cwl-generator/releases)
