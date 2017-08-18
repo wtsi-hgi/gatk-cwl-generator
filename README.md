@@ -73,6 +73,15 @@ variant_tags: [vcf]
 
 The cwl files will be outputted to `gatk_cmdline_tools/<VERSION>/cwl` and the JSON files given by the documentation to `gatk_cmdline_tools/<VERSION>/json`.
 
+## Generated CWL files
+
+- The input parameters of all cwl files have the same id as they would be used on the command line
+- The output parameters id's are of the format `<NAME>Output`
+- All read filter parameters are included as optional parameters in every tool, if they don't conflict with input parameters
+- Types of parameters are mostly what is specified in the documentation, corrected in a couple of places
+- The type of the input parameter `annotation` is a string, not an enumeration of all the possible options
+- Array types in the documentation are implemented as a union of the base type and the array type
+
 ## Examples
 
 To test the generated CWL files, provided are inputs to the HaplotypeCaller tool. To test assuming you have used the default options and have installed everything as above, run:

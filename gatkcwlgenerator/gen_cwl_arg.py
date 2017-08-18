@@ -168,11 +168,13 @@ def get_CWL_type(argument):
         if is_array_type:
             # This needs to be done instead of adding [], as you can do correct
             # inputBinding prefixes and it works with object types
-            typ = {
+            # Also adding the type itself for convenience - this would be interpreted as
+            # a one element array
+            typ = [typ, {
                 "type": "array",
                 "items": typ,
                 "inputBinding": get_input_bindings(argument, typ == "File")
-            }
+            }]
 
         if argument['required'] == 'no':
             if isinstance(typ, list):
