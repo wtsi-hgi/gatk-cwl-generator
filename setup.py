@@ -10,7 +10,7 @@ except ImportError:
 
 setup(
     name="gatk_cwl_generator",
-    version="1.1.0",
+    version="1.2.0",
     packages=find_packages(exclude=["tests"]),
     install_requires=open("requirements.txt", "r").readlines(),
     tests_require=open("test_requirements.txt", "r").readlines(),

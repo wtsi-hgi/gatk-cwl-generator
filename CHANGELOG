@@ -1,3 +1,6 @@
+v1.2
+- Array types are type | type[]
+
 v1.1: 
 - Made output arguments's ids be <NAME>Output instead of adding dashes
 - Outputting to gatk_cmdline_tools
