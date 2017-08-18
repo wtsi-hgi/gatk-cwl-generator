@@ -76,7 +76,7 @@ def run_tool(toolname, extra_info, version, interval=1, filetext=None, expect_fa
     with tempfile.NamedTemporaryFile() as f:
         f.write(filetext)
         f.flush()
-        return run_command("cwl-runner cwl_files_{}/cwl/{}.cwl {}".format(
+        return run_command("cwl-runner gatk_cmdline_tools/{}/cwl/{}.cwl {}".format(
             version,
             toolname,
             f.name
@@ -111,7 +111,7 @@ def test_runs(version):
 @pytest.mark.parametrize("version", supported_versions)
 class TestGeneratedCWLFiles:
     def get_base_cwl_path(self, version):
-        return path.join(base_dir, "cwl_files_{}/cwl".format(version))
+        return path.join(base_dir, "gatk_cmdline_tools/{}/cwl".format(version))
     
     def test_are_cwl_files_valid(self, version):
         exceptions = []
@@ -127,7 +127,7 @@ class TestGeneratedCWLFiles:
             raise AssertionError("Not all cwl files are valid:\n" + "\n\n".join(exceptions))
 
     def test_haplotype_caller(self, version):
-        run_command("cwl-runner cwl_files_{}/cwl/HaplotypeCaller.cwl examples/HaplotypeCaller_inputs.yml".format(version))
+        run_command("cwl-runner gatk_cmdline_tools/{}/cwl/HaplotypeCaller.cwl examples/HaplotypeCaller_inputs.yml".format(version))
 
     # Test if the haplotype caller accepts all the correct types
 

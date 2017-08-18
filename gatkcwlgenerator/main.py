@@ -180,7 +180,7 @@ def main():
     parser.add_argument("--version", "-v", dest='gatkversion', default="3.5",
         help="Sets the version of GATK to parse documentation for. Default is 3.5")
     parser.add_argument('--out', "-o", dest='outputdir',
-        help="Sets the output directory for generated files. Default is ./cwl_files_<VERSION>")
+        help="Sets the output directory for generated files. Default is ./gatk_cmdline_tools/<VERSION>/")
     parser.add_argument('--include', dest='include_file',
         help="Only generate this file (note, CommandLinkGATK has to be generated for v3.x)")
     parser.add_argument("--dev", dest="dev", action="store_true",
