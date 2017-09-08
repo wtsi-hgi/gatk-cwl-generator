@@ -110,3 +110,7 @@ You can also run the tests in parallel with `-n` to improve performance
 
 - The parameter `annotation` (for example, in [HaplotypeCaller](https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php#--annotation)) is specified to take in a string in the generated CWL file, not an enumeration of all the possible options
 - All parameters that you can pass to read filters that don't conflict with tool parameters are included and they are marked as optional and no default arguments are specified
+
+## Creating a new version
+
+To create a `gatk_cmdline_tools.zip` zip file containing all the generated cwl files for gatk versions 3.5, 3.6, 3.7 and 3.8, run `bash build.sh`. This file is uploaded as a release on GitHub for every new release of this package.
