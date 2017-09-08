@@ -1,4 +1,7 @@
-v1.2
+v1.2.2
+- Resolving secondaryFiles to a relative path, to work with newer cwl-runner versions and the advice in "secondaryFiles" of http://www.commonwl.org/v1.0/Workflow.html#WorkflowOutputParameter 
+
+v1.2.1
 - Array types are type | type[]
 
 v1.1: 
