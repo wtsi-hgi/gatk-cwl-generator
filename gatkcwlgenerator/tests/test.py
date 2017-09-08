@@ -27,11 +27,11 @@ def run_command(command, fail_message=None, expect_failure=False):
             "" if fail_message is None else fail_message + ": ",
             command,
             exitcode,
-            stdout,
-            stderr
+            stdout.decode(),
+            stderr.decode()
         ))
 
-    return CommandOutput(stdout, stderr, exitcode)
+    return CommandOutput(stdout.decode(), stderr.decode(), exitcode)
 
 class CommandOutput():
     def __init__(self, stdout, stderr, exitcode):
@@ -73,7 +73,7 @@ def run_tool(toolname, extra_info, version, interval=1, filetext=None, expect_fa
         extra_info += "\nintervals: [chr22:10591400-{}]".format(10591400 + interval)
         filetext = "analysis_type: {}\n".format(toolname) + default_args + "\n" + extra_info
 
-    with tempfile.NamedTemporaryFile() as f:
+    with tempfile.NamedTemporaryFile("w+") as f:
         f.write(filetext)
         f.flush()
         return run_command("cwl-runner gatk_cmdline_tools/{}/cwl/{}.cwl {}".format(
