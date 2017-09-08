@@ -101,7 +101,7 @@ pip install -r test_requirements.txt
 Then add example data to `cwl-example-data` such that `examples/HaplotypeCaller_inputs.yml` will run, then:
 
 ```bash
-py.test gatkcwlgenerator/tests/test.py
+py.test -v gatkcwlgenerator/tests/test.py
 ```
 
 You can also run the tests in parallel with `-n` to improve performance
