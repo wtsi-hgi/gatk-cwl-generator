@@ -52,7 +52,7 @@ def get_input_json(argument, options):
     if argument['name'] == '--reference_sequence':
         cwl_desc['secondaryFiles'] = ['.fai', '^.dict']
     elif 'requires' in argument['fulltext'] and 'files' in argument['fulltext']:
-        cwl_desc['secondaryFiles'] = "$(self.location+'.'+self.basename.split('.').splice(-1)[0].replace('m','i'))"
+        cwl_desc['secondaryFiles'] = "$(self.basename + self.nameext.replace('m','i'))"
 
     return cwl_desc
 
