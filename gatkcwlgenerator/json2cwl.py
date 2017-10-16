@@ -57,12 +57,17 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
     skeleton_cwl = {
         'id': GATK_json['name'],
         'cwlVersion': 'v1.0',
-        'baseCommand': ['java', '-jar', '/gatk/GenomeAnalysisTK.jar'],
+        'baseCommand': ['java', '-jar', cmd_line_options.gatk_location],
         'class': 'CommandLineTool',
+        'hints': [{
+            "class": "DockerRequirement",
+            "dockerPull": cmd_line_options.docker_container_name
+        }],
         'requirements': [
             {
                 "class": "ShellCommandRequirement"
-            }, {
+            },
+            {
                 "class": "InlineJavascriptRequirement",
                 "expressionLib": [
                     # Allows you to add annotations
@@ -75,10 +80,6 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
                         }
                     }""".replace("    ", "").replace("\n", "")
                 ]
-            },
-            {
-                "dockerPull": cmd_line_options.docker_container_name + ":latest",
-                "class": "DockerRequirement"
             }
         ]
     }

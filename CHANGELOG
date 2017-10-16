@@ -1,3 +1,6 @@
+v1.3
+- Changed the docker container to be broad institute's official docker container, not wtsi-hgi own container
+
 v1.2.2
 - Resolving secondaryFiles to a relative path, to work with newer cwl-runner versions and the advice in "secondaryFiles" of http://www.commonwl.org/v1.0/Workflow.html#WorkflowOutputParameter 
 
