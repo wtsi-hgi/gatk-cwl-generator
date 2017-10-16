@@ -186,9 +186,11 @@ def main():
     parser.add_argument("--dev", dest="dev", action="store_true",
         help="Enable network caching and overwriting of the generated files (for development purposes). " + 
         "Requires requests_cache to be installed")
-    parser.add_argument("--docker_container_name", "-c", dest="docker_container_name", default="gatk",
-        help="Enable network caching and overwriting of the generated files (for development purposes). " + 
-        "Default is 'gatk'")
+    parser.add_argument("--docker_container_name", "-c", dest="docker_container_name",
+        help="Docker container name for generated cwl files. Default is 'broadinstitute/gatk3:<VERSION>-0' " + 
+        "for version 3.x and 'broadinstitute/gatk:<VERSION>' for 4.x")
+    parser.add_argument("--gatk_location", "-l", dest="gatk_location",
+        help="Location of the gatk jar file. Default is '/usr/GenomeAnalysisTK.jar' for gatk 3.x and '/gatk/gatk.jar' for gatk 4.x")
     cmd_line_options = parser.parse_args()
 
 
@@ -197,7 +199,19 @@ def main():
         requests_cache.install_cache() # Decreases the time to run dramatically
     
     if not cmd_line_options.outputdir:
-      cmd_line_options.outputdir = os.getcwd() + '/gatk_cmdline_tools/%s' % cmd_line_options.gatkversion
+        cmd_line_options.outputdir = os.getcwd() + '/gatk_cmdline_tools/' + cmd_line_options.gatkversion
+
+    if not cmd_line_options.docker_container_name:
+        if is_version_3(cmd_line_options.gatkversion):
+            cmd_line_options.docker_container_name = "broadinstitute/gatk3:" + cmd_line_options.gatkversion + "-0"
+        else:
+            cmd_line_options.docker_container_name = "broadinstitute/gatk:" + cmd_line_options.gatkversion
+
+    if not cmd_line_options.gatk_location:
+        if is_version_3(cmd_line_options.gatkversion):
+            cmd_line_options.gatk_location = "/usr/GenomeAnalysisTK.jar"
+        else:
+            cmd_line_options.gatk_location = "/gatk/gatk.jar"
 
     print("Your chosen directory is: %s" % cmd_line_options.outputdir)
     grouped_urls = get_json_links(cmd_line_options.gatkversion)
