@@ -59,10 +59,6 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
         'cwlVersion': 'v1.0',
         'baseCommand': ['java', '-jar', cmd_line_options.gatk_location],
         'class': 'CommandLineTool',
-        'hints': [{
-            "class": "DockerRequirement",
-            "dockerPull": cmd_line_options.docker_container_name
-        }],
         'requirements': [
             {
                 "class": "ShellCommandRequirement"
@@ -80,6 +76,10 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
                         }
                     }""".replace("    ", "").replace("\n", "")
                 ]
+            },
+            {
+                "class": "DockerRequirement",
+                "dockerPull": cmd_line_options.docker_container_name
             }
         ]
     }
