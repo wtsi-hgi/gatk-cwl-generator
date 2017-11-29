@@ -106,7 +106,8 @@ class TestGenerateCWL:
 
 @pytest.mark.parametrize("version", supported_versions + ["4.beta-latest"])
 def test_runs(version):
-    run_command("python2 gatkcwlgenerator/main.py -v {} --dev".format(version))
+    os.environ['PYTHONPATH'] = "."
+    run_command("python gatkcwlgenerator/main.py -v {} --dev".format(version))
 
 @pytest.mark.parametrize("version", supported_versions)
 class TestGeneratedCWLFiles:
