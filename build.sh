@@ -2,6 +2,8 @@
 
 set -euf -o pipefail
 
+generator_version=$(git describe --tags --always)
+
 VERSIONS=( 3.5 3.6 3.7 3.8 4.beta-latest )
 
 tmpdir=$(mktemp -d)
@@ -17,15 +19,15 @@ done
 
 echo "Generating zip file"
 ( cd "${tmpdir}"; zip -r gatk_cmdline_tools gatk_cmdline_tools )
-cp "${tmpdir}/gatk_cmdline_tools.zip" ./
+cp "${tmpdir}/gatk_cmdline_tools.zip" "./gatk-cwl-generator-${generator_version}-gatk_cmdline_tools.zip"
 
 echo "Generating tgz file"
 ( cd "${tmpdir}"; tar zcvf gatk_cmdline_tools.tgz gatk_cmdline_tools/ )
-cp "${tmpdir}/gatk_cmdline_tools.tgz" ./
+cp "${tmpdir}/gatk_cmdline_tools.tgz" "./gatk-cwl-generator-${generator_version}-gatk_cmdline_tools.tgz"
 
 echo "Generating .tar.bz2 file"
 ( cd "${tmpdir}"; tar jcvf gatk_cmdline_tools.tar.bz2 gatk_cmdline_tools/ )
-cp "${tmpdir}/gatk_cmdline_tools.tar.bz2" ./
+cp "${tmpdir}/gatk_cmdline_tools.tar.bz2" "./gatk-cwl-generator-${generator_version}-gatk_cmdline_tools.tar.bz2"
 
 echo "Removing tmpdir: ${tmpdir}"
 rm -rf "${tmpdir}"
