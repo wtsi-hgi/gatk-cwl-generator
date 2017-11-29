@@ -3,13 +3,14 @@
 set -euf -o pipefail
 
 generator_version=$(git describe --tags --always)
+echo "GATK CWL generator: gatk-cwl-generator-${generator_version}"
 
 VERSIONS=( 3.5 3.6 3.7 3.8 4.beta-latest )
 
 tmpdir=$(mktemp -d)
 builddir="${tmpdir}/gatk_cmdline_tools"
 mkdir -p "${builddir}"
-echo "Building CWL in ${builddir} for GATK ${VERSIONS[@]}"
+echo "Building CWL in ${builddir} for GATK versions ${VERSIONS[@]}"
 
 for ver in ${VERSIONS[@]}
 do
