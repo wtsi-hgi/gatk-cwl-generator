@@ -14,6 +14,21 @@ import pytest
 import requests
 
 """
+Download example data to be used in CWL integration tests
+"""
+@pytest.fixture(scope="module")
+def example_data():
+    if not os.path.isfile("cwl-example-data/chr22_cwl_test.cram"):
+        from six.moves.urllib.request import urlopen
+        import tarfile
+        print("Downloading and extracting cwl-example-data")
+        tgz = urlopen("https://cwl-example-data.cog.sanger.ac.uk/chr22_cwl_test.tgz")
+        tar = tarfile.open(fileobj=tgz, mode="r|gz")
+        tar.extractall(path="cwl-example-data")
+        tar.close()
+        tgz.close()
+
+"""
 Runs the specified command and reports it as an AssertionError if it fails (can override this with
 expect_failure)
 """
@@ -127,22 +142,22 @@ class TestGeneratedCWLFiles:
         if exceptions:
             raise AssertionError("Not all cwl files are valid:\n" + "\n\n".join(exceptions))
 
-    def test_haplotype_caller(self, version):
+    def test_haplotype_caller(self, version, example_data):
         run_command("cwl-runner gatk_cmdline_tools/{}/cwl/HaplotypeCaller.cwl examples/HaplotypeCaller_inputs.yml".format(version))
 
     # Test if the haplotype caller accepts all the correct types
 
-    def test_boolean_type(self, version):
+    def test_boolean_type(self, version, example_data):
         assert "ThreadEfficiencyMonitor" in run_haplotype_caller("monitorThreadEfficiency: True", version).stderr
 
-    def test_integers_type(self, version):
+    def test_integers_type(self, version, example_data):
         assert "42 data thread" in run_haplotype_caller("num_threads: 42", version, expect_failure=True).stderr
 
-    def test_string_type(self, version):
+    def test_string_type(self, version, example_data):
         assert "Specified name does not exist in input bam files" in \
             run_haplotype_caller("sample_name: invalid_sample_name", version, expect_failure=True).stderr
 
-    def test_file_type(self, version):
+    def test_file_type(self, version, example_data):
         BQSR_arg = """
 BQSR:
    class: File
@@ -151,10 +166,10 @@ BQSR:
         assert "Bad input: The GATK report has an unknown/unsupported version in the header" in \
             run_haplotype_caller(BQSR_arg, version, expect_failure=True).stderr
 
-    def test_enum_type(self, version):
+    def test_enum_type(self, version, example_data):
         assert "Strictness is LENIENT" in run_haplotype_caller("validation_strictness: LENIENT", version).stderr
 
-    def test_list_type(self, version):
+    def test_list_type(self, version, example_data):
         run_with_larger_intervals = run_haplotype_caller(extra_info="", version=version,
             filetext="analysis_type: HaplotypeCaller\n" + default_args + "\nintervals: [chr22:10591400-10591500, chr22:10591500-10591645]")
 
