@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -euf -o pipefail
+
 VERSIONS="3.5
 3.6
 3.7
