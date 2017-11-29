@@ -9,3 +9,5 @@ do
     PYTHONPATH=. python gatkcwlgenerator -v $ver "$@"
 done
 zip -r gatk_cmdline_tools gatk_cmdline_tools
+tar zcvf gatk_cmdline_tools.tgz gatk_cmdline_tools
+tar jcvf gatk_cmdline_tools.tar.bz2 gatk_cmdline_tools
