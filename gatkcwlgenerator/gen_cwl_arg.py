@@ -73,7 +73,8 @@ enum_types = {
     "type": ['INDEL', 'SNP', 'MIXED', 'MNP', 'SYMBOLIC', 'NO_VARIATION']
 }
 
-warning_colour = '\033[93m'
+warning_colour = "\033[33m"
+default_colour = "\033[39m"
 
 
 def basic_GATK_type_to_CWL(argument, typ):
@@ -124,7 +125,7 @@ def basic_GATK_type_to_CWL(argument, typ):
     else:
         print(warning_colour + 'WARNING: Unable to assign to a CWL type, defaulting to string\n'
             + warning_colour + 'Argument: {}   Type: {}'.format(
-            argument['name'][2:], typ))
+            argument['name'][2:], typ) + default_colour)
         
         cwl_type = "string"
 
