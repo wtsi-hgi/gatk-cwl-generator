@@ -2,7 +2,7 @@
 The file converts the documentation's json files to cwl files
 """
 
-from ruamel.yaml import YAML
+from ruamel import yaml
 import os
 from .gen_cwl_arg import get_input_json, get_output_json, is_output_argument
 
@@ -93,7 +93,5 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
         skeleton_cwl,
         cmd_line_options
     )
-    yaml = YAML()
-    yaml.indent(sequence=4)
-    yaml.dump(skeleton_cwl, f)  # write the file
+    yaml.round_trip_dump(skeleton_cwl, f)  # write the file
     f.close()
