@@ -5,6 +5,7 @@ import argparse
 import shutil
 import itertools
 import json
+import sys
 
 from bs4 import BeautifulSoup
 import requests
@@ -46,7 +47,10 @@ def get_json_links(version):
     for link in soup.select("tr > td > a"):
         href = link['href']
         if href.startswith(starting_str) and "Exception" not in href:
-            full_url = base_url + href + ".json"
+            if is_version_3(version):
+                full_url = base_url + href + ".json" # v3 files end in .php.json
+            else:
+                full_url = base_url + href[:-4] + ".json" # strip off .php as v4 files end in .json
             rest_text = href[len(starting_str + "_"):]
 
             # Need to process these separately
@@ -104,8 +108,14 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
     for tool_url in grouped_urls.tool_urls:
         if cmd_line_options.include_file is None or cmd_line_options.include_file in tool_url or "CommandLineGATK" in tool_url:
             tool_json = requests.get(tool_url)
-            
-            tool_json_json = tool_json.json()
+            if not tool_json.ok:
+                print("Could not retrieve tool URL '%s' (status %s): %s" % (tool_url, tool_json.status_code, tool_json.text))
+            try:
+                tool_json_json = tool_json.json()
+            except ValueError as ve:
+                print("Could not decode json retrieved from %s: %s" % (tool_url, ve))
+                sys.exit(1)
+
             tool_name = tool_json_json['name']
             json_name = tool_name + ".json"
             
@@ -153,13 +163,27 @@ def get_global_arguments(grouped_urls, apply_cmdlineGATK):
     arguments = []
 
     if apply_cmdlineGATK:
-        commandLineGATK = requests.get(grouped_urls.tool_urls[0]).json() # This should be CommandLinkGATK
+        commandLineGATK_response = requests.get(grouped_urls.tool_urls[0])
+        if not commandLineGATK_response.ok:
+            print("Could not retrieve CommandLineGATK URL '%s' (status %s): %s" % (grouped_urls.tool_urls[0], commandLineGATK_response.status_code, commandLineGATK_response.text))
+        try: 
+            commandLineGATK = commandLineGATK_response.json() # This should be CommandLineGATK
+        except ValueError as ve:
+            print("Error decoding CommandLineGATK JSON retrieved from %s: %s" % (grouped_urls.tool_urls[0], ve))
+            sys.exit(1)
         arguments.extend(commandLineGATK["arguments"])
 
     print("Getting read filter arguments ...")
 
     for readfilter_url in grouped_urls.readfilter_urls:
-        readfilter_json = requests.get(readfilter_url).json()
+        readfilter_response = requests.get(readfilter_url)
+        if not readfilter_response.ok:
+            print("Could not retrieve read filter URL '%s' (status %s): %s" % (grouped_urls.tool_urls[0], readfilter_response.status_code, readfilter_response.text))
+        try:
+            readfilter_json = readfilter_response.json()
+        except ValueError as ve:
+            print("Could not decode read filter json retrieved from %s: %s" % (readfilter_url, ve))
+            sys.exit(1)
         print("Fetched " + readfilter_url)
         
         if "arguments" in readfilter_json:
