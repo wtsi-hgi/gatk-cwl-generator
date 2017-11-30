@@ -7,8 +7,10 @@ echo "GATK CWL generator: gatk-cwl-generator-${generator_version}"
 
 VERSIONS=( 3.5 3.6 3.7 3.8 4.beta-latest )
 
+tarbase="gatk-cwl-generator-${generator_version}-gatk_cmdline_tools"
+
 tmpdir=$(mktemp -d)
-builddir="${tmpdir}/gatk_cmdline_tools"
+builddir="${tmpdir}/${tarbase}"
 mkdir -p "${builddir}"
 echo "Building CWL in ${builddir} for GATK versions ${VERSIONS[@]}"
 
@@ -19,16 +21,16 @@ do
 done
 
 echo "Generating zip file"
-( cd "${tmpdir}"; zip -r gatk_cmdline_tools gatk_cmdline_tools )
-cp "${tmpdir}/gatk_cmdline_tools.zip" "./gatk-cwl-generator-${generator_version}-gatk_cmdline_tools.zip"
+( cd "${tmpdir}"; zip -r ${tarbase} ${tarbase} )
+cp "${tmpdir}/${tarbase}.zip" ./
 
 echo "Generating tgz file"
-( cd "${tmpdir}"; tar zcvf gatk_cmdline_tools.tgz gatk_cmdline_tools/ )
-cp "${tmpdir}/gatk_cmdline_tools.tgz" "./gatk-cwl-generator-${generator_version}-gatk_cmdline_tools.tgz"
+( cd "${tmpdir}"; tar zcvf ${tarbase}.tgz ${tarbase}/ )
+cp "${tmpdir}/${tarbase}.tgz" ./
 
 echo "Generating .tar.bz2 file"
-( cd "${tmpdir}"; tar jcvf gatk_cmdline_tools.tar.bz2 gatk_cmdline_tools/ )
-cp "${tmpdir}/gatk_cmdline_tools.tar.bz2" "./gatk-cwl-generator-${generator_version}-gatk_cmdline_tools.tar.bz2"
+( cd "${tmpdir}"; tar jcvf ${tarbase}.tar.bz2 ${tarbase}/ )
+cp "${tmpdir}/${tarbase}.tar.bz2" ./
 
 echo "Removing tmpdir: ${tmpdir}"
 rm -rf "${tmpdir}"
