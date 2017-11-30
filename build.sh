@@ -42,15 +42,21 @@ echo "Deactivating virtualenv"
 deactivate
 
 echo "Generating zip file"
+set -x
 ( cd "${tmpdir}"; zip -r ${tarbase} ${tarbase} )
+set +x
 cp "${tmpdir}/${tarbase}.zip" ./
 
 echo "Generating tgz file"
+set -x
 ( cd "${tmpdir}"; tar zcvf ${tarbase}.tgz ${tarbase}/ )
+set +x
 cp "${tmpdir}/${tarbase}.tgz" ./
 
 echo "Generating .tar.bz2 file"
+set -x
 ( cd "${tmpdir}"; tar jcvf ${tarbase}.tar.bz2 ${tarbase}/ )
+set +x
 cp "${tmpdir}/${tarbase}.tar.bz2" ./
 
 echo "Removing tmpdir: ${tmpdir}"
