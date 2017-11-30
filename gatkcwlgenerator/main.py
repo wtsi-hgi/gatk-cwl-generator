@@ -29,10 +29,7 @@ def get_json_links(version):
     """
     Parses the tool docs HTML page to get links to the json resources
     """
-    if version == "current" or version.startswith("4"):
-       base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" % version
-    else:
-       base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s-0/" % version
+    base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" % version
     
     data = requests.get(base_url).text
     soup = BeautifulSoup(data, "html.parser")
@@ -187,7 +184,7 @@ def main():
         help="Enable network caching and overwriting of the generated files (for development purposes). " + 
         "Requires requests_cache to be installed")
     parser.add_argument("--docker_container_name", "-c", dest="docker_container_name",
-        help="Docker container name for generated cwl files. Default is 'broadinstitute/gatk3:<VERSION>-0' " + 
+        help="Docker container name for generated cwl files. Default is 'broadinstitute/gatk3:<VERSION>' " + 
         "for version 3.x and 'broadinstitute/gatk:<VERSION>' for 4.x")
     parser.add_argument("--gatk_location", "-l", dest="gatk_location",
         help="Location of the gatk jar file. Default is '/usr/GenomeAnalysisTK.jar' for gatk 3.x and '/gatk/gatk.jar' for gatk 4.x")
@@ -203,7 +200,7 @@ def main():
 
     if not cmd_line_options.docker_container_name:
         if is_version_3(cmd_line_options.gatkversion):
-            cmd_line_options.docker_container_name = "broadinstitute/gatk3:" + cmd_line_options.gatkversion + "-0"
+            cmd_line_options.docker_container_name = "broadinstitute/gatk3:" + cmd_line_options.gatkversion
         else:
             cmd_line_options.docker_container_name = "broadinstitute/gatk:" + cmd_line_options.gatkversion
 
