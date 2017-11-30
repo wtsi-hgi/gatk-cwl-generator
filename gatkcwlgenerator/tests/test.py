@@ -99,7 +99,7 @@ def run_tool(toolname, extra_info, version, interval=1, filetext=None, expect_fa
 
 # Unit tests
 
-supported_versions = ["3.5", "3.6", "3.7", "3.8"]
+supported_versions = ["3.5-0", "3.6-0", "3.7-0", "3.8-0"] #  "4.beta.6"
 
 @pytest.mark.parametrize("version", supported_versions)
 class TestGenerateCWL:
