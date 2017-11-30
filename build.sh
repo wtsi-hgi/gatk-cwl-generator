@@ -5,7 +5,7 @@ set -euf -o pipefail
 generator_version=$(git describe --tags --always)
 echo "GATK CWL generator: gatk-cwl-generator-${generator_version}"
 
-VERSIONS=( 3.5 3.6 3.7 3.8 4.beta-latest )
+VERSIONS=( 3.5 3.6 3.7 3.8 4.beta.6 )
 
 tarbase="gatk-cwl-generator-${generator_version}-gatk_cmdline_tools"
 
