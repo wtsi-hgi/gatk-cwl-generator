@@ -43,7 +43,7 @@ deactivate
 
 echo "Generating zip file"
 set -x
-( cd "${tmpdir}"; zip -r ${tarbase} ${tarbase} )
+( cd "${tmpdir}"; zip -r ${tarbase}.zip ${tarbase} )
 set +x
 cp "${tmpdir}/${tarbase}.zip" ./
 
