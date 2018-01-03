@@ -102,3 +102,6 @@ gatk-cwl-generator-*
 cwl-example-data
 out.gvcf.gz
 cache.sqlite
+
+gatk_cmdline_tools
+gatk_cmdline_tools.zip
