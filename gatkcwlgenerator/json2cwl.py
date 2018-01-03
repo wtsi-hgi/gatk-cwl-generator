@@ -4,7 +4,7 @@ The file converts the documentation's json files to cwl files
 
 from ruamel import yaml
 import os
-from .gen_cwl_arg import get_input_json, get_output_json, is_output_argument
+from .gen_cwl_arg import get_input_objects, get_output_json, is_output_argument
 
 invalid_args = [
     "--help",
@@ -34,20 +34,14 @@ def cwl_generator(json_, cwl, cmd_line_options):
             if is_output_argument(argument):
                 output_json = get_output_json(argument)
                 outputs.append(output_json)
-            
-            input_json = get_input_json(argument, cmd_line_options)
 
-            if input_json["type"] == "File":
-                inputs.append({
-                    "type": "string[]?",
-                    "doc": "A argument to set the tags of '{}'".format(input_json["id"]),
-                    "id": input_json["id"] + "_tags"
-                })
-            
-            if "secondaryFiles" in input_json: # So reference_sequence doesn't conflict with refIndex and refDict
-                inputs.insert(0, input_json)
-            else:
-                inputs.append(input_json)
+            input_objects_for_arg = get_input_objects(argument, cmd_line_options)
+
+            for input_object in input_objects_for_arg:
+                if "secondaryFiles" in input_object: # So reference_sequence doesn't conflict with refIndex and refDict
+                    inputs.insert(0, input_object)
+                else:
+                    inputs.append(input_object)
 
     cwl["inputs"] = inputs
     cwl["outputs"] = outputs

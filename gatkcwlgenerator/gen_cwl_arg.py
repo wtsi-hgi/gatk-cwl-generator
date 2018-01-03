@@ -1,7 +1,7 @@
 """
 Functions to generate the CWL descriptions for GATK arguments.
 
-The main exported functions are get_output_json and get_input_json
+The main exported functions are get_output_json and get_input_objects
 """
 
 
@@ -14,23 +14,25 @@ def get_input_bindings(argument, is_file_type):
         input_binding["valueFrom"] = "$(parseTags(self.path, inputs.{}_tags))".format(get_arg_id(argument))
         input_binding["shellQuote"] = False
         input_binding["separate"] = False
-    
+
     return input_binding
 
 def get_arg_id(argument):
     return argument["name"].strip("-")
 
-def get_input_json(argument, options):
+def get_input_objects(argument, options):
     """
-    Returns the cwl syntax for expressing the given argument
+    Returns a list of cwl objects for expressing the given argument
 
     :param argument: The cwl argument, as specified in the json file
     :param inputs: The inputs object, to be written to with the correct information
 
-    :returns: CWL object to describe the given argument
+    :returns: CWL objects to describe the given argument
     """
 
-    cwl_desc = {
+    cwl_objects = []
+
+    cwl_object = {
         'doc': argument['summary'],
         'id': get_arg_id(argument),
     }
@@ -40,21 +42,30 @@ def get_input_json(argument, options):
     if prefix == '--input_file' or prefix == '--input':
         argument['type'] = 'File'
 
-    cwl_type, is_array_type = get_CWL_type(argument)
-    if not is_array_type:
-        cwl_desc["inputBinding"] = get_input_bindings(argument, cwl_type == "File")
+    cwl_type, is_union_type = get_CWL_type(argument)
+    if not is_union_type:
+        cwl_object["inputBinding"] = get_input_bindings(argument, cwl_type == "File")
 
-    cwl_desc["type"] = cwl_type
+    cwl_object["type"] = cwl_type
 
     if is_arg_with_default(argument, options) and is_output_argument(argument):
-        cwl_desc["default"] = get_output_default_arg(argument, cwl_type)
+        cwl_object["default"] = get_output_default_arg(argument, cwl_type)
 
     if argument['name'] == '--reference_sequence':
-        cwl_desc['secondaryFiles'] = ['.fai', '^.dict']
+        cwl_object['secondaryFiles'] = ['.fai', '^.dict']
     elif 'requires' in argument['fulltext'] and 'files' in argument['fulltext']:
-        cwl_desc['secondaryFiles'] = "$(self.basename + self.nameext.replace('m','i'))"
+        cwl_object['secondaryFiles'] = "$(self.basename + self.nameext.replace('m','i'))"
 
-    return cwl_desc
+    cwl_objects.append(cwl_object)
+
+    if cwl_object["type"] == "File":
+        cwl_objects.append({
+            "type": "string[]?",
+            "doc": "A argument to set the tags of '{}'".format(cwl_object["id"]),
+            "id": cwl_object["id"] + "_tags"
+        })
+
+    return cwl_object
 
 
 def is_arg_with_default(argument, cmd_line_options):
@@ -77,7 +88,7 @@ warning_colour = "\033[33m"
 default_colour = "\033[39m"
 
 
-def basic_GATK_type_to_CWL(argument, typ):
+def basic_GATK_type_to_CWL(argument, inner_type):
     """
     Gets the correct CWL type for an argument, given an argument's GATK type excluding List[...]
 
@@ -86,23 +97,29 @@ def basic_GATK_type_to_CWL(argument, typ):
     :param argument: The cwl argument, as specified in the json file
     :param typ: The GATK type given
 
-    :returns: (cwl_type, is_array_type)
+    :returns: (cwl_type, is_union_type)
     """
 
-    is_array_type = False
 
-    if typ in ('long', 'double', 'int', 'string', 'float', 'boolean', 'bool'):
-        cwl_type = typ
-    elif typ == 'file':
+    is_union_type = False
+
+    prefix = argument['name']
+
+    # Override List[String] to List[File] for input_file in gatk<4 and input for gatk>=4
+    if prefix == '--input_file' or prefix == '--input':
+        cwl_type = "File"
+    elif inner_type in ('long', 'double', 'int', 'string', 'float', 'boolean', 'bool'):
+        cwl_type = inner_type
+    elif inner_type == 'file':
         cwl_type = 'File'
     elif is_output_argument(argument):
         cwl_type = "string"
-    elif typ in ('byte', 'integer'):
+    elif inner_type in ('byte', 'integer'):
         cwl_type = 'int'
-    elif typ == 'set':
+    elif inner_type == 'set':
         # The caller function will turn this into an array of sets
         # Example of this -goodSM
-        is_array_type = True
+        is_union_type = True
         cwl_type = 'string'
     elif argument['options']:
         # Check for enumerated types, and if they exist, ignore the specified type name
@@ -110,26 +127,26 @@ def basic_GATK_type_to_CWL(argument, typ):
             'type': 'enum',
             'symbols': [x['name'] for x in argument['options']]
         }
-    elif typ in enum_types.keys():
+    elif inner_type in enum_types.keys():
         cwl_type = {
             "type": "enum",
-            "symbols": enum_types[typ]
+            "symbols": enum_types[inner_type]
         }
-    elif 'intervalbinding' in typ:
+    elif 'intervalbinding' in inner_type:
         # Type intervalbinding can be a list of strings or a list of files
-        is_array_type = True
+        is_union_type = True
         cwl_type = ['File', "string"]
-    elif "rodbinding" in typ:
+    elif "rodbinding" in inner_type:
          # Possible options: https://gist.github.com/ThomasHickman/b4a0552231f4963520927812ad29eac8
         cwl_type = 'File'
     else:
         print(warning_colour + 'WARNING: Unable to assign to a CWL type, defaulting to string\n'
             + warning_colour + 'Argument: {}   Type: {}'.format(
-            argument['name'][2:], typ) + default_colour)
-        
+            argument['name'][2:], inner_type) + default_colour)
+
         cwl_type = "string"
 
-    return (cwl_type, is_array_type)
+    return (cwl_type, is_union_type)
 
 
 def get_CWL_type(argument):
@@ -137,58 +154,55 @@ def get_CWL_type(argument):
     Returns the CWL type of an argument, indicating if it is an array type
 
     :param argument: The cwl argument, as specified in the json file
-    :param cwl_desc: The inputs object, to be written to with the correct information
+    :param cwl_object: The inputs object, to be written to with the correct information
 
-    :returns: (type_json, is_array_type)
-    If is_array_type is true, the caller shouldn't output inputBinding's prefix
+    :returns: (type_json, is_union_type)
+    If is_union_type is true, the caller shouldn't output inputBinding's prefix
     """
 
-    is_array_type = False
+    is_union_type = False
 
     prefix = argument['name']
-    # Patch the incorrect description given by GATK for both --input_file and the type intervalbinding
-    if prefix == '--input_file' or prefix == '--input':
-        typ = 'File'
+    # Patch the incorrect description given by GATK for both --input_file
+    outer_type = argument['type'].lower()
+
+    if 'list[' in outer_type or 'set[' in outer_type:
+        inner_type = outer_type[outer_type.index('[') + 1 : -1]
+        is_union_type = True
+    elif '[]' in outer_type:
+        inner_type = outer_type.strip('[]')
+        is_union_type = True
     else:
-        outer_type = argument['type'].lower()
+        inner_type = outer_type
 
-        if 'list[' in outer_type or 'set[' in outer_type:
-            inner_type = outer_type[outer_type.index('[') + 1 : -1]
-            is_array_type = True
-        elif '[]' in outer_type:
-            inner_type = outer_type.strip('[]')
-            is_array_type = True
+    typ, is_union_type2 = basic_GATK_type_to_CWL(argument, inner_type)
+
+    if is_union_type2:
+        is_union_type = True
+
+    if is_union_type:
+        # This needs to be done instead of adding [], as you can do correct
+        # inputBinding prefixes and it works with object types
+        # Also adding the type itself for convenience - this would be interpreted as
+        # a one element array
+        array_type = {
+            "type": "array",
+            "items": typ,
+            "inputBinding": get_input_bindings(argument, typ == "File")
+        }
+
+        if isinstance(typ, list):
+            typ = typ + [array_type]
         else:
-            inner_type = outer_type
+            typ = [typ, array_type]
 
-        typ, is_array_type2 = basic_GATK_type_to_CWL(argument, inner_type)
+    if argument['required'] == 'no':
+        if isinstance(typ, list):
+            typ.insert(0, 'null')
+        else:
+            typ = ['null', typ]
 
-        if is_array_type2:
-            is_array_type = True
-
-        if is_array_type:
-            # This needs to be done instead of adding [], as you can do correct
-            # inputBinding prefixes and it works with object types
-            # Also adding the type itself for convenience - this would be interpreted as
-            # a one element array
-            array_type = {
-                "type": "array",
-                "items": typ,
-                "inputBinding": get_input_bindings(argument, typ == "File")
-            }
-
-            if isinstance(typ, list):
-                typ = typ + [array_type]
-            else:
-                typ = [typ, array_type]
-
-        if argument['required'] == 'no':
-            if isinstance(typ, list):
-                typ.insert(0, 'null')
-            else:
-                typ = ['null', typ]
-
-    return (typ, is_array_type)
+    return (typ, is_union_type)
 
 # A dict of output type's file extentions
 output_types_file_ext = {
