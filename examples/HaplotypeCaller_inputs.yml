@@ -1,4 +1,3 @@
-analysis_type: HaplotypeCaller
 reference_sequence:
    class: File
    #path: /path/to/fasta/ref/file

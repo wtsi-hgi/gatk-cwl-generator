@@ -86,7 +86,7 @@ Runs the haplotype_caller tool with the specified data
 def run_tool(toolname, extra_info, cwl_files_location, interval=1, filetext=None, expect_failure=False):
     if filetext is None:
         extra_info += "\nintervals: [chr22:10591400-{}]".format(10591400 + interval)
-        filetext = "analysis_type: {}\n".format(toolname) + default_args + "\n" + extra_info
+        filetext = default_args + "\n" + extra_info
 
     with tempfile.NamedTemporaryFile("w+") as f:
         f.write(filetext)
@@ -175,6 +175,6 @@ BQSR:
 
     def test_list_type(self, cwl_files):
         run_with_larger_intervals = run_haplotype_caller(extra_info="", cwl_files_location=cwl_files,
-            filetext="analysis_type: HaplotypeCaller\n" + default_args + "\nintervals: [chr22:10591400-10591500, chr22:10591500-10591645]")
+            filetext=default_args + "\nintervals: [chr22:10591400-10591500, chr22:10591500-10591645]")
 
         assert "Processing 246 bp from intervals" in run_with_larger_intervals.stderr

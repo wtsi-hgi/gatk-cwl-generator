@@ -6,7 +6,11 @@ from ruamel import yaml
 import os
 from .gen_cwl_arg import get_input_json, get_output_json, is_output_argument
 
-invalid_args = ['--help', '--defaultBaseQualities']
+invalid_args = [
+    "--help",
+    "--defaultBaseQualities",
+    "--analysis_type"           # this is hard coded into the baseCommand for each tool
+]
 
 def cwl_generator(json_, cwl, cmd_line_options):
     """
@@ -57,7 +61,13 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
     skeleton_cwl = {
         'id': GATK_json['name'],
         'cwlVersion': 'v1.0',
-        'baseCommand': ['java', '-jar', cmd_line_options.gatk_location],
+        'baseCommand': [
+            'java',
+            '-jar',
+            cmd_line_options.gatk_location,
+            "--analysis_type",
+            GATK_json['name']
+            ],
         'class': 'CommandLineTool',
         'requirements': [
             {
