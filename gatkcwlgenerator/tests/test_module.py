@@ -8,6 +8,7 @@ import subprocess
 import os
 from os import path
 from multiprocessing import Process
+from multiprocessing.pool import ThreadPool
 import tempfile
 import pytest
 
@@ -62,18 +63,18 @@ default_args = """
 reference_sequence:
    class: File
    #path: /path/to/fasta/ref/file
-   path: {0}/cwl-example-data/chr22_cwl_test.fa 
+   path: {0}/cwl-example-data/chr22_cwl_test.fa
 refIndex:
    class: File
    #path: /path/to/index/file
-   path: {0}/cwl-example-data/chr22_cwl_test.fa.fai 
+   path: {0}/cwl-example-data/chr22_cwl_test.fa.fai
 refDict:
    class: File
    #path: /path/to/dict/file
-   path: {0}/cwl-example-data/chr22_cwl_test.fa.dict 
+   path: {0}/cwl-example-data/chr22_cwl_test.fa.dict
 input_file: #must be BAM or CRAM
    class: File
-   #path: /path/to/input/file 
+   #path: /path/to/input/file
    path: {0}/cwl-example-data/chr22_cwl_test.cram
 out: out.gvcf.gz""".format(base_dir)
 
@@ -99,7 +100,7 @@ def run_tool(toolname, extra_info, cwl_files_location, interval=1, filetext=None
 
 # Unit tests
 
-supported_versions = ["3.5-0", "3.6-0", "3.7-0", "3.8-0"] #  "4.beta.6"
+supported_versions = ["3.5-0"] #  "4.beta.6" , "3.6-0", "3.7-0", "3.8-0"
 
 @pytest.mark.parametrize("version", supported_versions)
 class TestGenerateCWL:
@@ -122,26 +123,49 @@ class TestGenerateCWL:
 
 def test_generate_v4():
     os.environ['PYTHONPATH'] = "."
-    run_command("python gatkcwlgenerator/main.py -v 4.beta-latest --dev")
+    run_command("python -m gatkcwlgenerator -v 4.beta.6 --dev")
 
 @pytest.fixture(scope="module", params=supported_versions)
 def cwl_files(request):
     version = request.param
 
     os.environ['PYTHONPATH'] = "."
-    run_command("python2 gatkcwlgenerator/main.py -v {} --dev".format(version))
+    run_command("python2 -m gatkcwlgenerator -v {} --dev".format(version))
     return "gatk_cmdline_tools/{}/cwl".format(version)
 
 class TestGeneratedCWLFiles:
+    # def test_are_cwl_files_valid(self, cwl_files):
+    #     exceptions = []
+    #     for cwl_file in os.listdir(cwl_files):
+    #         try:
+    #             run_command("cwl-runner --validate " + path.join(cwl_files, cwl_file))
+    #             print("Validated " + cwl_file)
+    #         except AssertionError as e:
+    #             print(e)
+    #             exceptions.append(e)
+
+    #     if exceptions:
+    #         raise AssertionError("Not all cwl files are valid:\n" + "\n\n".join(exceptions))
+
+    def _is_cwlfile_valid(self, file_location):
+        try:
+            run_command("cwl-runner --validate " + file_location)
+            print("Validated " + file_location)
+        except AssertionError as e:
+            return e
+
     def test_are_cwl_files_valid(self, cwl_files):
+        thread_pool = ThreadPool(4)
+        results = thread_pool.map(
+            self._is_cwlfile_valid,
+            [path.join(cwl_files, file_name) for file_name in os.listdir(cwl_files)]
+        )
+
         exceptions = []
-        for cwl_file in os.listdir(cwl_files):
-            try:
-                run_command("cwl-runner --validate " + path.join(cwl_files, cwl_file))
-                print("Validated " + cwl_file)
-            except AssertionError as e:
-                print(e)
-                exceptions.append(e)
+        for result in results:
+            if isinstance(result, AssertionError):
+                print(result)
+                exceptions.append(result)
 
         if exceptions:
             raise AssertionError("Not all cwl files are valid:\n" + "\n\n".join(exceptions))

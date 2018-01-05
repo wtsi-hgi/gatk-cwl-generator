@@ -10,13 +10,13 @@ import sys
 from bs4 import BeautifulSoup
 import requests
 
-import gatkcwlgenerator.json2cwl as json2cwl
+from .json2cwl import json2cwl
 
 def find_index(lst, func):
     for i, item in enumerate(lst):
         if func(item):
             return i
-    
+
     raise ValueError("Item not found")
 
 class JSONLinks:
@@ -31,8 +31,12 @@ def get_json_links(version):
     Parses the tool docs HTML page to get links to the json resources
     """
     base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" % version
-    
-    data = requests.get(base_url).text
+
+    base_webpage_request = requests.get(base_url)
+    if not base_webpage_request.ok:
+        print("Could not retrieve URL '%s' (status %s): %s" % (base_url, base_webpage_request.status_code, base_webpage_request.text))
+
+    data = base_webpage_request.text
     soup = BeautifulSoup(data, "html.parser")
 
     tool_urls = []
@@ -67,7 +71,7 @@ def get_json_links(version):
 
     # Remove duplicates
     tool_urls = list(set(tool_urls))
-    
+
     # Move CommandLine to the front of the list
     if is_version_3(version):
         i = find_index(tool_urls, lambda x: "CommandLineGATK" in x)
@@ -86,7 +90,7 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
     global_args = get_global_arguments(grouped_urls, is_version_3(cmd_line_options.gatkversion))
 
     print("Creating and converting json files...")
-    
+
     # Get current directory and make folders for files
     json_dir = os.path.join(out_dir, 'json')
     cwl_dir = os.path.join(out_dir, 'cwl')
@@ -118,7 +122,7 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
 
             tool_name = tool_json_json['name']
             json_name = tool_name + ".json"
-            
+
             f = open(os.path.join(json_dir, json_name), 'w+')
             f.write(tool_json.text)
             f.close()
@@ -130,7 +134,7 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
             if not (tool_name == "CommandLineGATK" or tool_name == "CatVariants"):
                 apply_global_arguments(tool_json_json, global_args)
 
-            json2cwl.json2cwl(
+            json2cwl(
                 tool_json_json,
                 cwl_dir,
                 cmd_line_options
@@ -166,7 +170,7 @@ def get_global_arguments(grouped_urls, apply_cmdlineGATK):
         commandLineGATK_response = requests.get(grouped_urls.tool_urls[0])
         if not commandLineGATK_response.ok:
             print("Could not retrieve CommandLineGATK URL '%s' (status %s): %s" % (grouped_urls.tool_urls[0], commandLineGATK_response.status_code, commandLineGATK_response.text))
-        try: 
+        try:
             commandLineGATK = commandLineGATK_response.json() # This should be CommandLineGATK
         except ValueError as ve:
             print("Error decoding CommandLineGATK JSON retrieved from %s: %s" % (grouped_urls.tool_urls[0], ve))
@@ -185,7 +189,7 @@ def get_global_arguments(grouped_urls, apply_cmdlineGATK):
             print("Could not decode read filter json retrieved from %s: %s" % (readfilter_url, ve))
             sys.exit(1)
         print("Fetched " + readfilter_url)
-        
+
         if "arguments" in readfilter_json:
             args = readfilter_json["arguments"]
 
@@ -218,7 +222,7 @@ def main():
     if cmd_line_options.dev:
         import requests_cache
         requests_cache.install_cache() # Decreases the time to run dramatically
-    
+
     if not cmd_line_options.outputdir:
         cmd_line_options.outputdir = os.getcwd() + '/gatk_cmdline_tools/' + cmd_line_options.gatkversion
 

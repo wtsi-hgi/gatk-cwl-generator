@@ -82,14 +82,10 @@ The generated CWL files can also be found in the [releases](https://github.com/w
 
 ## Tests
 
-First install the test requirements
-```
-pip install -r test_requirements.txt
-```
-Then add example data to `cwl-example-data` such that `examples/HaplotypeCaller_inputs.yml` will run, then:
-
+Install the tests requirements, then run the tests. Note: docker must be installed in order to run the tests (the cwl files are tested during the tests):
 ```bash
-py.test -v gatkcwlgenerator/tests/test.py
+pip install -r test_requirements.txt
+pytest gatkcwlgenerator
 ```
 
 You can also run the tests in parallel with `-n` to improve performance

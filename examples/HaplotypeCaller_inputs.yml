@@ -1,18 +1,21 @@
 reference_sequence:
    class: File
    #path: /path/to/fasta/ref/file
-   path: ../cwl-example-data/chr22_cwl_test.fa 
+   path: ../cwl-example-data/chr22_cwl_test.fa
 refIndex:
    class: File
    #path: /path/to/index/file
-   path: ../cwl-example-data/chr22_cwl_test.fa.fai 
+   path: ../cwl-example-data/chr22_cwl_test.fa.fai
 refDict:
    class: File
    #path: /path/to/dict/file
-   path: ../cwl-example-data/chr22_cwl_test.fa.dict 
+   path: ../cwl-example-data/chr22_cwl_test.fa.dict
 input_file: #must be BAM or CRAM
    class: File
-   #path: /path/to/input/file 
+   #path: /path/to/input/file
    path: ../cwl-example-data/chr22_cwl_test.cram
+input_file_tags:
+  - abc
+  - def
 out: out.gvcf.gz
 intervals: [chr22:10591400-10591600]

@@ -1,229 +1,222 @@
 """
 Functions to generate the CWL descriptions for GATK arguments.
-
 The main exported functions are get_output_json and get_input_objects
 """
 
+from .cwl_ast import *
 
-def get_input_bindings(argument, is_file_type):
-    input_binding = {
-        "prefix": argument["name"]
-    }
-
-    if is_file_type:
-        input_binding["valueFrom"] = "$(parseTags(self.path, inputs.{}_tags))".format(get_arg_id(argument))
-        input_binding["shellQuote"] = False
-        input_binding["separate"] = False
-
-    return input_binding
+def get_input_bindings(argument, cwl_type):
+    arg_id = get_arg_id(argument)
+    if cwl_type.find_node(is_file_type) is not None:
+        return {
+            "valueFrom": "$(applyTagsToArgument(\"--{}\", inputs.{}_tags))".format(arg_id, arg_id)
+        }
+    elif isinstance(cwl_type, CWLArrayType):
+        return {
+            "valueFrom": "$(generateArrayCmd(\"--{}\")".format(arg_id)
+        }
+    else:
+        return {
+            "prefix": argument["name"]
+        }
 
 def get_arg_id(argument):
     return argument["name"].strip("-")
 
-def get_input_objects(argument, options):
-    """
-    Returns a list of cwl objects for expressing the given argument
-
-    :param argument: The cwl argument, as specified in the json file
-    :param inputs: The inputs object, to be written to with the correct information
-
-    :returns: CWL objects to describe the given argument
-    """
-
-    cwl_objects = []
-
-    cwl_object = {
-        'doc': argument['summary'],
-        'id': get_arg_id(argument),
-    }
-
-    prefix = argument['name']
-    # Patch the incorrect description given by GATK for both --input_file
-    if prefix == '--input_file' or prefix == '--input':
-        argument['type'] = 'File'
-
-    cwl_type, is_union_type = get_CWL_type(argument)
-    if not is_union_type:
-        cwl_object["inputBinding"] = get_input_bindings(argument, cwl_type == "File")
-
-    cwl_object["type"] = cwl_type
-
-    if is_arg_with_default(argument, options) and is_output_argument(argument):
-        cwl_object["default"] = get_output_default_arg(argument, cwl_type)
-
-    if argument['name'] == '--reference_sequence':
-        cwl_object['secondaryFiles'] = ['.fai', '^.dict']
-    elif 'requires' in argument['fulltext'] and 'files' in argument['fulltext']:
-        cwl_object['secondaryFiles'] = "$(self.basename + self.nameext.replace('m','i'))"
-
-    cwl_objects.append(cwl_object)
-
-    if cwl_object["type"] == "File":
-        cwl_objects.append({
-            "type": "string[]?",
-            "doc": "A argument to set the tags of '{}'".format(cwl_object["id"]),
-            "id": cwl_object["id"] + "_tags"
-        })
-
-    return cwl_object
-
-
-def is_arg_with_default(argument, cmd_line_options):
+def is_arg_with_default(argument):
     return  argument['defaultValue'] != "NA" \
         and argument['defaultValue'].lower() != "none"
 
-# You cannot get the enumeration information for an enumeration in a nested type, so they are hard coded here
-enum_types = {
-    # Example: https://software.broadinstitute.org/gatk/gatkdocs/3.6-0/org_broadinstitute_gatk_tools_walkers_variantutils_ValidateVariants.php
-    "validationtype": ["ALL", "REF", "IDS", "ALLELES", "CHR_COUNTS"],
-    # Example: https://software.broadinstitute.org/gatk/gatkdocs/3.7-0/org_broadinstitute_gatk_tools_walkers_cancer_contamination_ContEst.php#--lane_level_contamination
-    "contaminationruntype": ['META', 'SAMPLE', 'READGROUP'],  # default is META
-    # Example: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php#--partitionType
-    "partition": ["readgroup", "sample", "library", "platform", "center",
-                  "sample_by_platform", "sample_by_center", "sample_by_platform_by_center"],
-    "type": ['INDEL', 'SNP', 'MIXED', 'MNP', 'SYMBOLIC', 'NO_VARIATION']
-}
+class UnknownGATKTypeError(Exception):
+    def __init__(self, unknown_type):
+        super(UnknownGATKTypeError, self).__init__("Unknown GATK type: '" + unknown_type + "'")
 
-warning_colour = "\033[33m"
-default_colour = "\033[39m"
+        self.unknown_type = unknown_type
 
+def is_file_type(typ):
+    return isinstance(typ, CWLBasicType) and typ.name == "File"
 
-def basic_GATK_type_to_CWL(argument, inner_type):
+def has_file_type(typ):
+    return typ.traverseAST(is_file_type)
+
+def GATK_type_to_CWL_type(gatk_type):
     """
-    Gets the correct CWL type for an argument, given an argument's GATK type excluding List[...]
-
-    typ may not be the same as the arguments type if you are overriding the type
-
-    :param argument: The cwl argument, as specified in the json file
-    :param typ: The GATK type given
-
-    :returns: (cwl_type, is_union_type)
+    Convert a GATK type to a CWL type.
+    NOTE: No "hacks" or patching GATK types should be done in this function,
+    do that in get_base_CWL_type_for_argument.
     """
+    # You cannot get the enumeration information for an enumeration in a nested type, so they are hard coded here
+    gatk_enum_types = {
+        # Example: https://software.broadinstitute.org/gatk/gatkdocs/3.6-0/org_broadinstitute_gatk_tools_walkers_variantutils_ValidateVariants.php
+        "validationtype": ["ALL", "REF", "IDS", "ALLELES", "CHR_COUNTS"],
+        # Example: https://software.broadinstitute.org/gatk/gatkdocs/3.7-0/org_broadinstitute_gatk_tools_walkers_cancer_contamination_ContEst.php#--lane_level_contamination
+        "contaminationruntype": ['META', 'SAMPLE', 'READGROUP'],  # default is META
+        # Example: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php#--partitionType
+        "partition": ["readgroup", "sample", "library", "platform", "center",
+                    "sample_by_platform", "sample_by_center", "sample_by_platform_by_center"],
+        "type": ['INDEL', 'SNP', 'MIXED', 'MNP', 'SYMBOLIC', 'NO_VARIATION']
+    }
 
+    gatk_type = gatk_type.lower()
 
-    is_union_type = False
+    if 'list[' in gatk_type or 'set[' in gatk_type:
+        inner_type = gatk_type[gatk_type.index('[') + 1 : -1]
+        return CWLArrayType(GATK_type_to_CWL_type(inner_type))
+    elif '[]' in gatk_type:
+        inner_type = gatk_type.strip('[]')
+        return CWLArrayType(GATK_type_to_CWL_type(inner_type))
+    elif gatk_type in ("long", "double", "int", "string", "float", "boolean", "bool"):
+        return CWLBasicType(gatk_type)
+    elif gatk_type == "file":
+        return CWLBasicType("File")
+    elif gatk_type in ("byte", "integer"):
+        return CWLBasicType("int")
+    elif gatk_type == "set":
+        return CWLArrayType(CWLBasicType("string"))
+    elif gatk_type in gatk_enum_types.keys():
+        return CWLEnumType(gatk_enum_types[gatk_type])
+    elif "intervalbinding" in gatk_type:
+        return CWLUnionType(
+            CWLBasicType("File"),
+            CWLBasicType("string")
+        )
+    elif "rodbinding" in gatk_type:
+        # Possible options: https://gist.github.com/ThomasHickman/b4a0552231f4963520927812ad29eac8
+        return CWLBasicType("File")
+    else:
+        raise UnknownGATKTypeError("Unknown GATK type: '" + gatk_type + "'")
 
+def get_base_CWL_type_for_argument(argument):
     prefix = argument['name']
 
-    # Override List[String] to List[File] for input_file in gatk<4 and input for gatk>=4
-    if prefix == '--input_file' or prefix == '--input':
-        cwl_type = "File"
-    elif inner_type in ('long', 'double', 'int', 'string', 'float', 'boolean', 'bool'):
-        cwl_type = inner_type
-    elif inner_type == 'file':
-        cwl_type = 'File'
+    if argument['options']:
+        return CWLEnumType([x['name'] for x in argument['options']])
+
+    gatk_type = argument['type']
+
+    if prefix == "--input_file" or prefix == "--input":
+        gatk_type = "List[File]"
     elif is_output_argument(argument):
-        cwl_type = "string"
-    elif inner_type in ('byte', 'integer'):
-        cwl_type = 'int'
-    elif inner_type == 'set':
-        # The caller function will turn this into an array of sets
-        # Example of this -goodSM
-        is_union_type = True
-        cwl_type = 'string'
-    elif argument['options']:
-        # Check for enumerated types, and if they exist, ignore the specified type name
-        cwl_type = {
-            'type': 'enum',
-            'symbols': [x['name'] for x in argument['options']]
-        }
-    elif inner_type in enum_types.keys():
-        cwl_type = {
-            "type": "enum",
-            "symbols": enum_types[inner_type]
-        }
-    elif 'intervalbinding' in inner_type:
-        # Type intervalbinding can be a list of strings or a list of files
-        is_union_type = True
-        cwl_type = ['File', "string"]
-    elif "rodbinding" in inner_type:
-         # Possible options: https://gist.github.com/ThomasHickman/b4a0552231f4963520927812ad29eac8
-        cwl_type = 'File'
-    else:
+        gatk_type = "string"
+
+    try:
+        cwl_type = GATK_type_to_CWL_type(gatk_type)
+    except UnknownGATKTypeError as error:
+        warning_colour = "\033[33m"
+        default_colour = "\033[39m"
+
         print(warning_colour + 'WARNING: Unable to assign to a CWL type, defaulting to string\n'
             + warning_colour + 'Argument: {}   Type: {}'.format(
-            argument['name'][2:], inner_type) + default_colour)
+            argument['name'][2:], error.unknown_type) + default_colour)
 
-        cwl_type = "string"
+        cwl_type = CWLBasicType("string")
 
-    return (cwl_type, is_union_type)
-
-
-def get_CWL_type(argument):
-    """
-    Returns the CWL type of an argument, indicating if it is an array type
-
-    :param argument: The cwl argument, as specified in the json file
-    :param cwl_object: The inputs object, to be written to with the correct information
-
-    :returns: (type_json, is_union_type)
-    If is_union_type is true, the caller shouldn't output inputBinding's prefix
-    """
-
-    is_union_type = False
-
-    prefix = argument['name']
-    # Patch the incorrect description given by GATK for both --input_file
-    outer_type = argument['type'].lower()
-
-    if 'list[' in outer_type or 'set[' in outer_type:
-        inner_type = outer_type[outer_type.index('[') + 1 : -1]
-        is_union_type = True
-    elif '[]' in outer_type:
-        inner_type = outer_type.strip('[]')
-        is_union_type = True
+    if isinstance(cwl_type, CWLArrayType):
+        return CWLUnionType(cwl_type, cwl_type.inner_type)
     else:
-        inner_type = outer_type
+        return cwl_type
 
-    typ, is_union_type2 = basic_GATK_type_to_CWL(argument, inner_type)
-
-    if is_union_type2:
-        is_union_type = True
-
-    if is_union_type:
-        # This needs to be done instead of adding [], as you can do correct
-        # inputBinding prefixes and it works with object types
-        # Also adding the type itself for convenience - this would be interpreted as
-        # a one element array
-        array_type = {
-            "type": "array",
-            "items": typ,
-            "inputBinding": get_input_bindings(argument, typ == "File")
-        }
-
-        if isinstance(typ, list):
-            typ = typ + [array_type]
-        else:
-            typ = [typ, array_type]
-
-    if argument['required'] == 'no':
-        if isinstance(typ, list):
-            typ.insert(0, 'null')
-        else:
-            typ = ['null', typ]
-
-    return (typ, is_union_type)
-
-# A dict of output type's file extentions
-output_types_file_ext = {
-    "GATKSAMFileWriter": ".bam",
-    "PrintStream": '.txt',
-    'VariantContextWriter': '.vcf'
-}
-
-def get_output_default_arg(argument, cwl_type):
+def get_output_default_arg(argument):
     """
-    Returns the default CWL argument for a given GATK argument, in a parsed form
+    Returns the overriden default argument for an output argument
     """
+    output_type_to_file_ext = {
+        "GATKSAMFileWriter": ".bam",
+        "PrintStream": '.txt',
+        'VariantContextWriter': '.vcf.gz'
+    }
+
     arg_name = get_arg_id(argument)
 
-    if argument["type"] in output_types_file_ext.keys():
-        return arg_name + output_types_file_ext[argument["type"]]
+    if argument["type"] in output_type_to_file_ext.keys():
+        return arg_name + output_type_to_file_ext[argument["type"]]
     else:
         cwl_default = arg_name + ".txt"
         print("Unknown output type '{}', making the default argument '{}'".format(argument["type"], cwl_default))
 
         return cwl_default
+
+def get_input_objects(argument):
+    """
+    Returns a list of cwl input arguments for expressing the given gatk argument
+
+    :param argument: The cwl argument, as specified in the json file
+    :param options: Command line options
+
+    :returns: CWL objects to describe the given argument
+    """
+    def handle_required(typ):
+        """Makes a given type optional if required"""
+        if argument['required'] == 'no':
+            return CWLOptionalType(typ)
+        else:
+            return typ
+
+    cwl_type = get_base_CWL_type_for_argument(argument)
+
+    has_array_type = False
+
+    array_node = cwl_type.find_node(lambda node: isinstance(node, CWLArrayType))
+    if array_node is not None:
+        array_node.add_input_binding(get_input_bindings(argument, array_node.inner_type))
+
+        has_array_type = True
+
+    arg_id = get_arg_id(argument)
+
+    base_cwl_arg = {
+        "doc": argument['summary'],
+        "id": arg_id,
+        "type": handle_required(cwl_type).get_cwl_object()
+    }
+
+    if not has_array_type:
+        base_cwl_arg["inputBinding"] = get_input_bindings(argument, cwl_type)
+
+    # For output arguments with a default, override the gatk default with
+    # a more predictable name
+    if is_arg_with_default(argument) and is_output_argument(argument):
+        base_cwl_arg["default"] = get_output_default_arg(argument)
+
+    if argument["name"] == "--reference_sequence":
+        base_cwl_arg["secondaryFiles"] = [".fai", "^.dict"]
+    elif "requires" in argument["fulltext"] and "files" in argument["fulltext"]:
+        base_cwl_arg["secondaryFiles"] = "$(self.basename + self.nameext.replace('m','i'))"
+
+    if cwl_type.find_node(is_file_type) is not None:
+        if has_array_type:
+            tags_type = [
+                "null",
+                {
+                    "type": "array",
+                    "items": [
+                        "string",
+                        {
+                            "type": "array",
+                            "items": "string"
+                        }
+                    ]
+                }
+            ]
+        else:
+            tags_type = [
+                "null",
+                "string",
+                {
+                    "type": "array",
+                    "items": "string"
+                }
+            ]
+
+        tag_argument = {
+            "type": tags_type,
+            "doc": "A argument to set the tags of '{}'".format(arg_id),
+            "id": arg_id + "_tags"
+        }
+
+        return [base_cwl_arg, tag_argument]
+    else:
+        return [base_cwl_arg]
 
 
 def is_output_argument(argument):
@@ -234,9 +227,14 @@ def is_output_argument(argument):
 
 
 def get_output_json(argument):
+    # NOTE: Whether this always outputs depends on whether the input argument is
+    # specified - we can't specify this in the type, so mark it as optional if there
+    # is a possibilty if could not output
+    is_optional_arg = argument["required"] == "no" and not is_arg_with_default(argument)
+
     return {
         'id': get_arg_id(argument) + "Output",
-        'type': ['null', 'File'] if argument["required"] == "no" else "File",
+        'type': 'File?' if is_optional_arg else "File",
         'outputBinding': {
             'glob': '$(inputs.{})'.format(argument['name'].strip("-"))
         }
