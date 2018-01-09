@@ -29,8 +29,8 @@ class CWLType:
             return self
         else:
             try:
-                return filter(None, (child.find_node(predicate) for child in self.children))[0]
-            except (AttributeError, IndexError):
+                return next(filter(None, (child.find_node(predicate) for child in self.children)))
+            except (AttributeError, StopIteration):
                 return None
 
 

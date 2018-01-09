@@ -1,3 +1,3 @@
-import main
+from .main import cmdline_main
 
-main.main()
+cmdline_main()

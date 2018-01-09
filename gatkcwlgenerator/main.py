@@ -6,11 +6,16 @@ import shutil
 import itertools
 import json
 import sys
+import logging
 
 from bs4 import BeautifulSoup
 import requests
 
 from .json2cwl import json2cwl
+
+_logger = logging.getLogger("gatkcwlgenerator") # type: logging.Logger
+_logger.setLevel(logging.INFO)
+_logger.addHandler(logging.StreamHandler())
 
 def find_index(lst, func):
     for i, item in enumerate(lst):
@@ -33,8 +38,7 @@ def get_json_links(version):
     base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" % version
 
     base_webpage_request = requests.get(base_url)
-    if not base_webpage_request.ok:
-        print("Could not retrieve URL '%s' (status %s): %s" % (base_url, base_webpage_request.status_code, base_webpage_request.text))
+    base_webpage_request.raise_for_status()
 
     data = base_webpage_request.text
     soup = BeautifulSoup(data, "html.parser")
@@ -87,9 +91,9 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
     """
     Generates the cwl and json files
     """
-    global_args = get_global_arguments(grouped_urls, is_version_3(cmd_line_options.gatkversion))
+    global_args = get_global_arguments(grouped_urls, is_version_3(cmd_line_options.version))
 
-    print("Creating and converting json files...")
+    _logger.info("Creating and converting json files...")
 
     # Get current directory and make folders for files
     json_dir = os.path.join(out_dir, 'json')
@@ -105,28 +109,27 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
             os.makedirs(json_dir)
             os.makedirs(cwl_dir)
         else:
-            raise e
+            raise
 
 
     # Create json for each tool and convert to cwl
     for tool_url in grouped_urls.tool_urls:
-        if cmd_line_options.include_file is None or cmd_line_options.include_file in tool_url or "CommandLineGATK" in tool_url:
+        if cmd_line_options.include is None or cmd_line_options.include in tool_url or "CommandLineGATK" in tool_url:
             tool_json = requests.get(tool_url)
-            if not tool_json.ok:
-                print("Could not retrieve tool URL '%s' (status %s): %s" % (tool_url, tool_json.status_code, tool_json.text))
+            tool_json.raise_for_status()
             try:
                 tool_json_json = tool_json.json()
-            except ValueError as ve:
-                print("Could not decode json retrieved from %s: %s" % (tool_url, ve))
-                sys.exit(1)
+            except ValueError as error:
+                raise Exception("Could not decode json retrieved from %s" % tool_url) from error
 
             tool_name = tool_json_json['name']
             json_name = tool_name + ".json"
 
-            f = open(os.path.join(json_dir, json_name), 'w+')
-            f.write(tool_json.text)
-            f.close()
-            print("Written json/" + json_name)
+            json_path = os.path.join(json_dir, json_name)
+            _logger.info("Writing json to " + json_path)
+            json_file = open(json_path, 'w+')
+            json_file.write(tool_json.text)
+            json_file.close()
 
             # Don't append options for CommandLinkGATK or read filters for CatVariants,
             # it bypasses the GATK engine
@@ -134,14 +137,15 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
             if not (tool_name == "CommandLineGATK" or tool_name == "CatVariants"):
                 apply_global_arguments(tool_json_json, global_args)
 
+            cwl_path = os.path.join(cwl_dir, tool_name + ".cwl")
+            _logger.info("Writing cwl to " + cwl_path)
             json2cwl(
                 tool_json_json,
                 cwl_dir,
                 cmd_line_options
             )
-            print("Written cwl/" + tool_name + ".cwl")
 
-    print("Success!")
+    _logger.info("Success!")
 
 def apply_global_arguments(GATK_json, global_args):
     """
@@ -168,27 +172,24 @@ def get_global_arguments(grouped_urls, apply_cmdlineGATK):
 
     if apply_cmdlineGATK:
         commandLineGATK_response = requests.get(grouped_urls.tool_urls[0])
-        if not commandLineGATK_response.ok:
-            print("Could not retrieve CommandLineGATK URL '%s' (status %s): %s" % (grouped_urls.tool_urls[0], commandLineGATK_response.status_code, commandLineGATK_response.text))
+        commandLineGATK_response.raise_for_status()
+
         try:
             commandLineGATK = commandLineGATK_response.json() # This should be CommandLineGATK
         except ValueError as ve:
-            print("Error decoding CommandLineGATK JSON retrieved from %s: %s" % (grouped_urls.tool_urls[0], ve))
-            sys.exit(1)
+            raise Exception("Error decoding CommandLineGATK JSON retrieved from %s" % grouped_urls.tool_urls[0]) from ve
         arguments.extend(commandLineGATK["arguments"])
 
-    print("Getting read filter arguments ...")
+    _logger.info("Getting read filter arguments ...")
 
     for readfilter_url in grouped_urls.readfilter_urls:
+        _logger.info("Fetching " + readfilter_url)
         readfilter_response = requests.get(readfilter_url)
-        if not readfilter_response.ok:
-            print("Could not retrieve read filter URL '%s' (status %s): %s" % (grouped_urls.tool_urls[0], readfilter_response.status_code, readfilter_response.text))
+        readfilter_response.raise_for_status()
         try:
             readfilter_json = readfilter_response.json()
-        except ValueError as ve:
-            print("Could not decode read filter json retrieved from %s: %s" % (readfilter_url, ve))
-            sys.exit(1)
-        print("Fetched " + readfilter_url)
+        except ValueError as error:
+            raise Exception("Could not decode read filter json retrieved from %s" % readfilter_url) from error
 
         if "arguments" in readfilter_json:
             args = readfilter_json["arguments"]
@@ -200,49 +201,71 @@ def get_global_arguments(grouped_urls, apply_cmdlineGATK):
             arguments.extend(args)
     return arguments
 
-def main():
+def gatk_cwl_generator(**cmd_line_options):
+    """
+    Programmic entry to gatk_cwl_generator.
+
+    This converts the object to cmd line flags and
+    passes it though the command line interface, to apply defaults
+    """
+    args = []
+    for key, value in cmd_line_options.items():
+        if isinstance(value, bool):
+            if value:
+                args.append("--" + key)
+        else:
+            args.append("--" + key)
+            args.append(str(value))
+
+    cmdline_main(args)
+
+def cmdline_main(args=sys.argv[1:]):
+    """
+    Function to be called when this is invoked on the command line.
+    """
     parser = argparse.ArgumentParser(description='Generates CWL files from the GATK documentation')
-    parser.add_argument("--version", "-v", dest='gatkversion', default="3.5",
-        help="Sets the version of GATK to parse documentation for. Default is 3.5")
-    parser.add_argument('--out', "-o", dest='outputdir',
+    parser.add_argument("--version", "-v", dest='version', default="3.5-0",
+        help="Sets the version of GATK to parse documentation for. Default is 3.5-0")
+    parser.add_argument('--out', "-o", dest='output_dir',
         help="Sets the output directory for generated files. Default is ./gatk_cmdline_tools/<VERSION>/")
-    parser.add_argument('--include', dest='include_file',
+    parser.add_argument('--include', dest='include',
         help="Only generate this file (note, CommandLinkGATK has to be generated for v3.x)")
     parser.add_argument("--dev", dest="dev", action="store_true",
-        help="Enable network caching and overwriting of the generated files (for development purposes). " + 
+        help="Enable network caching and overwriting of the generated files (for development purposes). " +
         "Requires requests_cache to be installed")
-    parser.add_argument("--docker_container_name", "-c", dest="docker_container_name",
-        help="Docker container name for generated cwl files. Default is 'broadinstitute/gatk3:<VERSION>' " + 
+    parser.add_argument("--no_docker", dest="no_docker", action="store_true",
+        help="Make the generated CWL files not use docker containers. Default is False.")
+    parser.add_argument("--docker_image_name", "-c", dest="docker_image_name",
+        help="Docker image name for generated cwl files. Default is 'broadinstitute/gatk3:<VERSION>' " +
         "for version 3.x and 'broadinstitute/gatk:<VERSION>' for 4.x")
-    parser.add_argument("--gatk_location", "-l", dest="gatk_location",
-        help="Location of the gatk jar file. Default is '/usr/GenomeAnalysisTK.jar' for gatk 3.x and '/gatk/gatk.jar' for gatk 4.x")
-    cmd_line_options = parser.parse_args()
+    parser.add_argument("--gatk_command", "-l", dest="gatk_command",
+        help="Command to launch GATK. Default is 'java -jar /usr/GenomeAnalysisTK.jar' for gatk 3.x and 'java -jar /gatk/gatk.jar' for gatk 4.x")
+    cmd_line_options = parser.parse_args(args)
 
+    if not cmd_line_options.output_dir:
+        cmd_line_options.output_dir = os.getcwd() + '/gatk_cmdline_tools/' + cmd_line_options.version
+
+    if not cmd_line_options.docker_image_name:
+        if is_version_3(cmd_line_options.version):
+            cmd_line_options.docker_image_name = "broadinstitute/gatk3:" + cmd_line_options.version
+        else:
+            cmd_line_options.docker_image_name = "broadinstitute/gatk:" + cmd_line_options.version
+
+    if not cmd_line_options.gatk_command:
+        if is_version_3(cmd_line_options.version):
+            cmd_line_options.gatk_command = "java -jar /usr/GenomeAnalysisTK.jar"
+        else:
+            cmd_line_options.gatk_command = "java -jar /gatk/gatk.jar"
 
     if cmd_line_options.dev:
         import requests_cache
         requests_cache.install_cache() # Decreases the time to run dramatically
 
-    if not cmd_line_options.outputdir:
-        cmd_line_options.outputdir = os.getcwd() + '/gatk_cmdline_tools/' + cmd_line_options.gatkversion
+    _logger.info("Ouputting to: '%s'" % cmd_line_options.output_dir)
+    grouped_urls = get_json_links(cmd_line_options.version)
 
-    if not cmd_line_options.docker_container_name:
-        if is_version_3(cmd_line_options.gatkversion):
-            cmd_line_options.docker_container_name = "broadinstitute/gatk3:" + cmd_line_options.gatkversion
-        else:
-            cmd_line_options.docker_container_name = "broadinstitute/gatk:" + cmd_line_options.gatkversion
-
-    if not cmd_line_options.gatk_location:
-        if is_version_3(cmd_line_options.gatkversion):
-            cmd_line_options.gatk_location = "/usr/GenomeAnalysisTK.jar"
-        else:
-            cmd_line_options.gatk_location = "/gatk/gatk.jar"
-
-    print("Your chosen directory is: %s" % cmd_line_options.outputdir)
-    grouped_urls = get_json_links(cmd_line_options.gatkversion)
-
-    generate_cwl_and_json_files(cmd_line_options.outputdir, grouped_urls, cmd_line_options)
+    generate_cwl_and_json_files(cmd_line_options.output_dir, grouped_urls, cmd_line_options)
 
 
 if __name__ == '__main__':
-    main()
+    cmdline_main()

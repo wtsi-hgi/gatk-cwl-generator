@@ -4,6 +4,9 @@ The main exported functions are get_output_json and get_input_objects
 """
 
 from .cwl_ast import *
+import logging
+
+_logger = logging.getLogger("gatkcwlgenerator")
 
 def get_input_bindings(argument, cwl_type):
     arg_id = get_arg_id(argument)
@@ -35,9 +38,6 @@ class UnknownGATKTypeError(Exception):
 
 def is_file_type(typ):
     return isinstance(typ, CWLBasicType) and typ.name == "File"
-
-def has_file_type(typ):
-    return typ.traverseAST(is_file_type)
 
 def GATK_type_to_CWL_type(gatk_type):
     """
@@ -102,12 +102,11 @@ def get_base_CWL_type_for_argument(argument):
     try:
         cwl_type = GATK_type_to_CWL_type(gatk_type)
     except UnknownGATKTypeError as error:
-        warning_colour = "\033[33m"
-        default_colour = "\033[39m"
-
-        print(warning_colour + 'WARNING: Unable to assign to a CWL type, defaulting to string\n'
-            + warning_colour + 'Argument: {}   Type: {}'.format(
-            argument['name'][2:], error.unknown_type) + default_colour)
+        _logger.warning(
+            "WARNING: Unable to assign to a CWL type, defaulting to string\nArgument: %s   Type: %s",
+            argument['name'][2:],
+            error.unknown_type
+        )
 
         cwl_type = CWLBasicType("string")
 
@@ -132,7 +131,11 @@ def get_output_default_arg(argument):
         return arg_name + output_type_to_file_ext[argument["type"]]
     else:
         cwl_default = arg_name + ".txt"
-        print("Unknown output type '{}', making the default argument '{}'".format(argument["type"], cwl_default))
+        _logger.warning(
+            "Unknown output type '%s', making the default argument '%s'",
+            argument["type"],
+            cwl_default
+        )
 
         return cwl_default
 
@@ -152,17 +155,21 @@ def get_input_objects(argument):
         else:
             return typ
 
+    arg_id = get_arg_id(argument)
+
     cwl_type = get_base_CWL_type_for_argument(argument)
 
     has_array_type = False
+    has_file_type = cwl_type.find_node(is_file_type) is not None
 
     array_node = cwl_type.find_node(lambda node: isinstance(node, CWLArrayType))
     if array_node is not None:
-        array_node.add_input_binding(get_input_bindings(argument, array_node.inner_type))
+        if has_file_type:
+            array_node.add_input_binding({
+                "valueFrom": "$(null)"
+            })
 
         has_array_type = True
-
-    arg_id = get_arg_id(argument)
 
     base_cwl_arg = {
         "doc": argument['summary'],
@@ -170,8 +177,18 @@ def get_input_objects(argument):
         "type": handle_required(cwl_type).get_cwl_object()
     }
 
-    if not has_array_type:
-        base_cwl_arg["inputBinding"] = get_input_bindings(argument, cwl_type)
+    if has_file_type:
+        base_cwl_arg["inputBinding"] = {
+            "valueFrom": "$(applyTagsToArgument(\"--{0}\", inputs.{0}_tags))".format(arg_id)
+        }
+    elif has_array_type:
+        array_node.add_input_binding({
+            "valueFrom": "$(generateArrayCmd(\"--{}\"))".format(arg_id)
+        })
+    else:
+        base_cwl_arg["inputBinding"] = {
+            "prefix": argument["name"]
+        }
 
     # For output arguments with a default, override the gatk default with
     # a more predictable name
@@ -183,7 +200,7 @@ def get_input_objects(argument):
     elif "requires" in argument["fulltext"] and "files" in argument["fulltext"]:
         base_cwl_arg["secondaryFiles"] = "$(self.basename + self.nameext.replace('m','i'))"
 
-    if cwl_type.find_node(is_file_type) is not None:
+    if has_file_type:
         if has_array_type:
             tags_type = [
                 "null",

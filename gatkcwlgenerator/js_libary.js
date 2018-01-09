@@ -7,17 +7,23 @@ function applyTagsToArgument(prefix, tags){
     /**
      * Function to be used in the field valueFrom of File objects to add gatk tags.
      */
+
     if(!self){
         return null;
     }
     else if(!tags){
-        return [prefix, self];
+        if(Array.isArray(self)){
+            return generateArrayCmd(prefix);
+        }
+        else{
+            return [prefix, self];
+        }
     }
     else{
         function addTagToArgument(tagObject, argument){
             var allTags = Array.isArray(tagObject) ? tagObject.join(",") : tagObject;
 
-            return [prefix + ":" + allTags, self];
+            return [prefix + ":" + allTags, argument];
         }
 
         if(Array.isArray(self)){
@@ -25,9 +31,13 @@ function applyTagsToArgument(prefix, tags){
                 throw new TypeError("Argument '" + prefix + "' tag field is invalid");
             }
 
-            return self.map(function(element, i) {
-                return addTagToArgument(tags, element);
-            })
+            var value = self.map(function(element, i) {
+                return addTagToArgument(tags[i], element);
+            }).reduce(function(a, b){return a.concat(b)})
+
+            console.log(value);
+
+            return value;
         }
         else{
             return addTagToArgument(tags, self);

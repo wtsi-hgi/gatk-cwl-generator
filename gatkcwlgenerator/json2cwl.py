@@ -74,10 +74,7 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
     skeleton_cwl = {
         'id': GATK_json['name'],
         'cwlVersion': 'v1.0',
-        'baseCommand': [
-            'java',
-            '-jar',
-            cmd_line_options.gatk_location,
+        'baseCommand': cmd_line_options.gatk_command.split(" ") + [
             "--analysis_type",
             GATK_json['name']
             ],
@@ -91,12 +88,13 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
                 "expressionLib": [
                     JS_LIBARY
                 ]
-            },
-            {
-                "class": "DockerRequirement",
-                "dockerPull": cmd_line_options.docker_container_name
             }
-        ]
+        ] + ([]
+            if cmd_line_options.no_docker else
+            [{
+                "class": "DockerRequirement",
+                "dockerPull": cmd_line_options.docker_image_name
+            }])
     }
 
     # Create and write the cwl file

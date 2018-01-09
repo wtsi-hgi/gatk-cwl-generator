@@ -10,17 +10,19 @@ except ImportError:
 
 setup(
     name="gatk_cwl_generator",
-    version="1.3.0",
+    version=open("gatkcwlgenerator/VERSION", "r").read(),
     packages=find_packages(exclude=["tests"]),
     install_requires=open("requirements.txt", "r").readlines(),
     tests_require=open("test_requirements.txt", "r").readlines(),
     url="https://github.com/wtsi-hgi/gatk-cwl-generator",
+    package_data={'': ['*.js', "VERSION"]},
+    include_package_data=True,
     license="MIT",
     description="Generates CWL files from the GATK documentation Edit",
     long_description=read_markdown("README.md"),
     entry_points={
         "console_scripts": [
-            "gatk_cwl_generator=gatkcwlgenerator.main:main",
+            "gatk_cwl_generator=gatkcwlgenerator.main:cmdline_main",
         ]
     }
 )

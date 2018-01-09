@@ -1,3 +1,9 @@
+v1.4
+- Added no_docker command line option, changed docker_container_name to docker_image_name
+- Fixed beheviour of array and tag types
+- Rewrote gen_cwl_arg to be clearer
+- Reduced the dependance on the command line for the tests
+
 v1.3
 - Changed the docker container to be broad institute's official docker container, not wtsi-hgi own container
 
