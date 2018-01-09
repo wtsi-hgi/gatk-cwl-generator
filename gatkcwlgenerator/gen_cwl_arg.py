@@ -65,8 +65,10 @@ def GATK_type_to_CWL_type(gatk_type):
             CWLBasicType("File"),
             CWLBasicType("string")
         )
-    elif "rodbinding" in gatk_type:
-        # Possible options: https://gist.github.com/ThomasHickman/b4a0552231f4963520927812ad29eac8
+    elif "rodbinding" in gatk_type or "featureinput" in gatk_type:
+        # TODO: This type indicates the type of file as below. We could verify the file
+        # is correct
+        # https://gist.github.com/ThomasHickman/b4a0552231f4963520927812ad29eac8
         return CWLBasicType("File")
     else:
         raise UnknownGATKTypeError("Unknown GATK type: '" + gatk_type + "'")
@@ -100,29 +102,19 @@ def get_base_CWL_type_for_argument(argument):
     else:
         return cwl_type
 
+output_type_to_file_ext = {
+    "GATKSAMFileWriter": ".bam",
+    "PrintStream": '.txt',
+    'VariantContextWriter': '.vcf.gz'
+}
+
 def get_output_default_arg(argument):
     """
-    Returns the overriden default argument for an output argument
+    Returns the overriden default argument for an output argument.
     """
-    output_type_to_file_ext = {
-        "GATKSAMFileWriter": ".bam",
-        "PrintStream": '.txt',
-        'VariantContextWriter': '.vcf.gz'
-    }
-
-    arg_name = get_arg_id(argument)
-
-    if argument["type"] in output_type_to_file_ext.keys():
-        return arg_name + output_type_to_file_ext[argument["type"]]
-    else:
-        cwl_default = arg_name + ".txt"
-        _logger.warning(
-            "Unknown output type '%s', making the default argument '%s'",
-            argument["type"],
-            cwl_default
-        )
-
-        return cwl_default
+    # Output types are defined to be keys of output_type_to_file_ext, so
+    # this should not error
+    return get_arg_id(argument) + output_type_to_file_ext[argument["type"]]
 
 def get_input_objects(argument):
     """
@@ -225,7 +217,7 @@ def is_output_argument(argument):
     """
     Returns whether this argument's type indicates it's an output argument
     """
-    return any(x in argument["type"] for x in ('PrintStream', 'Writer'))
+    return argument["type"] in output_type_to_file_ext.keys()
 
 
 def get_output_json(argument):

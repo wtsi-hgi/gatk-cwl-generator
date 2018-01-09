@@ -115,6 +115,7 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
     # Create json for each tool and convert to cwl
     for tool_url in grouped_urls.tool_urls:
         if cmd_line_options.include is None or cmd_line_options.include in tool_url or "CommandLineGATK" in tool_url:
+            _logger.info("Fetching tool url: %s", tool_url)
             tool_json = requests.get(tool_url)
             tool_json.raise_for_status()
             try:
