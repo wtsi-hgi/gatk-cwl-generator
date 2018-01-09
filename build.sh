@@ -10,7 +10,7 @@ VERSIONS=( 3.5-0 3.6-0 3.7-0 3.8-0 4.beta.6 )
 tarbase="gatk-cwl-generator-${generator_version}-gatk_cmdline_tools"
 
 tmpdir=$(mktemp -d)
-python_bin=$(which python)
+python_bin=$(which python3)
 echo "Using ${python_bin} to generate temporary virtualenv ${tmpdir}/venv"
 set -x
 ${python_bin} -m virtualenv "${tmpdir}/venv"
@@ -33,7 +33,7 @@ for ver in ${VERSIONS[@]}
 do
     echo "Generating CWL for GATK version ${ver}"
     set -x
-    PYTHONPATH=. python gatkcwlgenerator -v ${ver} -o "${builddir}/${ver}" "$@"
+    PYTHONPATH=. python -m gatkcwlgenerator -v ${ver} -o "${builddir}/${ver}" "$@"
     set +x
 done
 

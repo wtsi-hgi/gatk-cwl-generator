@@ -201,36 +201,49 @@ class TestTagsOutput:
         test_file = tmpdir.mkdir("test_non_array_tags").join("test_file")
         test_file.write("test")
         extra_text = \
-"""alleles:
+f"""alleles:
     class: File
-    path: {}
+    path: {test_file}
 alleles_tags:
     - tag1
-    - tag2""".format(test_file)
+    - tag2"""
 
         output = run_haplotype_caller(extra_text, echoHalotypeCaller)
 
+        # NOTE: in this test (and tests below), we can't use the filename of test_file
+        # as it changes in the docker container.
         assert "--alleles:tag1,tag2 " in output.stderr
 
     def test_array_tags(self, echoHalotypeCaller, tmpdir):
         test_file = tmpdir.mkdir("test_array_tags").join("test_file")
         test_file.write("test")
         extra_text = \
-"""activeRegionIn:
+f"""activeRegionIn:
     - class: File
-      path: {0}
+      path: {test_file}
     - class: File
-      path: {0}
+      path: {test_file}
 activeRegionIn_tags:
     - - tag1
       - tag2
-    - tag3""".format(test_file)
+    - tag3"""
 
         output = run_haplotype_caller(extra_text, echoHalotypeCaller)
 
-        assert "--activeRegionIn:tag1,tag2 " in output.stderr
+        assert f"--activeRegionIn:tag1,tag2 " in output.stderr
 
-        assert "--activeRegionIn:tag3 " in output.stderr
+        assert f"--activeRegionIn:tag3 " in output.stderr
+
+def test_array_cmd_override(echoHalotypeCaller):
+    output = run_haplotype_caller("annotation: ['one', 'two']", echoHalotypeCaller)
+
+    assert "--annotation one" in output.stderr
+
+    assert "--annotation two" in output.stderr
+
+    output = run_haplotype_caller("annotation: one", echoHalotypeCaller)
+
+    assert "--annotation one" in output.stderr
 
 class TestGeneratedCWLFiles:
     def _is_cwlfile_valid(self, file_location):

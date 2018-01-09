@@ -8,21 +8,6 @@ import logging
 
 _logger = logging.getLogger("gatkcwlgenerator")
 
-def get_input_bindings(argument, cwl_type):
-    arg_id = get_arg_id(argument)
-    if cwl_type.find_node(is_file_type) is not None:
-        return {
-            "valueFrom": "$(applyTagsToArgument(\"--{}\", inputs.{}_tags))".format(arg_id, arg_id)
-        }
-    elif isinstance(cwl_type, CWLArrayType):
-        return {
-            "valueFrom": "$(generateArrayCmd(\"--{}\")".format(arg_id)
-        }
-    else:
-        return {
-            "prefix": argument["name"]
-        }
-
 def get_arg_id(argument):
     return argument["name"].strip("-")
 
@@ -182,9 +167,9 @@ def get_input_objects(argument):
             "valueFrom": "$(applyTagsToArgument(\"--{0}\", inputs.{0}_tags))".format(arg_id)
         }
     elif has_array_type:
-        array_node.add_input_binding({
+        base_cwl_arg["inputBinding"] = {
             "valueFrom": "$(generateArrayCmd(\"--{}\"))".format(arg_id)
-        })
+        }
     else:
         base_cwl_arg["inputBinding"] = {
             "prefix": argument["name"]
