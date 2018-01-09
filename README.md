@@ -4,7 +4,7 @@ Generates [CWL](http://www.commonwl.org/v1.0/) files from the [GATK documentatio
 
 ## Installation
 
-First, install the module 
+First, install the module
 ```bash
 git clone https://github.com/wtsi-hgi/gatk-cwl-generator
 cd gatk-cwl-generator
@@ -13,38 +13,44 @@ python setup.py install
 
 You may also want to install [cwltool](https://github.com/common-workflow-language/cwltool) to run the generated CWL files
 
+## Requirements
+
+- Python 3
+- Docker and node.js for the tests
+
 ## Usage
 
 ```
-usage: gatkcwlgenerator [-h] [--version GATKVERSION] [--out OUTPUTDIR]
-                        [--include INCLUDE_FILE] [--dev]
-                        [--docker_container_name DOCKER_CONTAINER_NAME]
-                        [--gatk_location GATK_LOCATION]
+usage: gatk_cwl_generator [-h] [--version VERSION] [--out OUTPUT_DIR]
+                          [--include INCLUDE] [--dev] [--no_docker]
+                          [--docker_image_name DOCKER_IMAGE_NAME]
+                          [--gatk_command GATK_COMMAND]
 
 Generates CWL files from the GATK documentation
 
 optional arguments:
   -h, --help            show this help message and exit
-  --version GATKVERSION, -v GATKVERSION
+  --version VERSION, -v VERSION
                         Sets the version of GATK to parse documentation for.
-                        Default is 3.5
-  --out OUTPUTDIR, -o OUTPUTDIR
+                        Default is 3.5-0
+  --out OUTPUT_DIR, -o OUTPUT_DIR
                         Sets the output directory for generated files. Default
                         is ./gatk_cmdline_tools/<VERSION>/
-  --include INCLUDE_FILE
-                        Only generate this file (note, CommandLinkGATK has to
+  --include INCLUDE     Only generate this file (note, CommandLinkGATK has to
                         be generated for v3.x)
   --dev                 Enable network caching and overwriting of the
                         generated files (for development purposes). Requires
                         requests_cache to be installed
-  --docker_container_name DOCKER_CONTAINER_NAME, -c DOCKER_CONTAINER_NAME
-                        Docker container name for generated cwl files. Default
-                        is 'broadinstitute/gatk3:<VERSION>' for version 3.x and
+  --no_docker           Make the generated CWL files not use docker
+                        containers. Default is False.
+  --docker_image_name DOCKER_IMAGE_NAME, -c DOCKER_IMAGE_NAME
+                        Docker image name for generated cwl files. Default is
+                        'broadinstitute/gatk3:<VERSION>' for version 3.x and
                         'broadinstitute/gatk:<VERSION>' for 4.x
-  --gatk_location GATK_LOCATION, -l GATK_LOCATION
-                        Location of the gatk jar file. Default is
-                        '/usr/GenomeAnalysisTK.jar' for gatk 3.x and
-                        '/gatk/gatk.jar' for gatk 4.x
+  --gatk_command GATK_COMMAND, -l GATK_COMMAND
+                        Command to launch GATK. Default is 'java -jar
+                        /usr/GenomeAnalysisTK.jar' for gatk 3.x and 'java -jar
+                        /gatk/gatk.jar' for gatk 4.x
 ```
 
 This has been tested on versions 3.5-3.8 and generates files for version 4 (though some parameters are unknown and default to outputting a string).
@@ -82,14 +88,10 @@ The generated CWL files can also be found in the [releases](https://github.com/w
 
 ## Tests
 
-First install the test requirements
-```
-pip install -r test_requirements.txt
-```
-Then add example data to `cwl-example-data` such that `examples/HaplotypeCaller_inputs.yml` will run, then:
-
+Install the tests requirements, then run the tests. Note: docker must be installed in order to run the tests (the cwl files are tested during the tests):
 ```bash
-py.test -v gatkcwlgenerator/tests/test.py
+pip install -r test_requirements.txt
+pytest gatkcwlgenerator
 ```
 
 You can also run the tests in parallel with `-n` to improve performance

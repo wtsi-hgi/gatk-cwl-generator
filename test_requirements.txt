@@ -1,5 +1,5 @@
-pytest
-pytest-xdist
-requests_cache
-six
-cwlref-runner
+pytest~=3.3
+pytest-xdist~=1.21
+requests_cache~=0.4
+six~=1.11
+cwlref-runner~=1.0
