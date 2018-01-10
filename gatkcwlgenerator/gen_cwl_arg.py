@@ -39,7 +39,12 @@ def GATK_type_to_CWL_type(gatk_type):
         # Example: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php#--partitionType
         "partition": ["readgroup", "sample", "library", "platform", "center",
                     "sample_by_platform", "sample_by_center", "sample_by_platform_by_center"],
-        "type": ['INDEL', 'SNP', 'MIXED', 'MNP', 'SYMBOLIC', 'NO_VARIATION']
+        # NOTE: this actually refers to VariantContext.Type in the gatk 3 source code
+        "type": ['INDEL', 'SNP', 'MIXED', 'MNP', 'SYMBOLIC', 'NO_VARIATION'],
+        # from https://git.io/vNmFy
+        "sparkcollectors": ["CollectInsertSizeMetrics", "CollectQualityYieldMetrics"],
+        # from https://git.io/vNmAe
+        "metricaccumulationlevel": ["ALL_READS", "SAMPLE", "LIBRARY", "READ_GROUP"]
     }
 
     gatk_type = gatk_type.lower()
@@ -86,6 +91,10 @@ def get_base_CWL_type_for_argument(argument):
     elif is_output_argument(argument):
         gatk_type = "string"
 
+    # Patch --reference in gatk 4
+    if prefix == "--reference":
+        gatk_type = "File"
+
     try:
         cwl_type = GATK_type_to_CWL_type(gatk_type)
     except UnknownGATKTypeError as error:
@@ -114,7 +123,12 @@ def get_output_default_arg(argument):
     """
     # Output types are defined to be keys of output_type_to_file_ext, so
     # this should not error
-    return get_arg_id(argument) + output_type_to_file_ext[argument["type"]]
+    for output_type in output_type_to_file_ext:
+        if argument["type"] in output_type:
+            return get_arg_id(argument) + output_type_to_file_ext[output_type]
+
+    # The definition of is_output_argument should mean this is never reached
+    raise Exception("Output argument should be defined in output_type_to_file_ext")
 
 def get_input_objects(argument):
     """
@@ -141,10 +155,10 @@ def get_input_objects(argument):
 
     array_node = cwl_type.find_node(lambda node: isinstance(node, CWLArrayType))
     if array_node is not None:
-        if has_file_type:
-            array_node.add_input_binding({
-                "valueFrom": "$(null)"
-            })
+        # NOTE: this is fixing the issue at https://github.com/common-workflow-language/cwltool/issues/593
+        array_node.add_input_binding({
+            "valueFrom": "$(null)"
+        })
 
         has_array_type = True
 
@@ -172,9 +186,9 @@ def get_input_objects(argument):
     if is_arg_with_default(argument) and is_output_argument(argument):
         base_cwl_arg["default"] = get_output_default_arg(argument)
 
-    if argument["name"] == "--reference_sequence":
+    if arg_id == "reference_sequence" or arg_id == "reference":
         base_cwl_arg["secondaryFiles"] = [".fai", "^.dict"]
-    elif "requires" in argument["fulltext"] and "files" in argument["fulltext"]:
+    elif arg_id == "input_file" or arg_id == "input":
         base_cwl_arg["secondaryFiles"] = "$(self.basename + self.nameext.replace('m','i'))"
 
     if has_file_type:
@@ -217,7 +231,7 @@ def is_output_argument(argument):
     """
     Returns whether this argument's type indicates it's an output argument
     """
-    return argument["type"] in output_type_to_file_ext.keys()
+    return any(output_type in argument["type"] for output_type in output_type_to_file_ext)
 
 
 def get_output_json(argument):

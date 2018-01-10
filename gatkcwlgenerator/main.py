@@ -12,9 +12,9 @@ from bs4 import BeautifulSoup
 import requests
 
 from .json2cwl import json2cwl
+from .helpers import is_gatk_3
 
 _logger = logging.getLogger("gatkcwlgenerator") # type: logging.Logger
-_logger.setLevel(logging.INFO)
 _logger.addHandler(logging.StreamHandler())
 
 def find_index(lst, func):
@@ -49,13 +49,13 @@ def get_json_links(version):
     readfile_urls = []
     resourcefile_urls = []
 
-    starting_str = "org_broadinstitute_gatk" if is_version_3(version) else "org_broadinstitute_hellbender"
+    starting_str = "org_broadinstitute_gatk" if is_gatk_3(version) else "org_broadinstitute_hellbender"
 
     # Parse the html to obtain all json file links
     for link in soup.select("tr > td > a"):
         href = link['href']
         if href.startswith(starting_str) and "Exception" not in href:
-            if is_version_3(version):
+            if is_gatk_3(version):
                 full_url = base_url + href + ".json" # v3 files end in .php.json
             else:
                 full_url = base_url + href[:-4] + ".json" # strip off .php as v4 files end in .json
@@ -77,21 +77,17 @@ def get_json_links(version):
     tool_urls = list(set(tool_urls))
 
     # Move CommandLine to the front of the list
-    if is_version_3(version):
+    if is_gatk_3(version):
         i = find_index(tool_urls, lambda x: "CommandLineGATK" in x)
         tool_urls[0], tool_urls[i] = tool_urls[i], tool_urls[0]
 
     return JSONLinks(tool_urls, annotator_urls, readfile_urls, resourcefile_urls)
 
-
-def is_version_3(version):
-    return not version.startswith("4")
-
 def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
     """
     Generates the cwl and json files
     """
-    global_args = get_global_arguments(grouped_urls, is_version_3(cmd_line_options.version))
+    global_args = get_global_arguments(grouped_urls, is_gatk_3(cmd_line_options.version))
 
     _logger.info("Creating and converting json files...")
 
@@ -227,6 +223,8 @@ def cmdline_main(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Generates CWL files from the GATK documentation')
     parser.add_argument("--version", "-v", dest='version', default="3.5-0",
         help="Sets the version of GATK to parse documentation for. Default is 3.5-0")
+    parser.add_argument("--verbose", dest='verbose', action="store_true",
+        help="Set the logging to be verbose. Default is False.")
     parser.add_argument('--out', "-o", dest='output_dir',
         help="Sets the output directory for generated files. Default is ./gatk_cmdline_tools/<VERSION>/")
     parser.add_argument('--include', dest='include',
@@ -243,17 +241,20 @@ def cmdline_main(args=sys.argv[1:]):
         help="Command to launch GATK. Default is 'java -jar /usr/GenomeAnalysisTK.jar' for gatk 3.x and 'java -jar /gatk/gatk.jar' for gatk 4.x")
     cmd_line_options = parser.parse_args(args)
 
+    if cmd_line_options.verbose:
+        _logger.setLevel(logging.INFO)
+
     if not cmd_line_options.output_dir:
         cmd_line_options.output_dir = os.getcwd() + '/gatk_cmdline_tools/' + cmd_line_options.version
 
     if not cmd_line_options.docker_image_name:
-        if is_version_3(cmd_line_options.version):
+        if is_gatk_3(cmd_line_options.version):
             cmd_line_options.docker_image_name = "broadinstitute/gatk3:" + cmd_line_options.version
         else:
             cmd_line_options.docker_image_name = "broadinstitute/gatk:" + cmd_line_options.version
 
     if not cmd_line_options.gatk_command:
-        if is_version_3(cmd_line_options.version):
+        if is_gatk_3(cmd_line_options.version):
             cmd_line_options.gatk_command = "java -jar /usr/GenomeAnalysisTK.jar"
         else:
             cmd_line_options.gatk_command = "java -jar /gatk/gatk.jar"
