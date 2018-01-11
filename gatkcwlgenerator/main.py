@@ -220,6 +220,8 @@ def cmdline_main(args=sys.argv[1:]):
     """
     Function to be called when this is invoked on the command line.
     """
+    default_cache_location = "cache"
+
     parser = argparse.ArgumentParser(description='Generates CWL files from the GATK documentation')
     parser.add_argument("--version", "-v", dest='version', default="3.5-0",
         help="Sets the version of GATK to parse documentation for. Default is 3.5-0")
@@ -230,8 +232,10 @@ def cmdline_main(args=sys.argv[1:]):
     parser.add_argument('--include', dest='include',
         help="Only generate this file (note, CommandLinkGATK has to be generated for v3.x)")
     parser.add_argument("--dev", dest="dev", action="store_true",
-        help="Enable network caching and overwriting of the generated files (for development purposes). " +
+        help="Enable --use_cache and overwriting of the generated files (for development purposes). " +
         "Requires requests_cache to be installed")
+    parser.add_argument("--use_cache", dest="use_cache", nargs="?", const=default_cache_location, metavar="CACHE_LOCATION",
+        help="Use requests_cache, using the cache at CACHE_LOCATION, or 'cache' if not specified. Default is False.")
     parser.add_argument("--no_docker", dest="no_docker", action="store_true",
         help="Make the generated CWL files not use docker containers. Default is False.")
     parser.add_argument("--docker_image_name", "-c", dest="docker_image_name",
@@ -260,8 +264,11 @@ def cmdline_main(args=sys.argv[1:]):
             cmd_line_options.gatk_command = "java -jar /gatk/gatk.jar"
 
     if cmd_line_options.dev:
+        cmd_line_options.use_cache = default_cache_location
+
+    if cmd_line_options.use_cache:
         import requests_cache
-        requests_cache.install_cache() # Decreases the time to run dramatically
+        requests_cache.install_cache(cmd_line_options.use_cache) # Decreases the time to run dramatically
 
     _logger.info("Ouputting to: '%s'" % cmd_line_options.output_dir)
     grouped_urls = get_json_links(cmd_line_options.version)

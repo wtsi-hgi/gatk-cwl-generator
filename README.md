@@ -21,10 +21,10 @@ You may also want to install [cwltool](https://github.com/common-workflow-langua
 ## Usage
 
 ```
-usage: gatk_cwl_generator [-h] [--version VERSION] [--out OUTPUT_DIR]
-                          [--include INCLUDE] [--dev] [--no_docker]
-                          [--docker_image_name DOCKER_IMAGE_NAME]
-                          [--gatk_command GATK_COMMAND]
+usage: gatkcwlgenerator [-h] [--version VERSION] [--verbose] [--out OUTPUT_DIR]
+                        [--include INCLUDE] [--dev] [--use_cache [CACHE_LOCATION]]
+                        [--no_docker] [--docker_image_name DOCKER_IMAGE_NAME]
+                        [--gatk_command GATK_COMMAND]
 
 Generates CWL files from the GATK documentation
 
@@ -33,14 +33,18 @@ optional arguments:
   --version VERSION, -v VERSION
                         Sets the version of GATK to parse documentation for.
                         Default is 3.5-0
+  --verbose             Set the logging to be verbose. Default is False.
   --out OUTPUT_DIR, -o OUTPUT_DIR
                         Sets the output directory for generated files. Default
                         is ./gatk_cmdline_tools/<VERSION>/
   --include INCLUDE     Only generate this file (note, CommandLinkGATK has to
                         be generated for v3.x)
-  --dev                 Enable network caching and overwriting of the
-                        generated files (for development purposes). Requires
+  --dev                 Enable --use_cache and overwriting of the generated
+                        files (for development purposes). Requires
                         requests_cache to be installed
+  --use_cache [CACHE_LOCATION]
+                        Use requests_cache, using the cache at CACHE_LOCATION,
+                        or 'cache' if not specified. Default is False.
   --no_docker           Make the generated CWL files not use docker
                         containers. Default is False.
   --docker_image_name DOCKER_IMAGE_NAME, -c DOCKER_IMAGE_NAME
@@ -53,9 +57,9 @@ optional arguments:
                         /gatk/gatk.jar' for gatk 4.x
 ```
 
-This has been tested on versions 3.5-3.8 and generates files for version 4 (though some parameters are unknown and default to outputting a string).
+This has been tested on versions 3.5-0 to 3.8-0 and 4.beta.6.
 
-The input parameters are the same as in the documentation, with the addition of `refIndex` and `refDict` which are required parameters that specify the index and dict file of the reference genome.
+The parameters generated are the same as you would need to specify on the command line, with "--" stripped from the beggining.
 
 To add tags to arguments that have a file type, add to the parameter `<NAME>_tags`. e.g. to output the parameter `--variant:vcf path\to\file`, use the input:
 ```yml
@@ -65,6 +69,8 @@ variant:
 
 variant_tags: [vcf]
 ```
+
+For convenience, you can also specify any array input argument as a single element.
 
 The cwl files will be outputted to `gatk_cmdline_tools/<VERSION>/cwl` and the JSON files given by the documentation to `gatk_cmdline_tools/<VERSION>/json`.
 
@@ -99,8 +105,8 @@ You can also run the tests in parallel with `-n` to improve performance
 ## Limitations:
 
 - The parameter `annotation` (for example, in [HaplotypeCaller](https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php#--annotation)) is specified to take in a string in the generated CWL file, not an enumeration of all the possible options
-- All parameters that you can pass to read filters that don't conflict with tool parameters are included and they are marked as optional and no default arguments are specified
+- All parameters that you can pass to read filters that don't conflict with tool parameters are included and they are marked as optional
 
 ## Creating a new version
 
-To create a `gatk_cmdline_tools.zip` zip file containing all the generated cwl files for gatk versions 3.5, 3.6, 3.7 and 3.8, run `bash build.sh`. This file is uploaded as a release on GitHub for every new release of this package.
+To create a `gatk_cmdline_tools.zip` zip file containing all the generated cwl files for gatk versions 3.5, 3.6, 3.7, 3.8 and 4.beta.6, run `bash build.sh`. This file is uploaded as a release on GitHub for every new release of this package.

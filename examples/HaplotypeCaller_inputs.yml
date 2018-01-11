@@ -9,4 +9,4 @@ input_file: #must be BAM or CRAM
    #path: /path/to/input/file
    path: ../cwl-example-data/chr22_cwl_test.cram
 out: out.gvcf.gz
-intervals: [chr22:10591400-10591600]
+intervals: chr22:10591400-10591600
