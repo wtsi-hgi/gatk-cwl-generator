@@ -1,5 +1,5 @@
 v2.0
-- Added no_docker command line option
+- Added no_docker and use_cache command line option
 - Fixed beheviour of array and tag types
 - Rewrote gen_cwl_arg to be clearer
 - Reduced the dependance on the command line for the tests
