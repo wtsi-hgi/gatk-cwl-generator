@@ -11,19 +11,22 @@ tarbase="gatk-cwl-generator-${generator_version}-gatk_cmdline_tools"
 
 tmpdir=$(mktemp -d)
 python_bin=$(which python3)
-echo "Using ${python_bin} to generate temporary virtualenv ${tmpdir}/venv"
-set -x
-${python_bin} -m virtualenv "${tmpdir}/venv"
-set +x
-echo "Activating virtualenv in ${tmpdir}/venv"
-set +u # virtualenv activate script references unset vars
-. "${tmpdir}/venv/bin/activate"
-set -u
-
-echo "Installing requirements in virtualenv"
-set -x
-pip install -r requirements.txt
-set +x
+if [ -z "${USE_EXISTING_PYTHON+x}" ]; then
+    echo "Using ${python_bin} to generate temporary virtualenv ${tmpdir}/venv"
+    set -x
+    ${python_bin} -m virtualenv "${tmpdir}/venv" -p python3
+    set +x
+    echo "Activating virtualenv in ${tmpdir}/venv"
+    set +u # virtualenv activate script references unset vars
+    . "${tmpdir}/venv/bin/activate"
+    set -u
+    echo "Installing requirements in virtualenv"
+    set -x
+    pip install -r requirements.txt
+    set +x
+else
+    echo "Using existing python enviroment"
+fi
 
 builddir="${tmpdir}/${tarbase}"
 mkdir -p "${builddir}"
@@ -37,8 +40,10 @@ do
     set +x
 done
 
-echo "Deactivating virtualenv"
-deactivate
+if [ -z "${USE_EXISTING_PYTHON+x}" ]; then
+    echo "Deactivating virtualenv"
+    deactivate
+fi
 
 echo "Generating zip file"
 set -x

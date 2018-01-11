@@ -3,8 +3,10 @@ The file converts the documentation's json files to cwl files
 """
 
 from ruamel import yaml
+from ruamel.yaml.scalarstring import PreservedScalarString
 import os
 from .gen_cwl_arg import get_input_objects, get_output_json, is_output_argument
+from .helpers import is_gatk_3
 import re
 
 invalid_args = [
@@ -25,10 +27,7 @@ def cwl_generator(json_, cwl):
     :param cwl: A skeleton of the cwl file, which this function will complete.
     """
     outputs = []
-    inputs = [
-        {"doc": "Index file of reference genome", "type": "File", "id": "refIndex"},
-        {"doc": "Dict file of reference genome", "type": "File", "id": "refDict"}
-    ]
+    inputs = []
 
     for argument in json_['arguments']:
         if not argument['name'] in invalid_args:
@@ -56,13 +55,6 @@ def get_js_libary():
     with open(js_libary_path) as file:
         return file.read()
 
-# def minify_js(js):
-#     """
-#     Basic minification of javascript code
-#     """
-#     return re.sub("[/][*][\s\S]*?[*][/]", "",             # remove /**/ comments
-#         js.replace("    ", "").replace("\n", "")    # remove 4 spaces and new lines (assume semicolons exist)
-#     )
 
 JS_LIBARY = get_js_libary()
 
@@ -71,13 +63,17 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
     Make a cwl file with a given GATK json file in the cwl directory
     """
 
+    base_command = cmd_line_options.gatk_command.split(" ")
+
+    if is_gatk_3(cmd_line_options.version):
+        base_command.append("--analysis_type")
+
+    base_command.append(GATK_json['name'])
+
     skeleton_cwl = {
         'id': GATK_json['name'],
         'cwlVersion': 'v1.0',
-        'baseCommand': cmd_line_options.gatk_command.split(" ") + [
-            "--analysis_type",
-            GATK_json['name']
-            ],
+        'baseCommand': base_command,
         'class': 'CommandLineTool',
         'requirements': [
             {
@@ -86,7 +82,7 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
             {
                 "class": "InlineJavascriptRequirement",
                 "expressionLib": [
-                    JS_LIBARY
+                    PreservedScalarString(JS_LIBARY)
                 ]
             }
         ] + ([]
@@ -105,5 +101,6 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
         GATK_json,
         skeleton_cwl
     )
+
     yaml.round_trip_dump(skeleton_cwl, f)  # write the file
     f.close()

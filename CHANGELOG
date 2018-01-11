@@ -1,8 +1,20 @@
-v1.4
-- Added no_docker command line option, changed docker_container_name to docker_image_name
+v2.0
+- Added no_docker command line option
 - Fixed beheviour of array and tag types
 - Rewrote gen_cwl_arg to be clearer
 - Reduced the dependance on the command line for the tests
+### Breaking changes:
+- Removed the refIndex, refDict and analysis_type cwl parameters
+- Changed docker_container_name to docker_image_name
+
+v1.4.2
+- Use full GATK versions in release paths (i.e. "3.8-0" instead of just "3-8") and refer to specific version of latest GATK 4 beta release ("4.beta.6" rather than "latest").
+
+v1.4.1
+- Add releases in .tgz and .tar.bz2 archive formats. Add gatk-cwl-generator version to release filenames.
+
+v1.4
+- Changes generated CWL to YAML format rather than JSON for improved readability.
 
 v1.3
 - Changed the docker container to be broad institute's official docker container, not wtsi-hgi own container
@@ -13,6 +25,6 @@ v1.2.2
 v1.2.1
 - Array types are type | type[]
 
-v1.1: 
+v1.1:
 - Made output arguments's ids be <NAME>Output instead of adding dashes
 - Outputting to gatk_cmdline_tools

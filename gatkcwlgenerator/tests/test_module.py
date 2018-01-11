@@ -1,23 +1,20 @@
-from os import sys, path
-# Use fix from https://stackoverflow.com/a/19190695 to import from the base directory
-sys.path.append(path.dirname(path.dirname(path.dirname(path.abspath(__file__)))))
-
-import gatkcwlgenerator as cwl_gen
-
-from cwltool.main import main as cwltool_main
-
-import subprocess
-import os
-from os import path
-from multiprocessing import Process
-from multiprocessing.pool import ThreadPool
-import tempfile
-import pytest
-
-import requests
-
 import contextlib
 import io
+import os
+import subprocess
+import tempfile
+from multiprocessing import Process
+from multiprocessing.pool import ThreadPool
+from os import path, sys
+
+import pytest
+import requests
+from cwltool.main import main as cwltool_main
+
+# Use fix from https://stackoverflow.com/a/19190695 to import from the base directory
+sys.path.append(path.dirname(path.dirname(path.dirname(path.abspath(__file__)))))
+import gatkcwlgenerator as cwl_gen
+
 
 """
 Download example data to be used in CWL integration tests
@@ -64,35 +61,36 @@ class CommandOutput():
 base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 os.chdir(base_dir) # Need to be in the base directory for the cwl-runner to pick up the correct files
 
-default_args = """
+HAPLOTYPE_CALLER3_ARGS = """
 reference_sequence:
    class: File
-   #path: /path/to/fasta/ref/file
    path: {0}/cwl-example-data/chr22_cwl_test.fa
-refIndex:
-   class: File
-   #path: /path/to/index/file
-   path: {0}/cwl-example-data/chr22_cwl_test.fa.fai
-refDict:
-   class: File
-   #path: /path/to/dict/file
-   path: {0}/cwl-example-data/chr22_cwl_test.fa.dict
 input_file: #must be BAM or CRAM
    class: File
    #path: /path/to/input/file
    path: {0}/cwl-example-data/chr22_cwl_test.cram
 out: out.gvcf.gz""".format(base_dir)
 
-def run_haplotype_caller(extra_info, haplotypeCaller_location, interval=1, filetext=None, expect_failure=False):
-    return run_tool("HaplotypeCaller", extra_info, haplotypeCaller_location, interval, filetext, expect_failure)
+HAPLOTYPE_CALLER4_ARGS = """
+input:
+   class: File
+   path: {0}/cwl-example-data/chr22_cwl_test.cram
+reference:
+   class: File
+   path: {0}/cwl-example-data/chr22_cwl_test.fa
+output: out.gvcf.gz
+""".format(base_dir)
 
-def run_tool(toolname, extra_info, tool_location, interval=1, filetext=None, expect_failure=False):
+def run_haplotype_caller(haplotypeCaller_location, extra_info="", interval=1, filetext=None, expect_failure=False, gatk4=False):
+    return run_tool("HaplotypeCaller", haplotypeCaller_location, extra_info, interval, filetext, expect_failure, gatk4)
+
+def run_tool(toolname, tool_location, extra_info="", interval=1, filetext=None, expect_failure=False, gatk4=False):
     """
     Runs a cwl tool with the specified data
     """
     if filetext is None:
         extra_info += "\nintervals: [chr22:10591400-{}]".format(10591400 + interval)
-        filetext = default_args + "\n" + extra_info
+        filetext = (HAPLOTYPE_CALLER4_ARGS if gatk4 else HAPLOTYPE_CALLER3_ARGS) + "\n" + extra_info
 
     # NOTE: we're not using cwltool.factory.Factory, as recommended
     # due to https://github.com/common-workflow-language/cwltool/issues/596
@@ -110,6 +108,8 @@ def run_tool(toolname, extra_info, tool_location, interval=1, filetext=None, exp
                 with contextlib.redirect_stdout(new_stdout):
                     with contextlib.redirect_stderr(new_stderr):
                         exit_code = cwltool_main([
+                            "--leave-container",
+                            "--leave-tmpdir",
                             tool_location,
                             tmp_file.name
                         ])
@@ -131,8 +131,13 @@ def run_tool(toolname, extra_info, tool_location, interval=1, filetext=None, exp
 
 # Unit tests
 
-supported_versions = ["3.5-0", "3.6-0", "3.7-0", "3.8-0"] #  "4.beta.6"
+supported_versions = ["3.5-0", "3.6-0", "3.7-0", "3.8-0", "4.beta.6"]
 
+@pytest.mark.skip(reason="""
+The API for gatk is probably going to remain the same for specific versions,
+as this takes a lot of time, it should be disabled generally and used
+for testing added supporting versions for the first time
+""")
 @pytest.mark.parametrize("version", supported_versions)
 class TestGenerateCWL:
     def test_get_json_links(self, version):
@@ -152,10 +157,6 @@ class TestGenerateCWL:
 # Integration tests
 
 
-def test_generate_v4():
-    os.environ['PYTHONPATH'] = "."
-    run_command("python -m gatkcwlgenerator -v 4.beta.6 --dev")
-
 @pytest.fixture(scope="module", params=supported_versions)
 def cwl_files(request, tmpdir_factory):
     version = request.param
@@ -169,22 +170,28 @@ def cwl_files(request, tmpdir_factory):
 
     return path.join(str(output_dir), "cwl")
 
-@pytest.fixture(scope="session")
-def HaplotypeCallerFile(tmpdir_factory):
+@pytest.fixture(scope="module", params=supported_versions)
+def HaplotypeCaller_runner(request, tmpdir_factory):
+    version = request.param
+
     output_dir = tmpdir_factory.mktemp("HaplotypeCaller")
     cwl_gen.gatk_cwl_generator(
         dev=True,
-        version="3.5-0",
+        version=version,
         out=str(output_dir),
         include="HaplotypeCaller"
     )
 
-    return path.join(str(output_dir), "cwl", "HaplotypeCaller.cwl")
+    file_location = path.join(str(output_dir), "cwl", "HaplotypeCaller.cwl")
+
+    def closure(*nargs, **kwargs):
+        return run_haplotype_caller(file_location, *nargs, gatk4=("4" in version), **kwargs)
+
+    return closure
 
 @pytest.fixture(scope="session")
-def echoHalotypeCaller(tmpdir_factory):
-    output_dir = tmpdir_factory.mktemp("test_annotations")
-
+def echo_HalotypeCaller_runner(tmpdir_factory):
+    output_dir = tmpdir_factory.mktemp("EchoHaplotypeCaller")
     cwl_gen.gatk_cwl_generator(
         dev=True,
         no_docker=True,
@@ -194,10 +201,15 @@ def echoHalotypeCaller(tmpdir_factory):
         include="HaplotypeCaller"
     )
 
-    return path.join(str(output_dir), "cwl", "HaplotypeCaller.cwl")
+    file_location = path.join(str(output_dir), "cwl", "HaplotypeCaller.cwl")
+
+    def closure(extra_text=""):
+        return run_haplotype_caller(file_location, extra_text)
+
+    return closure
 
 class TestTagsOutput:
-    def test_non_array_tags(self, echoHalotypeCaller, tmpdir):
+    def test_non_array_tags(self, echo_HalotypeCaller_runner, tmpdir):
         test_file = tmpdir.mkdir("test_non_array_tags").join("test_file")
         test_file.write("test")
         extra_text = \
@@ -208,13 +220,13 @@ alleles_tags:
     - tag1
     - tag2"""
 
-        output = run_haplotype_caller(extra_text, echoHalotypeCaller)
+        output = echo_HalotypeCaller_runner(extra_text)
 
         # NOTE: in this test (and tests below), we can't use the filename of test_file
         # as it changes in the docker container.
         assert "--alleles:tag1,tag2 " in output.stderr
 
-    def test_array_tags(self, echoHalotypeCaller, tmpdir):
+    def test_array_tags(self, echo_HalotypeCaller_runner, tmpdir):
         test_file = tmpdir.mkdir("test_array_tags").join("test_file")
         test_file.write("test")
         extra_text = \
@@ -228,76 +240,77 @@ activeRegionIn_tags:
       - tag2
     - tag3"""
 
-        output = run_haplotype_caller(extra_text, echoHalotypeCaller)
+        output = echo_HalotypeCaller_runner(extra_text)
 
         assert f"--activeRegionIn:tag1,tag2 " in output.stderr
 
         assert f"--activeRegionIn:tag3 " in output.stderr
 
-def test_array_cmd_override(echoHalotypeCaller):
-    output = run_haplotype_caller("annotation: ['one', 'two']", echoHalotypeCaller)
+def test_array_cmd_override(echo_HalotypeCaller_runner):
+    output = echo_HalotypeCaller_runner("annotation: ['one', 'two']")
 
     assert "--annotation one" in output.stderr
 
     assert "--annotation two" in output.stderr
 
-    output = run_haplotype_caller("annotation: one", echoHalotypeCaller)
+    output = echo_HalotypeCaller_runner("annotation: one")
 
     assert "--annotation one" in output.stderr
 
-class TestGeneratedCWLFiles:
-    def _is_cwlfile_valid(self, file_location):
-        try:
-            run_command("cwl-runner --validate " + file_location)
-            print("Validated " + file_location)
-        except AssertionError as e:
-            return e
 
-    def test_are_cwl_files_valid(self, cwl_files):
-        thread_pool = ThreadPool(4)
-        results = thread_pool.map(
-            self._is_cwlfile_valid,
-            [path.join(cwl_files, file_name) for file_name in os.listdir(cwl_files)]
-        )
+def _is_cwlfile_valid(file_location):
+    try:
+        run_command("cwl-runner --validate " + file_location)
+        print("Validated " + file_location)
+    except AssertionError as e:
+        return e
 
-        exceptions = []
-        for result in results:
-            if isinstance(result, AssertionError):
-                print(result)
-                exceptions.append(result)
+def test_are_cwl_files_valid(cwl_files):
+    thread_pool = ThreadPool(4)
+    results = thread_pool.map(
+        _is_cwlfile_valid,
+        [path.join(cwl_files, file_name) for file_name in os.listdir(cwl_files)]
+    )
 
-        if exceptions:
-            raise AssertionError("Not all cwl files are valid:\n" + "\n\n".join(exceptions))
+    exceptions = []
+    for result in results:
+        if isinstance(result, AssertionError):
+            print(result)
+            exceptions.append(result)
 
-    def test_haplotype_caller(self, HaplotypeCallerFile):
-        run_command("cwl-runner {} examples/HaplotypeCaller_inputs.yml".format(HaplotypeCallerFile))
+    if exceptions:
+        raise AssertionError("Not all cwl files are valid:\n" + "\n\n".join(exceptions))
 
+def test_haplotype_caller(request, HaplotypeCaller_runner):
+    HaplotypeCaller_runner()
+
+@pytest.mark.skip("This takes a long time for the gain, so skip it")
+class TestGATKTypes:
     # Test if the haplotype caller accepts all the correct types
+    def test_boolean_type(self, HaplotypeCaller_runner):
+        assert "ThreadEfficiencyMonitor" in HaplotypeCaller_runner("monitorThreadEfficiency: True").stderr
 
-    def test_boolean_type(self, HaplotypeCallerFile):
-        assert "ThreadEfficiencyMonitor" in run_haplotype_caller("monitorThreadEfficiency: True", HaplotypeCallerFile).stderr
+    def test_integers_type(self, HaplotypeCaller_runner):
+        assert "42 data thread" in HaplotypeCaller_runner("num_threads: 42", expect_failure=True).stderr
 
-    def test_integers_type(self, HaplotypeCallerFile):
-        assert "42 data thread" in run_haplotype_caller("num_threads: 42", HaplotypeCallerFile, expect_failure=True).stderr
-
-    def test_string_type(self, HaplotypeCallerFile):
+    def test_string_type(self, HaplotypeCaller_runner):
         assert "Specified name does not exist in input bam files" in \
-            run_haplotype_caller("sample_name: invalid_sample_name", HaplotypeCallerFile, expect_failure=True).stderr
+            HaplotypeCaller_runner("sample_name: invalid_sample_name", expect_failure=True).stderr
 
-    def test_file_type(self, HaplotypeCallerFile):
+    def test_file_type(self, HaplotypeCaller_runner):
         BQSR_arg = """
 BQSR:
    class: File
    path: {0}/cwl-example-data/chr22_cwl_test.fa
 """.format(base_dir)
         assert "Bad input: The GATK report has an unknown/unsupported version in the header" in \
-            run_haplotype_caller(BQSR_arg, HaplotypeCallerFile, expect_failure=True).stderr
+            HaplotypeCaller_runner(BQSR_arg, expect_failure=True).stderr
 
-    def test_enum_type(self, HaplotypeCallerFile):
-        assert "Strictness is LENIENT" in run_haplotype_caller("validation_strictness: LENIENT", HaplotypeCallerFile).stderr
+    def test_enum_type(self, HaplotypeCaller_runner):
+        assert "Strictness is LENIENT" in HaplotypeCaller_runner("validation_strictness: LENIENT").stderr
 
-    def test_list_type(self, HaplotypeCallerFile):
-        run_with_larger_intervals = run_haplotype_caller(extra_info="", cwl_files_location=HaplotypeCallerFile,
-            filetext=default_args + "\nintervals: [chr22:10591400-10591500, chr22:10591500-10591645]")
+    def test_list_type(self, HaplotypeCaller_runner):
+        run_with_larger_intervals = HaplotypeCaller_runner(extra_info="",
+            filetext=HAPLOTYPE_CALLER3_ARGS + "\nintervals: [chr22:10591400-10591500, chr22:10591500-10591645]")
 
         assert "Processing 246 bp from intervals" in run_with_larger_intervals.stderr

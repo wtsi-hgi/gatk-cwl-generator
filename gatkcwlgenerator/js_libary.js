@@ -12,12 +12,7 @@ function applyTagsToArgument(prefix, tags){
         return null;
     }
     else if(!tags){
-        if(Array.isArray(self)){
-            return generateArrayCmd(prefix);
-        }
-        else{
-            return [prefix, self];
-        }
+        return generateArrayCmd(prefix);
     }
     else{
         function addTagToArgument(tagObject, argument){
@@ -53,6 +48,10 @@ function generateArrayCmd(prefix){
      * The issue that this solves is documented here:
      * https://www.biostars.org/p/258414/#260140
      */
+    if(!self){
+        return null;
+    }
+
     if(!Array.isArray(self)){
         self = [self];
     }
