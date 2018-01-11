@@ -59,7 +59,7 @@ optional arguments:
 
 This has been tested on versions 3.5-0 to 3.8-0 and 4.beta.6.
 
-The parameters generated are the same as you would need to specify on the command line, with "--" stripped from the beggining.
+The parameters generated are the same as you would need to specify on the command line, with "--" stripped from the beginning.
 
 To add tags to arguments that have a file type, add to the parameter `<NAME>_tags`. e.g. to output the parameter `--variant:vcf path\to\file`, use the input:
 ```yml
