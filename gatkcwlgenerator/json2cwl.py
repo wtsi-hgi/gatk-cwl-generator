@@ -46,17 +46,17 @@ def cwl_generator(json_, cwl):
     cwl["inputs"] = inputs
     cwl["outputs"] = outputs
 
-def get_js_libary():
-    js_libary_path = os.path.join(
+def get_js_library():
+    js_library_path = os.path.join(
         os.path.dirname(__file__),
-        "js_libary.js"
+        "js_library.js"
     )
 
-    with open(js_libary_path) as file:
+    with open(js_library_path) as file:
         return file.read()
 
 
-JS_LIBARY = get_js_libary()
+JS_LIBRARY = get_js_library()
 
 def json2cwl(GATK_json, cwl_dir, cmd_line_options):
     """
@@ -82,7 +82,7 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
             {
                 "class": "InlineJavascriptRequirement",
                 "expressionLib": [
-                    PreservedScalarString(JS_LIBARY)
+                    PreservedScalarString(JS_LIBRARY)
                 ]
             }
         ] + ([]
