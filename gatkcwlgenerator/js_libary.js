@@ -1,7 +1,5 @@
 /**
  * File of functions to be added to cwl files
- * NOTE: for easy minification, single line comments are not
- * allowed and every statement has to be terminated by a semicolon
  */
 function applyTagsToArgument(prefix, tags){
     /**
@@ -29,8 +27,6 @@ function applyTagsToArgument(prefix, tags){
             var value = self.map(function(element, i) {
                 return addTagToArgument(tags[i], element);
             }).reduce(function(a, b){return a.concat(b)})
-
-            console.log(value);
 
             return value;
         }
