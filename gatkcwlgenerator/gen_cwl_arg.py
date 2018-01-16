@@ -170,7 +170,7 @@ def get_input_objects(argument):
 
     if has_file_type:
         base_cwl_arg["inputBinding"] = {
-            "valueFrom": "$(applyTagsToArgument(\"--{0}\", inputs.{0}_tags))".format(arg_id)
+            "valueFrom": "$(applyTagsToArgument(\"--{0}\", inputs['{0}_tags']))".format(arg_id)
         }
     elif has_array_type:
         base_cwl_arg["inputBinding"] = {

@@ -131,23 +131,15 @@ def run_tool(toolname, tool_location, extra_info="", interval=1, filetext=None, 
 
 # Unit tests
 
-supported_versions = ["3.5-0", "3.6-0", "3.7-0", "3.8-0", "4.beta.6"]
+supported_versions = ["3.5-0", "3.6-0", "3.7-0", "3.8-0", "4.0.0.0"]
 
 @pytest.mark.skip(reason="""
-The API for gatk is probably going to remain the same for specific versions,
-as this takes a lot of time, it should be disabled generally and used
-for testing added supporting versions for the first time
+The API for gatk is probably going to remain the same for specific versions.
+As this takes a lot of time, it should be disabled generally and used
+for testing added supporting versions for the first time.
 """)
 @pytest.mark.parametrize("version", supported_versions)
 class TestGenerateCWL:
-    def test_get_json_links(self, version):
-        json_links = cwl_gen.get_json_links(version)
-        for link_type, links in json_links.__dict__.items():
-            assert links, "There are no links of type '{}' in gatk version {}".format(
-                    link_type,
-                    version
-                )
-
     def test_no_arguments_in_annotator(self, version):
         # If arguments are in annotator modules, we probably need to add them to the CWL file
         for url in cwl_gen.get_json_links(version).annotator_urls:
@@ -284,7 +276,7 @@ def test_are_cwl_files_valid(cwl_files):
 def test_haplotype_caller(request, HaplotypeCaller_runner):
     HaplotypeCaller_runner()
 
-@pytest.mark.skip("This takes a long time for the gain, so skip it")
+@pytest.mark.skip("This takes too long, so skip it")
 class TestGATKTypes:
     # Test if the haplotype caller accepts all the correct types
     def test_boolean_type(self, HaplotypeCaller_runner):

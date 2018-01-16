@@ -109,4 +109,4 @@ You can also run the tests in parallel with `-n` to improve performance
 
 ## Creating a new version
 
-To create a `gatk_cmdline_tools.zip` zip file containing all the generated cwl files for gatk versions 3.5, 3.6, 3.7, 3.8 and 4.beta.6, run `bash build.sh`. This file is uploaded as a release on GitHub for every new release of this package.
+To create a `gatk_cmdline_tools.zip` zip file containing all the generated cwl files for gatk versions 3.5, 3.6, 3.7, 3.8 and 4.0.0.0, run `bash build.sh`. This file is uploaded as a release on GitHub for every new release of this package.
