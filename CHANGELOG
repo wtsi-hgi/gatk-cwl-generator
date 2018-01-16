@@ -1,3 +1,8 @@
+v2.1
+- Fix generated expressions, where a parameter is not a valid javascript name
+- Remove console.log and incorrect comments from the javascript library
+- Generate gatk version 4.0.0.0
+
 v2.0
 - Added no_docker and use_cache command line option
 - Fixed beheviour of array and tag types
