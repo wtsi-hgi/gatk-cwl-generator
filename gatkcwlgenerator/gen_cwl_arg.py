@@ -3,8 +3,10 @@ Functions to generate the CWL descriptions for GATK arguments.
 The main exported functions are get_output_json and get_input_objects
 """
 
-from .cwl_ast import *
 import logging
+import re
+
+from .cwl_ast import *
 
 _logger = logging.getLogger("gatkcwlgenerator")
 
@@ -13,7 +15,8 @@ def get_arg_id(argument):
 
 def is_arg_with_default(argument):
     return  argument['defaultValue'] != "NA" \
-        and argument['defaultValue'].lower() != "none"
+        and argument['defaultValue'].lower() != "none" \
+        and argument['defaultValue'].lower() != "null"
 
 class UnknownGATKTypeError(Exception):
     def __init__(self, unknown_type):
@@ -78,6 +81,23 @@ def GATK_type_to_CWL_type(gatk_type):
     else:
         raise UnknownGATKTypeError("Unknown GATK type: '" + gatk_type + "'")
 
+def check_cwl_type_makes_sense(cwl_type: CWLType, argument):
+    if cwl_type.find_node(is_file_type) is None:
+        if "file" in argument["summary"] \
+         and isinstance(cwl_type, CWLBasicType) and cwl_type.name == "string" \
+         and not is_output_argument(argument):
+             _logger.warning(
+                f"Argument {argument['name']} has 'file' in it's summary and is type {argument['type']}\nsummary: {argument['summary']}"
+             )
+
+def is_gatk_argument_a_file(argument):
+    known_non_file_params = [
+        "--prefixForAllOutputFileNames",
+        "--READ_NAME_REGEX"
+    ]
+
+    return "file" in argument["summary"] and argument["name"] not in known_non_file_params
+
 def get_base_CWL_type_for_argument(argument):
     prefix = argument['name']
 
@@ -91,20 +111,24 @@ def get_base_CWL_type_for_argument(argument):
     elif is_output_argument(argument):
         gatk_type = "string"
 
-    # Patch --reference in gatk 4
-    if prefix == "--reference":
+    if is_gatk_argument_a_file(argument):
         gatk_type = "File"
+
+    if prefix == "--genomicsdb-workspace-path":
+        return CWLBasicType("Directory")
 
     try:
         cwl_type = GATK_type_to_CWL_type(gatk_type)
     except UnknownGATKTypeError as error:
         _logger.warning(
-            "WARNING: Unable to assign to a CWL type, defaulting to string\nArgument: %s   Type: %s",
+            "Unable to assign to a CWL type, defaulting to string\nArgument: %s   Type: %s",
             argument['name'][2:],
             error.unknown_type
         )
 
         cwl_type = CWLBasicType("string")
+
+    #check_cwl_type_makes_sense(cwl_type, argument)
 
     if isinstance(cwl_type, CWLArrayType):
         return CWLUnionType(cwl_type, cwl_type.inner_type)
@@ -128,7 +152,8 @@ def get_output_default_arg(argument):
             return get_arg_id(argument) + output_type_to_file_ext[output_type]
 
     # The definition of is_output_argument should mean this is never reached
-    raise Exception("Output argument should be defined in output_type_to_file_ext")
+    return ".txt"
+    #raise Exception("Output argument should be defined in output_type_to_file_ext")
 
 def get_input_objects(argument):
     """
@@ -181,9 +206,8 @@ def get_input_objects(argument):
             "prefix": argument["name"]
         }
 
-    # For output arguments with a default, override the gatk default with
-    # a more predictable name
-    if is_arg_with_default(argument) and is_output_argument(argument):
+    # Provide a default output location for required output arguments
+    if is_output_argument(argument) and argument['required'] != 'no':
         base_cwl_arg["default"] = get_output_default_arg(argument)
 
     if arg_id == "reference_sequence" or arg_id == "reference":
@@ -231,19 +255,36 @@ def is_output_argument(argument):
     """
     Returns whether this argument's type indicates it's an output argument
     """
-    return any(output_type in argument["type"] for output_type in output_type_to_file_ext)
+    known_output_files = [
+        "--score-warnings",
+        "--read-metadata",
+        "--filter-metrics",
+        "--prefixForAllOutputFileNames"
+    ]
+
+    return any(output_type in argument["type"] for output_type in output_type_to_file_ext) \
+        or "-out" in argument["name"] \
+        or re.match("-out(put)?$", argument["name"]) is not None \
+        or argument["name"].endswith("Out") or argument["name"].endswith("Output") \
+        or argument["name"] in known_output_files
 
 
 def get_output_json(argument):
-    # NOTE: Whether this always outputs depends on whether the input argument is
-    # specified - we can't specify this in the type, so mark it as optional if there
-    # is a possibilty if could not output
-    is_optional_arg = argument["required"] == "no" and not is_arg_with_default(argument)
+    if argument["name"] == "--prefixForAllOutputFileNames":
+        return {
+            "id": "splitToManyOutput",
+            "type": "File?",
+            "outputBinding": {
+                "glob": "$(inputs.prefixForAllOutputFileNames + '.split.*.vcf')"
+            }
+        }
+
+    is_optional_arg = argument["required"] == "no"
 
     return {
         'id': get_arg_id(argument) + "Output",
         'type': 'File?' if is_optional_arg else "File",
         'outputBinding': {
-            'glob': '$(inputs.{})'.format(argument['name'].strip("-"))
+            'glob': "$(inputs.['{}'])".format(get_arg_id(argument))
         }
     }

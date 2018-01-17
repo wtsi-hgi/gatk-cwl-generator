@@ -10,12 +10,14 @@ import logging
 
 from bs4 import BeautifulSoup
 import requests
+import coloredlogs
 
 from .json2cwl import json2cwl
 from .helpers import is_gatk_3
 
 _logger = logging.getLogger("gatkcwlgenerator") # type: logging.Logger
 _logger.addHandler(logging.StreamHandler())
+
 
 def find_index(lst, func):
     for i, item in enumerate(lst):
@@ -246,7 +248,9 @@ def cmdline_main(args=sys.argv[1:]):
     cmd_line_options = parser.parse_args(args)
 
     if cmd_line_options.verbose:
-        _logger.setLevel(logging.INFO)
+        coloredlogs.install(level='DEBUG', logger=_logger)
+    else:
+        coloredlogs.install(level='WARNING', logger=_logger)
 
     if not cmd_line_options.output_dir:
         cmd_line_options.output_dir = os.getcwd() + '/gatk_cmdline_tools/' + cmd_line_options.version
