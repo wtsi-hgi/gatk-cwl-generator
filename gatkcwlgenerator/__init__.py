@@ -1,3 +1,8 @@
+import sys
+
+if sys.version_info[0] < 3:
+    raise Exception("Must run in python 3.")
+
 from .main import *
 import gatkcwlgenerator.json2cwl
 import gatkcwlgenerator.gen_cwl_arg

@@ -1,11 +1,11 @@
 #!/bin/python
 
+import sys
 import os
 import argparse
 import shutil
 import itertools
 import json
-import sys
 import logging
 
 from bs4 import BeautifulSoup
@@ -112,20 +112,23 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
 
     # Create json for each tool and convert to cwl
     for tool_url in grouped_urls.tool_urls:
-        if cmd_line_options.include is None or cmd_line_options.include in tool_url or "CommandLineGATK" in tool_url:
+        # Strip the .php.json or .json from the end of the url
+        url_filename = tool_url[:-len(".php.json" if is_gatk_3(cmd_line_options.version) else ".json")]
+
+        if cmd_line_options.include is None or url_filename.endswith(cmd_line_options.include) or "CommandLineGATK" in tool_url:
             _logger.info("Fetching tool url: %s", tool_url)
             tool_json = requests.get(tool_url)
             tool_json.raise_for_status()
             try:
                 tool_json_json = tool_json.json()
             except ValueError as error:
-                raise Exception("Could not decode json retrieved from %s" % tool_url) from error
+                raise Exception("Could not decode json retrieved from " + tool_url) from error
 
             tool_name = tool_json_json['name']
             json_name = tool_name + ".json"
 
             json_path = os.path.join(json_dir, json_name)
-            _logger.info("Writing json to " + json_path)
+            _logger.info("Writing json to %s", json_path)
             json_file = open(json_path, 'w+')
             json_file.write(tool_json.text)
             json_file.close()
@@ -137,10 +140,11 @@ def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
                 apply_global_arguments(tool_json_json, global_args)
 
             cwl_path = os.path.join(cwl_dir, tool_name + ".cwl")
-            _logger.info("Writing cwl to " + cwl_path)
+            _logger.info("Writing cwl to %s", cwl_path)
             json2cwl(
                 tool_json_json,
                 cwl_dir,
+                tool_name,
                 cmd_line_options
             )
 
@@ -222,6 +226,7 @@ def cmdline_main(args=sys.argv[1:]):
     """
     Function to be called when this is invoked on the command line.
     """
+
     default_cache_location = "cache"
 
     parser = argparse.ArgumentParser(description='Generates CWL files from the GATK documentation')
@@ -247,10 +252,12 @@ def cmdline_main(args=sys.argv[1:]):
         help="Command to launch GATK. Default is 'java -jar /usr/GenomeAnalysisTK.jar' for gatk 3.x and 'java -jar /gatk/gatk.jar' for gatk 4.x")
     cmd_line_options = parser.parse_args(args)
 
+    log_format = "%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s"
+
     if cmd_line_options.verbose:
-        coloredlogs.install(level='DEBUG', logger=_logger)
+        coloredlogs.install(level='DEBUG', logger=_logger, fmt=log_format)
     else:
-        coloredlogs.install(level='WARNING', logger=_logger)
+        coloredlogs.install(level='WARNING', logger=_logger, fmt=log_format)
 
     if not cmd_line_options.output_dir:
         cmd_line_options.output_dir = os.getcwd() + '/gatk_cmdline_tools/' + cmd_line_options.version

@@ -2,12 +2,14 @@
 The file converts the documentation's json files to cwl files
 """
 
+import os
+import re
+
 from ruamel import yaml
 from ruamel.yaml.scalarstring import PreservedScalarString
-import os
-from .gen_cwl_arg import get_input_objects, get_output_json, is_output_argument
+
+from .gen_cwl_arg import gatk_argument_to_cwl_arguments
 from .helpers import is_gatk_3
-import re
 
 invalid_args = [
     "--help",
@@ -15,7 +17,7 @@ invalid_args = [
     "--analysis_type"           # this is hard coded into the baseCommand for each tool
 ]
 
-def cwl_generator(json_, cwl):
+def cwl_generator(json_, cwl, tool_name, cmd_line_options):
     """
     Converts GATK tools documented in .json to .cwl (this function changes the cwl parameter)
 
@@ -31,17 +33,15 @@ def cwl_generator(json_, cwl):
 
     for argument in json_['arguments']:
         if not argument['name'] in invalid_args:
-            if is_output_argument(argument):
-                output_json = get_output_json(argument)
-                outputs.append(output_json)
+            argument_inputs, argument_outputs = gatk_argument_to_cwl_arguments(argument, tool_name, cmd_line_options.version)
 
-            input_objects_for_arg = get_input_objects(argument)
+            outputs.extend(argument_outputs)
 
-            for input_object in input_objects_for_arg:
-                if "secondaryFiles" in input_object: # So reference_sequence doesn't conflict with refIndex and refDict
-                    inputs.insert(0, input_object)
+            for argument_input in argument_inputs:
+                if "secondaryFiles" in argument_input: # So reference_sequence doesn't conflict with refIndex and refDict
+                    inputs.insert(0, argument_input)
                 else:
-                    inputs.append(input_object)
+                    inputs.append(argument_input)
 
     cwl["inputs"] = inputs
     cwl["outputs"] = outputs
@@ -58,7 +58,7 @@ def get_js_library():
 
 JS_LIBRARY = get_js_library()
 
-def json2cwl(GATK_json, cwl_dir, cmd_line_options):
+def json2cwl(GATK_json, cwl_dir: str, tool_name: str, cmd_line_options):
     """
     Make a cwl file with a given GATK json file in the cwl directory
     """
@@ -99,7 +99,9 @@ def json2cwl(GATK_json, cwl_dir, cmd_line_options):
 
     cwl_generator(
         GATK_json,
-        skeleton_cwl
+        skeleton_cwl,
+        tool_name,
+        cmd_line_options
     )
 
     yaml.round_trip_dump(skeleton_cwl, f)  # write the file

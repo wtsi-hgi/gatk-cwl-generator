@@ -6,11 +6,39 @@ import abc
 class CWLType:
     __metaclass__ = abc.ABCMeta
 
+    def __eq__(self, other):
+        if self.is_leaf() and other.is_leaf():
+            if type(self) is type(other):
+                raise NotImplementedError(f"Leaf comparison not implemented for {type(self)} (__eq__ should be overloaded)")
+            else:
+                return False
+        elif not self.is_leaf() and not other.is_leaf():
+            return all((other_child == self_child for (other_child, self_child) in zip(other.children, self.children)))
+        else:
+            return False
+
     @abc.abstractmethod
     def get_cwl_object(self):
         pass
 
-    def is_array_type(self):
+    def has_array_type(self):
+        return self.find_node(lambda node: isinstance(node, CWLArrayType)) is not None
+
+    def has_file_type(self):
+        def is_file_type(cwl_type):
+            return isinstance(cwl_type, CWLBasicType) and cwl_type.name == "File"
+
+        self.find_node(is_file_type) is not None
+
+    def is_leaf(self):
+        """
+        Returns True if this element has no children.
+        """
+        try:
+            self.children
+        except AttributeError:
+            return True
+
         return False
 
     @property
@@ -38,6 +66,9 @@ class CWLBasicType(CWLType):
     def __init__(self, name):
         self.name = name
 
+    def __eq__(self, other):
+        return self.name == other.name
+
     def get_cwl_object(self):
         return self.name
 
@@ -46,9 +77,6 @@ class CWLArrayType(CWLType):
     def __init__(self, inner_type):
         self.inner_type = inner_type
         self._input_binding = None
-
-    def is_array_type(self):
-        return True
 
     def add_input_binding(self, inputBinding):
         self._input_binding = inputBinding
@@ -103,9 +131,6 @@ class CWLEnumType(CWLType):
 class CWLOptionalType(CWLType):
     def __init__(self, inner_type):
         self.inner_type = inner_type
-
-    def is_array_type(self):
-        return self.inner_type.is_array_type()
 
     def get_cwl_object(self):
         inner_cwl_object = self.inner_type.get_cwl_object()
