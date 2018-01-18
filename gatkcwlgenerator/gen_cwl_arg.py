@@ -173,6 +173,7 @@ def get_output_default_arg(argument):
     return ".txt"
     #raise Exception("Output argument should be defined in output_type_to_file_ext")
 
+
 def gatk_argument_to_cwl_arguments(argument, cwl_tool_name: str, cwl_version: str):
     """
     Returns inputs and outputs for a given gatk argument, in the form (inputs, outputs).
@@ -180,7 +181,20 @@ def gatk_argument_to_cwl_arguments(argument, cwl_tool_name: str, cwl_version: st
 
     inputs = get_input_objects(argument)
 
-    if cwl_tool_name == "DepthOfCoverage" and argument["name"] == "out":
+    arg_id = get_arg_id(argument)
+
+    if arg_id in ("create-output-bam-md5", "create-output-variant-md5", "create-output-bam-index", "create-output-variant-index"):
+        outputs = [{
+            "id": arg_id[len("create-output"):],
+            "type": "File?",
+            "outputBinding": {
+                "glob": f"$(inputs['{arg_id}'] + '.md5')" if arg_id.endswith("md5") else [
+                    f"$(inputs['{arg_id}'] + '.idx')",
+                    f"$(inputs['{arg_id}'] + '.tbi')"
+                ]
+            }
+        }]
+    elif cwl_tool_name == "DepthOfCoverage" and arg_id == "out":
         # Could be more selective on the glob. The actual names are here:
         # https://gatkforums.broadinstitute.org/gatk/discussion/6963/what-does-the-output-of-depthofcoverage-means
         outputs = [{
@@ -190,7 +204,7 @@ def gatk_argument_to_cwl_arguments(argument, cwl_tool_name: str, cwl_version: st
                 "glob": "$(inputs.out + '.*')"
             }
         }]
-    elif argument["name"] == "--prefixForAllOutputFileNames":
+    elif arg_id == "prefixForAllOutputFileNames":
         outputs = [{
             "id": "splitToManyOutput",
             "type": "File?",
@@ -319,9 +333,15 @@ def is_output_argument(argument):
         "--prefixForAllOutputFileNames"
     ]
 
+    output_suffixes = [
+        "-out",
+        "-output",
+        "Output",
+        "Out"
+    ]
+
     return any(output_type in argument["type"] for output_type in output_type_to_file_ext) \
-        or re.match("-out(put)?$", argument["name"]) is not None \
-        or argument["name"].endswith("Out") or argument["name"].endswith("Output") \
+        or any(map(argument["name"].endswith, output_suffixes)) \
         or argument["name"] in known_output_files
 
 
