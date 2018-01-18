@@ -28,7 +28,7 @@ class CWLType:
         def is_file_type(cwl_type):
             return isinstance(cwl_type, CWLBasicType) and cwl_type.name == "File"
 
-        self.find_node(is_file_type) is not None
+        return self.find_node(is_file_type) is not None
 
     def is_leaf(self):
         """
