@@ -75,6 +75,7 @@ def json2cwl(GATK_json, cwl_dir: str, tool_name: str, cmd_line_options):
         'cwlVersion': 'v1.0',
         'baseCommand': base_command,
         'class': 'CommandLineTool',
+        "doc": PreservedScalarString(GATK_json["description"]),
         'requirements': [
             {
                 "class": "ShellCommandRequirement"
