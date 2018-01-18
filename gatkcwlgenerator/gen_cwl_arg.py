@@ -89,15 +89,6 @@ def GATK_type_to_CWL_type(gatk_type):
     else:
         raise UnknownGATKTypeError("Unknown GATK type: '" + gatk_type + "'")
 
-def check_cwl_type_makes_sense(cwl_type: CWLType, argument):
-    if cwl_type.find_node(is_file_type) is None:
-        if "file" in argument["summary"] \
-         and isinstance(cwl_type, CWLBasicType) and cwl_type.name == "string" \
-         and not is_output_argument(argument):
-             _logger.warning(
-                f"Argument {argument['name']} has 'file' in it's summary and is type {argument['type']}\nsummary: {argument['summary']}"
-             )
-
 def infer_if_gatk_argument_is_file(argument):
     """
     Infer from properties of an argument if it is a file. To be used if an argument's type contains a 'string'
@@ -110,13 +101,20 @@ def infer_if_gatk_argument_is_file(argument):
 
     return "file" in argument["summary"] and argument["name"] not in known_non_file_params
 
-def get_base_CWL_type_for_argument(argument):
+def get_base_CWL_type_for_argument(argument, toolname):
     prefix = argument['name']
 
     gatk_type = argument['type']
 
     if prefix == "--input_file" or prefix == "--input":
         gatk_type = "List[File]"
+
+    if prefix == "--intervals":
+        # Enforce the GATK 3 type and fix https://github.com/broadinstitute/gatk/issues/4196
+        if toolname == "GenomicsDBImport":
+            gatk_type = "IntervalBinding[Feature]"
+        else:
+            gatk_type = "List[IntervalBinding[Feature]]"
 
     if prefix == "--genomicsdb-workspace-path":
         cwl_type = CWLBasicType("Directory")
@@ -146,8 +144,6 @@ def get_base_CWL_type_for_argument(argument):
     # overload the type of a gatk argument if think it should be a string
     if string_type is not None and infer_if_gatk_argument_is_file(argument):
         string_type.name = "File"
-
-    #check_cwl_type_makes_sense(cwl_type, argument)
 
     if isinstance(cwl_type, CWLArrayType):
         cwl_type = CWLUnionType(cwl_type, cwl_type.inner_type)
@@ -219,12 +215,12 @@ def get_depth_of_coverage_outputs():
 
     return outputs
 
-def gatk_argument_to_cwl_arguments(argument, cwl_tool_name: str, cwl_version: str):
+def gatk_argument_to_cwl_arguments(argument, toolname: str, cwl_version: str):
     """
     Returns inputs and outputs for a given gatk argument, in the form (inputs, outputs).
     """
 
-    inputs = get_input_objects(argument, cwl_version)
+    inputs = get_input_objects(argument, toolname, cwl_version)
 
     arg_id = get_arg_id(argument)
 
@@ -242,9 +238,9 @@ def gatk_argument_to_cwl_arguments(argument, cwl_tool_name: str, cwl_version: st
                 ]
             }
         }]
-    elif cwl_tool_name == "DepthOfCoverage" and arg_id == "out":
+    elif toolname == "DepthOfCoverage" and arg_id == "out":
         outputs = get_depth_of_coverage_outputs()
-    elif cwl_tool_name == "RandomlySplitVariants" and arg_id == "prefixForAllOutputFileNames":
+    elif toolname == "RandomlySplitVariants" and arg_id == "prefixForAllOutputFileNames":
         outputs = [{
             "id": "splitToManyOutput",
             "doc": "Output if --splitToManyFiles is true",
@@ -302,7 +298,7 @@ NON_ARRAY_TAGS_TAGS = [
     }
 ]
 
-def get_input_objects(argument, cwl_version):
+def get_input_objects(argument, toolname, cwl_version):
     """
     Returns a list of cwl input arguments for expressing the given gatk argument
 
@@ -314,7 +310,7 @@ def get_input_objects(argument, cwl_version):
 
     arg_id = get_arg_id(argument)
 
-    cwl_type = get_base_CWL_type_for_argument(argument)
+    cwl_type = get_base_CWL_type_for_argument(argument, toolname)
 
     has_array_type = False
     has_file_type = cwl_type.find_node(is_file_type) is not None
