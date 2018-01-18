@@ -69,7 +69,7 @@ input_file: #must be BAM or CRAM
    class: File
    #path: /path/to/input/file
    path: {0}/cwl-example-data/chr22_cwl_test.cram
-out: out.gvcf.gz""".format(base_dir)
+outFilename: out.gvcf.gz""".format(base_dir)
 
 HAPLOTYPE_CALLER4_ARGS = """
 input:
@@ -78,7 +78,7 @@ input:
 reference:
    class: File
    path: {0}/cwl-example-data/chr22_cwl_test.fa
-output: out.gvcf.gz
+output-filename: out.gvcf.gz
 """.format(base_dir)
 
 def run_haplotype_caller(haplotypeCaller_location, extra_info="", interval=1, filetext=None, expect_failure=False, gatk4=False):

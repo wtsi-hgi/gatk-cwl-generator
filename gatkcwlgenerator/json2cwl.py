@@ -4,6 +4,7 @@ The file converts the documentation's json files to cwl files
 
 import os
 import re
+import logging
 
 from ruamel import yaml
 from ruamel.yaml.scalarstring import PreservedScalarString
@@ -11,10 +12,21 @@ from ruamel.yaml.scalarstring import PreservedScalarString
 from .gen_cwl_arg import gatk_argument_to_cwl_arguments
 from .helpers import is_gatk_3
 
+_logger = logging.getLogger("gatkcwlgenerator")
+
 invalid_args = [
     "--help",
     "--defaultBaseQualities",
     "--analysis_type"           # this is hard coded into the baseCommand for each tool
+]
+
+"""
+This indicates gatk modules that require extra undocumented output arguments in gatk3.
+These haven't been ported to gatk 4, but when they are, the patched arguments need to be updated.
+"""
+SPECIAL_GATK3_MODULES = [
+    "DepthOfCoverage",
+    "RandomlySplitVariants"
 ]
 
 def cwl_generator(json_, cwl, tool_name, cmd_line_options):
@@ -62,6 +74,9 @@ def json2cwl(GATK_json, cwl_dir: str, tool_name: str, cmd_line_options):
     """
     Make a cwl file with a given GATK json file in the cwl directory
     """
+
+    if tool_name in SPECIAL_GATK3_MODULES and not is_gatk_3(cmd_line_options.version):
+        _logger.warning(f"Tool {tool_name}'s cwl may be incorrect. The GATK documentation needs to be looked at by a human and hasn't been yet.")
 
     base_command = cmd_line_options.gatk_command.split(" ")
 

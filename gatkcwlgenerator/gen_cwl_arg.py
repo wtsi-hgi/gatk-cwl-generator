@@ -8,6 +8,7 @@ import logging
 import re
 
 from .cwl_ast import *
+from .helpers import is_gatk_3
 
 _logger = logging.getLogger("gatkcwlgenerator")
 
@@ -121,7 +122,7 @@ def get_base_CWL_type_for_argument(argument):
         cwl_type = CWLBasicType("Directory")
     elif argument['options']:
         cwl_type = CWLEnumType([x['name'] for x in argument['options']])
-    else:# Output prefix
+    else:
         try:
             cwl_type = GATK_type_to_CWL_type(gatk_type)
         except UnknownGATKTypeError as error:
@@ -137,6 +138,8 @@ def get_base_CWL_type_for_argument(argument):
         file_or_string_type = cwl_type.find_node(lambda node: node == CWLBasicType("File") or node == CWLBasicType("string"))
         if file_or_string_type is not None:
             file_or_string_type.name = "string"
+        else:
+            _logger.warning(f"Output argument {argument['name']} should have a string or file type in it. GATK type: {argument['type']}")
 
     string_type = cwl_type.find_node(lambda node: node == CWLBasicType("string"))
 
@@ -170,50 +173,88 @@ def get_output_default_arg(argument):
         if argument["type"] in output_type:
             return get_arg_id(argument) + output_type_to_file_ext[output_type]
 
-    return ".txt"
-    #raise Exception("Output argument should be defined in output_type_to_file_ext")
+    raise Exception("Output argument should be defined in output_type_to_file_ext")
 
+
+def get_input_argument_name(argument, cwl_version):
+    arg_id = get_arg_id(argument)
+
+    if is_output_argument(argument):
+        if is_gatk_3(cwl_version):
+            return arg_id + "Filename"
+        else:
+            return arg_id + "-filename"
+
+    return arg_id
+
+
+def get_depth_of_coverage_outputs():
+    # TODO: autogenerate this from https://software.broadinstitute.org/gatk/documentation/tooldocs/3.8-0/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php
+    partition_types = ["library", "read_group", "sample"]
+    output_types = [
+        "summary",
+        "statistics",
+        "interval_summary",
+        "interval_statistics",
+        "gene_summary",
+        "gene_statistics",
+        "cumulative_coverage_counts",
+        "cumulative_coverage_proportions"
+    ]
+
+    outputs = []
+
+    for partition_type in partition_types:
+        for output_type in output_types:
+            output_suffix = f"{partition_type}_{output_type}"
+
+            outputs.extend({
+                "id": f"{output_suffix}Output",
+                "doc": f"The {output_suffix} generated file",
+                "type": "File?",
+                "outputBinding": {
+                    "glob": f"$(inputs.out + '{output_suffix}')"
+                }
+            })
+
+    return outputs
 
 def gatk_argument_to_cwl_arguments(argument, cwl_tool_name: str, cwl_version: str):
     """
     Returns inputs and outputs for a given gatk argument, in the form (inputs, outputs).
     """
 
-    inputs = get_input_objects(argument)
+    inputs = get_input_objects(argument, cwl_version)
 
     arg_id = get_arg_id(argument)
 
+    input_argument_name = get_input_argument_name(argument, cwl_version)
+
     if arg_id in ("create-output-bam-md5", "create-output-variant-md5", "create-output-bam-index", "create-output-variant-index"):
         outputs = [{
-            "id": arg_id[len("create-output"):],
+            "id": arg_id[len("create-output-"):],
+            "doc": f"{'md5' if arg_id.endswith('md5') else 'index'} file generated if {arg_id} is true",
             "type": "File?",
             "outputBinding": {
-                "glob": f"$(inputs['{arg_id}'] + '.md5')" if arg_id.endswith("md5") else [
-                    f"$(inputs['{arg_id}'] + '.idx')",
-                    f"$(inputs['{arg_id}'] + '.tbi')"
+                "glob": f"$(inputs['{input_argument_name}'] + '.md5')" if arg_id.endswith("md5") else [
+                    f"$(inputs['{input_argument_name}'] + '.idx')",
+                    f"$(inputs['{input_argument_name}'] + '.tbi')"
                 ]
             }
         }]
     elif cwl_tool_name == "DepthOfCoverage" and arg_id == "out":
-        # Could be more selective on the glob. The actual names are here:
-        # https://gatkforums.broadinstitute.org/gatk/discussion/6963/what-does-the-output-of-depthofcoverage-means
-        outputs = [{
-            "id": "outOutput",
-            "type": "File[]",
-            "outputBinding": {
-                "glob": "$(inputs.out + '.*')"
-            }
-        }]
-    elif arg_id == "prefixForAllOutputFileNames":
+        outputs = get_depth_of_coverage_outputs()
+    elif cwl_tool_name == "RandomlySplitVariants" and arg_id == "prefixForAllOutputFileNames":
         outputs = [{
             "id": "splitToManyOutput",
-            "type": "File?",
+            "doc": "Output if --splitToManyFiles is true",
+            "type": "File[]?",
             "outputBinding": {
                 "glob": "$(inputs.prefixForAllOutputFileNames + '.split.*.vcf')"
             }
         }]
     elif is_output_argument(argument):
-        outputs = [get_output_json(argument)]
+        outputs = [get_output_json(argument, cwl_version)]
     else:
         outputs = []
 
@@ -261,7 +302,7 @@ NON_ARRAY_TAGS_TAGS = [
     }
 ]
 
-def get_input_objects(argument):
+def get_input_objects(argument, cwl_version):
     """
     Returns a list of cwl input arguments for expressing the given gatk argument
 
@@ -289,13 +330,13 @@ def get_input_objects(argument):
 
     base_cwl_arg = {
         "doc": argument['summary'],
-        "id": arg_id,
+        "id": get_input_argument_name(argument, cwl_version),
         "type": cwl_type.get_cwl_object(),
         "inputBinding": get_input_binding(argument, cwl_type)
     }
 
     # Provide a default output location for required output arguments
-    if is_output_argument(argument) and argument['required'] != 'no':
+    if is_arg_with_default(argument) and is_output_argument(argument) and argument['required'] != 'no':
         base_cwl_arg["default"] = get_output_default_arg(argument)
 
     if arg_id == "reference_sequence" or arg_id == "reference":
@@ -322,15 +363,12 @@ def get_input_objects(argument):
 
 def is_output_argument(argument):
     """
-    Returns whether this argument's type indicates it's an output argument.
-    To be called on a type that contains a cwl type of string (GATK docs don't
-    differentiate between strings and Files)
+    Returns whether this this argument's properties indicate is should be an output argument.
     """
     known_output_files = [
         "--score-warnings",
         "--read-metadata",
-        "--filter-metrics",
-        "--prefixForAllOutputFileNames"
+        "--filter-metrics"
     ]
 
     output_suffixes = [
@@ -340,18 +378,27 @@ def is_output_argument(argument):
         "Out"
     ]
 
-    return any(output_type in argument["type"] for output_type in output_type_to_file_ext) \
-        or any(map(argument["name"].endswith, output_suffixes)) \
-        or argument["name"] in known_output_files
+    no_num_or_bool_type = all((x not in argument["type"] for x in ("boolean", "int")))
+    has_known_gatk_output_types = any(output_type in argument["type"] for output_type in output_type_to_file_ext)
+    has_output_suffix = any(map(argument["name"].endswith, output_suffixes))
+    in_known_output_files = argument["name"] in known_output_files
+
+    return no_num_or_bool_type and \
+        (has_known_gatk_output_types \
+        or has_output_suffix \
+        or in_known_output_files)
 
 
-def get_output_json(argument):
+def get_output_json(argument, cwl_version):
     is_optional_arg = argument["required"] == "no"
 
+    input_argument_name = get_input_argument_name(argument, cwl_version)
+
     return {
-        'id': get_arg_id(argument) + "Output",
+        'id': get_arg_id(argument),
+        'doc': f"Output file from corresponding to the input argument {input_argument_name}",
         'type': 'File?' if is_optional_arg else "File",
         'outputBinding': {
-            'glob': "$(inputs['{}'])".format(get_arg_id(argument))
+            'glob': f"$(inputs['{input_argument_name}'])"
         }
     }
