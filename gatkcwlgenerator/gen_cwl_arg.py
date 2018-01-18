@@ -33,7 +33,7 @@ def GATK_type_to_CWL_type(gatk_type):
     """
     Convert a GATK type to a CWL type.
     NOTE: No "hacks" or patching GATK types should be done in this function,
-    do that in get_base_CWL_type_for_argument.
+    do that in get_CWL_type_for_argument.
     """
     # You cannot get the enumeration information for an enumeration in a nested type, so they are hard coded here
     gatk_enum_types = {
@@ -101,7 +101,7 @@ def infer_if_gatk_argument_is_file(argument):
 
     return "file" in argument["summary"] and argument["name"] not in known_non_file_params
 
-def get_base_CWL_type_for_argument(argument, toolname):
+def get_CWL_type_for_argument(argument, toolname):
     prefix = argument['name']
 
     gatk_type = argument['type']
@@ -310,7 +310,7 @@ def get_input_objects(argument, toolname, cwl_version):
 
     arg_id = get_arg_id(argument)
 
-    cwl_type = get_base_CWL_type_for_argument(argument, toolname)
+    cwl_type = get_CWL_type_for_argument(argument, toolname)
 
     has_array_type = False
     has_file_type = cwl_type.find_node(is_file_type) is not None
