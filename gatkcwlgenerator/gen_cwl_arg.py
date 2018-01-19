@@ -172,11 +172,11 @@ def get_output_default_arg(argument):
     raise Exception("Output argument should be defined in output_type_to_file_ext")
 
 
-def get_input_argument_name(argument, cwl_version):
+def get_input_argument_name(argument, gatk_version):
     arg_id = get_arg_id(argument)
 
     if is_output_argument(argument):
-        if is_gatk_3(cwl_version):
+        if is_gatk_3(gatk_version):
             return arg_id + "Filename"
         else:
             return arg_id + "-filename"
@@ -215,16 +215,16 @@ def get_depth_of_coverage_outputs():
 
     return outputs
 
-def gatk_argument_to_cwl_arguments(argument, toolname: str, cwl_version: str):
+def gatk_argument_to_cwl_arguments(argument, toolname: str, gatk_version: str):
     """
     Returns inputs and outputs for a given gatk argument, in the form (inputs, outputs).
     """
 
-    inputs = get_input_objects(argument, toolname, cwl_version)
+    inputs = get_input_objects(argument, toolname, gatk_version)
 
     arg_id = get_arg_id(argument)
 
-    input_argument_name = get_input_argument_name(argument, cwl_version)
+    input_argument_name = get_input_argument_name(argument, gatk_version)
 
     if arg_id in ("create-output-bam-md5", "create-output-variant-md5", "create-output-bam-index", "create-output-variant-index"):
         outputs = [{
@@ -250,15 +250,16 @@ def gatk_argument_to_cwl_arguments(argument, toolname: str, cwl_version: str):
             }
         }]
     elif is_output_argument(argument):
-        outputs = [get_output_json(argument, cwl_version)]
+        outputs = [get_output_json(argument, gatk_version)]
     else:
         outputs = []
 
     return inputs, outputs
 
-def get_input_binding(argument, cwl_type: CWLType):
+def get_input_binding(argument, gatk_version, cwl_type: CWLType):
     has_file_type = cwl_type.find_node(is_file_type) is not None
     has_array_type = cwl_type.find_node(lambda node: isinstance(node, CWLArrayType)) is not None
+    has_boolean_type = cwl_type.find_node(lambda node: node == CWLBasicType("boolean"))
 
     arg_id = get_arg_id(argument)
 
@@ -298,7 +299,7 @@ NON_ARRAY_TAGS_TAGS = [
     }
 ]
 
-def get_input_objects(argument, toolname, cwl_version):
+def get_input_objects(argument, toolname, gatk_version):
     """
     Returns a list of cwl input arguments for expressing the given gatk argument
 
@@ -326,9 +327,9 @@ def get_input_objects(argument, toolname, cwl_version):
 
     base_cwl_arg = {
         "doc": argument['summary'],
-        "id": get_input_argument_name(argument, cwl_version),
+        "id": get_input_argument_name(argument, gatk_version),
         "type": cwl_type.get_cwl_object(),
-        "inputBinding": get_input_binding(argument, cwl_type)
+        "inputBinding": get_input_binding(argument, gatk_version, cwl_type)
     }
 
     # Provide a default output location for required output arguments
@@ -385,10 +386,10 @@ def is_output_argument(argument):
         or in_known_output_files)
 
 
-def get_output_json(argument, cwl_version):
+def get_output_json(argument, gatk_version):
     is_optional_arg = argument["required"] == "no"
 
-    input_argument_name = get_input_argument_name(argument, cwl_version)
+    input_argument_name = get_input_argument_name(argument, gatk_version)
 
     return {
         'id': get_arg_id(argument),
