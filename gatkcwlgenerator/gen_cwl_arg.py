@@ -263,7 +263,12 @@ def get_input_binding(argument, gatk_version, cwl_type: CWLType):
 
     arg_id = get_arg_id(argument)
 
-    if has_file_type:
+    if not is_gatk_3(gatk_version) and has_boolean_type:
+        return {
+            "prefix": argument["name"],
+            "valueFrom": f"$(generateGATK4BooleanValue())"
+        }
+    elif has_file_type:
         return {
             "valueFrom": f"$(applyTagsToArgument(\"--{arg_id}\", inputs['{arg_id}_tags']))"
         }

@@ -1,6 +1,19 @@
 /**
  * File of functions to be added to cwl files
  */
+
+function generateGATK4BooleanValue(){
+    /**
+     * Boolean types in GATK 4 are expressed on the command line as --<PREFIX> "true"/"false",
+     * so patch here
+     */
+    if(self === true || self === false){
+        return self.toString()
+    }
+
+    return self;
+}
+
 function applyTagsToArgument(prefix, tags){
     /**
      * Function to be used in the field valueFrom of File objects to add gatk tags.
