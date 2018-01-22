@@ -6,12 +6,16 @@ import argparse
 import shutil
 import itertools
 import json
+import time
+from collections import namedtuple
 import logging
+from typing import *
 
 from bs4 import BeautifulSoup
 import requests
 import coloredlogs
 
+from .GATK_classes import *
 from .json2cwl import json2cwl
 from .helpers import is_gatk_3
 
@@ -26,18 +30,16 @@ def find_index(lst, func):
 
     raise ValueError("Item not found")
 
-class JSONLinks:
-    def __init__(self, tool_urls, annotator_urls, readfilter_urls, resourcefile_urls):
-        self.tool_urls = tool_urls
-        self.annotator_urls = annotator_urls
-        self.readfilter_urls = readfilter_urls
-        self.resourcefile_urls = resourcefile_urls
+"""
+GATKLinks: A class to store info from the leading GATK page
+"""
+GATKLinks = namedtuple("GATKLinks", ["tool_urls", "annotator_urls", "readfilter_urls", "resourcefile_urls"])
 
-def get_json_links(version):
+def get_gatk_links(gatk_version):
     """
     Parses the tool docs HTML page to get links to the json resources
     """
-    base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" % version
+    base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" % gatk_version
 
     base_webpage_request = requests.get(base_url)
     base_webpage_request.raise_for_status()
@@ -51,13 +53,13 @@ def get_json_links(version):
     readfile_urls = []
     resourcefile_urls = []
 
-    starting_str = "org_broadinstitute_gatk" if is_gatk_3(version) else "org_broadinstitute_hellbender"
+    starting_str = "org_broadinstitute_gatk" if is_gatk_3(gatk_version) else "org_broadinstitute_hellbender"
 
     # Parse the html to obtain all json file links
     for link in soup.select("tr > td > a"):
         href = link['href']
         if href.startswith(starting_str) and "Exception" not in href:
-            if is_gatk_3(version):
+            if is_gatk_3(gatk_version):
                 full_url = base_url + href + ".json" # v3 files end in .php.json
             else:
                 full_url = base_url + href[:-4] + ".json" # strip off .php as v4 files end in .json
@@ -79,11 +81,91 @@ def get_json_links(version):
     tool_urls = list(set(tool_urls))
 
     # Move CommandLine to the front of the list
-    if is_gatk_3(version):
+    if is_gatk_3(gatk_version):
         i = find_index(tool_urls, lambda x: "CommandLineGATK" in x)
         tool_urls[0], tool_urls[i] = tool_urls[i], tool_urls[0]
 
-    return JSONLinks(tool_urls, annotator_urls, readfile_urls, resourcefile_urls)
+    return GATKLinks(tool_urls, annotator_urls, readfile_urls, resourcefile_urls)
+
+class OutputWriter:
+    def __init__(self, cmd_line_options):
+        # Get current directory and make folders for files
+        json_dir = os.path.join(out_dir, "json")
+        cwl_dir = os.path.join(out_dir, "cwl")
+
+        try:
+            os.makedirs(json_dir)
+            os.makedirs(cwl_dir)
+        except OSError:
+            if cmd_line_options.dev:
+                # Removing existing generated files if the folder already exists, for testing
+                shutil.rmtree(json_dir)
+                shutil.rmtree(cwl_dir)
+                os.makedirs(json_dir)
+                os.makedirs(cwl_dir)
+            else:
+                raise
+
+        self._json_dir = json_dir
+        self._cwl_dir = cwl_dir
+
+    def write_cwl_file(self, cwl_file_name: str, text: str):
+        json_path = os.path.join(self._json_dir, cwl_file_name + ".cwl")
+
+        with open(json_path, "w+") as json_output_file:
+            json_output_file.write(text)
+
+    def write_json_file(self, cwl_file_name: str ,text: str):
+        cwl_path = os.path.join(self._cwl_dir, cwl_file_name + ".json")
+
+        with open(cwl_path, "w") as cwl_output_file:
+            cwl_output_file.write(text)
+
+
+def should_generate_file(tool_url, cmd_line_options):
+    return cmd_line_options.include is None or tool_url.endswith(cmd_line_options.include) or "CommandLineGATK" in tool_url
+
+def generate_cwl_and_json_files(gatk_links: GATKLinks, output_writer: OutputWriter, cmd_line_options):
+    global_args = get_global_arguments(grouped_urls, is_gatk_3(cmd_line_options.version))
+
+    for tool_url in gatk_links.tool_urls:
+        if should_generate_file(tool_url, cmd_line_options):
+            _logger.info(f"Fetching GATK tool '{tool_url}'")
+            gatk_tool = fetch_gatk_tool(tool_url)
+
+            output_writer.write_cwl_file(gatk_tool.get_json())
+            output_writer.write_json_file(gatk_description_to_cwl(gatk_tool, cmd_line_options))
+
+def get_gatk_tools(gatk_links: GATKLinks) -> GATKInfo:
+    global_args = get_global_arguments(grouped_urls, is_gatk_3(cmd_line_options.version))
+
+    gatk_info_request = requests.get(url)
+    gatk_info_request.raise_for_status()
+
+    try:
+        gatk_info_json = gatk_info_request.json()
+    except ValueError as error:
+        raise Exception("Could not decode json retrieved from " + url) from error
+
+    return GATKInfo(**gatk_info_json)
+
+def main2(cmd_line_options):
+    start = time.time()
+
+    gatk_links = get_gatk_links(cmd_line_options.gatk_version)
+    gatk_tools = get_gatk_tools(gatk_links, cmd_line_options.gatk_version)
+
+    dump_gatk_json(gatk_tools)
+
+    for gatk_tool in gatk_tools:
+        cwl_desc = gatk_tool_to_cwl(gatk_tool)
+        cwl_dict = cwl_desc.to_dict()
+        output_writer.write_cwl_file(yaml.round_trip_dump(cwl_dict))
+
+    generate_cwl_and_json_files(gatk_links, OutputWriter(cmd_line_options), cmd_line_options)
+
+    end = time.time()
+    _logger.info(f"Completed in {start - end:.2f} seconds")
 
 def generate_cwl_and_json_files(out_dir, grouped_urls, cmd_line_options):
     """
@@ -282,7 +364,7 @@ def cmdline_main(args=sys.argv[1:]):
         requests_cache.install_cache(cmd_line_options.use_cache) # Decreases the time to run dramatically
 
     _logger.info("Ouputting to: '%s'" % cmd_line_options.output_dir)
-    grouped_urls = get_json_links(cmd_line_options.version)
+    grouped_urls = get_gatk_links(cmd_line_options.version)
 
     generate_cwl_and_json_files(cmd_line_options.output_dir, grouped_urls, cmd_line_options)
 
