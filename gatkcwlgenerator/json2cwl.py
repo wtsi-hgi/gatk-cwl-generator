@@ -70,6 +70,18 @@ def get_js_library():
 
 JS_LIBRARY = get_js_library()
 
+# class CWLDescription:
+#     def __init__(self, **kwargs):
+#         self._init_dict = kwargs
+
+#     def get_argument_by_alias(self, alias: str) -> CWLArgument:
+#         pass
+
+#     def to_dict(self) -> Dict:
+#         return {
+#             **self._init_dict
+#         }
+
 def json2cwl(GATK_json, cwl_dir: str, tool_name: str, cmd_line_options):
     """
     Make a cwl file with a given GATK json file in the cwl directory

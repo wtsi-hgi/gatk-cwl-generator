@@ -6,6 +6,7 @@ import tempfile
 from multiprocessing import Process
 from multiprocessing.pool import ThreadPool
 from os import path, sys
+import coloredlogs
 
 import pytest
 import requests
