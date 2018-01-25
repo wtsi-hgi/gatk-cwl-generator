@@ -8,8 +8,8 @@ import logging
 from ruamel.yaml.scalarstring import PreservedScalarString
 
 from .gatk_argument_to_cwl import gatk_argument_to_cwl
-from .helpers import is_gatk_3
-from .GATK_classes import *
+from .common import GATKVersion
+from .gatk_classes import *
 
 _logger = logging.getLogger("gatkcwlgenerator")
 
@@ -45,12 +45,14 @@ def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options):
     Make a cwl file with a given GATK json file in the cwl directory
     """
 
-    if gatk_tool.name in SPECIAL_GATK3_MODULES and not is_gatk_3(cmd_line_options.version):
+    version = GATKVersion(cmd_line_options.version)
+
+    if gatk_tool.name in SPECIAL_GATK3_MODULES and not version.is_3():
         _logger.warning(f"Tool {gatk_tool.name}'s cwl may be incorrect. The GATK documentation needs to be looked at by a human and hasn't been yet.")
 
     base_command = cmd_line_options.gatk_command.split(" ")
 
-    if is_gatk_3(cmd_line_options.version):
+    if version.is_3():
         base_command.append("--analysis_type")
 
     base_command.append(gatk_tool.name)
@@ -89,7 +91,7 @@ def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options):
             argument_inputs, argument_outputs = gatk_argument_to_cwl(
                 argument,
                 gatk_tool.name,
-                cmd_line_options.version
+                version
             )
 
             outputs.extend(argument_outputs)

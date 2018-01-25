@@ -9,7 +9,7 @@ import re
 from types import SimpleNamespace
 
 from .cwl_type_ast import *
-from .helpers import is_gatk_3
+from .common import GATKVersion
 from .gatk_classes import *
 
 _logger = logging.getLogger("gatkcwlgenerator")
@@ -134,9 +134,9 @@ def get_CWL_type_for_argument(argument: GATKArgument, toolname: str):
     else:
         return cwl_type
 
-def get_input_argument_name(argument: GATKArgument, gatk_version: str):
+def get_input_argument_name(argument: GATKArgument, gatk_version: GATKVersion):
     if argument.is_output_argument():
-        if is_gatk_3(gatk_version):
+        if gatk_version.is_3():
             return argument.name + "Filename"
         else:
             return argument.name + "-filename"
@@ -176,7 +176,7 @@ def get_depth_of_coverage_outputs():
 
     return outputs
 
-def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: str):
+def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: GATKVersion):
     """
     Returns inputs and outputs for a given gatk argument, in the form (inputs, outputs).
     """
@@ -214,12 +214,12 @@ def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: st
 
     return inputs, outputs
 
-def get_input_binding(argument, gatk_version, cwl_type: CWLType):
+def get_input_binding(argument, gatk_version: GATKVersion, cwl_type: CWLType):
     has_file_type = cwl_type.find_node(is_file_type) is not None
     has_array_type = cwl_type.find_node(lambda node: isinstance(node, CWLArrayType)) is not None
     has_boolean_type = cwl_type.find_node(lambda node: node == CWLBasicType("boolean"))
 
-    if not is_gatk_3(gatk_version) and has_boolean_type:
+    if gatk_version.is_4() and has_boolean_type:
         return {
             "prefix": argument.long_prefix,
             "valueFrom": f"$(generateGATK4BooleanValue())"
@@ -259,7 +259,7 @@ NON_ARRAY_TAGS_TAGS = CWLOptionalType(
     )
 )
 
-def get_input_objects(argument: GATKArgument, toolname: str, gatk_version: str) -> List[Dict]:
+def get_input_objects(argument: GATKArgument, toolname: str, gatk_version: GATKVersion) -> List[Dict]:
     """
     Returns a list of cwl input arguments for expressing the given gatk argument
 
@@ -316,7 +316,7 @@ def get_input_objects(argument: GATKArgument, toolname: str, gatk_version: str) 
         return [base_cwl_arg]
 
 
-def get_output_json(argument: GATKArgument, gatk_version: str):
+def get_output_json(argument: GATKArgument, gatk_version: GATKVersion):
     input_argument_name = get_input_argument_name(argument, gatk_version)
 
     return {

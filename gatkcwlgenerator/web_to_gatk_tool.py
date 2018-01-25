@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from .gatk_classes import *
-from .helpers import is_gatk_3
+from .common import GATKVersion
 
 _logger = logging.getLogger("gatkcwlgenerator")  # type: logging.Logger
 _logger.addHandler(logging.StreamHandler())
@@ -22,7 +22,7 @@ GATKLinks = namedtuple("GATKLinks", [
     "command_line_gatk_url"
 ])
 
-def get_gatk_links(gatk_version) -> GATKLinks:
+def get_gatk_links(gatk_version: GATKVersion) -> GATKLinks:
     """
     Parses the tool docs HTML page to get links to the json resources
     """
@@ -40,13 +40,13 @@ def get_gatk_links(gatk_version) -> GATKLinks:
     readfilter_urls = []
     resourcefile_urls = []
 
-    starting_str = "org_broadinstitute_gatk" if is_gatk_3(gatk_version) else "org_broadinstitute_hellbender"
+    starting_str = "org_broadinstitute_gatk" if gatk_version.is_3() else "org_broadinstitute_hellbender"
 
     # Parse the html to obtain all json file links
     for link in soup.select("tr > td > a"):
         href = link['href']
         if href.startswith(starting_str) and "Exception" not in href:
-            if is_gatk_3(gatk_version):
+            if gatk_version.is_3():
                 full_url = base_url + href + ".json"  # v3 files end in .php.json
             else:
                 full_url = base_url + href[:-4] + ".json"  # strip off .php as v4 files end in .json
@@ -70,7 +70,7 @@ def get_gatk_links(gatk_version) -> GATKLinks:
     cmd_line_gatk = None
 
     # Move CommandLine to the front of the list
-    if is_gatk_3(gatk_version):
+    if gatk_version.is_3():
         cmd_line_gatk = next((x for x in tool_urls if "CommandLineGATK" in x))
 
     return GATKLinks(
@@ -93,7 +93,7 @@ def fetch_json_from(gatk_tool_url: str) -> Dict:
 
     return gatk_info_dict
 
-def _get_extra_readfilter_arguments(readfilter_urls: List[str]) -> List[Dict]:
+def _get_extra_readfilter_arguments(readfilter_urls: Iterable[str]) -> List[Dict]:
     arguments = [] # type: List[Dict]
 
     for readfilter_url in readfilter_urls:
@@ -112,7 +112,7 @@ def _get_extra_readfilter_arguments(readfilter_urls: List[str]) -> List[Dict]:
     return arguments
 
 def get_gatk_tools(
-        gatk_version: str,
+        gatk_version: GATKVersion,
         tool_urls: Iterable[str],
         readfilter_urls: Iterable[str],
         command_line_gatk_url: str = None
@@ -122,7 +122,7 @@ def get_gatk_tools(
     NOTE: command_line_gatk_url should be specified for gatk 3, and leave
     as None in gatk 4
     """
-    if is_gatk_3(gatk_version):
+    if gatk_version.is_3():
         if command_line_gatk_url is None:
             raise Exception("command_line_gatk_url needs to be specified in gatk 3 in get_gatk_tools")
 
@@ -134,7 +134,7 @@ def get_gatk_tools(
         tool_name = tool_dict["name"]
 
         if tool_name not in ("CommandLineGATK", "CatVariants"):
-            if is_gatk_3(gatk_version):
+            if gatk_version.is_3():
                 extra_arguments = cmd_line_gatk_dict["arguments"] + read_filter_arguments
             else:
                 extra_arguments = read_filter_arguments

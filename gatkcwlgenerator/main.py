@@ -15,7 +15,7 @@ import coloredlogs
 from ruamel import yaml
 
 from .gatk_tool_to_cwl import gatk_tool_to_cwl
-from .helpers import is_gatk_3
+from .common import GATKVersion
 from .web_to_gatk_tool import get_gatk_links, get_gatk_tools
 
 _logger = logging.getLogger("gatkcwlgenerator")  # type: logging.Logger
@@ -60,19 +60,27 @@ class OutputWriter:
         with open(gatk_json_path, "w") as file:
             json.dump(gatk_json_dict, file)
 
-def should_generate_file(tool_url, cmd_line_options):
-    no_ext_url = tool_url[:-len(".php.json" if is_gatk_3(cmd_line_options.version) else ".json")]
+def should_generate_file(tool_url, gatk_version: GATKVersion, include_pattern: str = None):
+    no_ext_url = tool_url[:-len(".php.json" if gatk_version.is_3() else ".json")]
 
-    return cmd_line_options.include is None or no_ext_url.endswith(cmd_line_options.include)
+    return include_pattern is None or no_ext_url.endswith(include_pattern)
 
 def main(cmd_line_options: SimpleNamespace):
     start = time.time()
 
+    gatk_version = GATKVersion(cmd_line_options.version)
+
     output_writer = OutputWriter(cmd_line_options)
-    gatk_links = get_gatk_links(cmd_line_options.version)
-    tool_urls = filter(functools.partial(should_generate_file, cmd_line_options=cmd_line_options), gatk_links.tool_urls) # mypy: ignore
+    gatk_links = get_gatk_links(gatk_version)
+
+    tool_urls = filter(functools.partial(
+        should_generate_file,
+        gatk_version=gatk_version,
+        include_pattern=cmd_line_options.include
+    ), gatk_links.tool_urls) # mypy: ignore
+
     gatk_tools = get_gatk_tools(
-        cmd_line_options.version,
+        gatk_version,
         tool_urls,
         gatk_links.readfilter_urls,
         gatk_links.command_line_gatk_url
@@ -139,6 +147,8 @@ def cmdline_main(args=None):
 
     log_format = "%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s"
 
+    version = GATKVersion(cmd_line_options.version)
+
     if cmd_line_options.verbose:
         coloredlogs.install(level='DEBUG', logger=_logger, fmt=log_format)
     else:
@@ -148,13 +158,13 @@ def cmdline_main(args=None):
         cmd_line_options.output_dir = os.getcwd() + '/gatk_cmdline_tools/' + cmd_line_options.version
 
     if not cmd_line_options.docker_image_name:
-        if is_gatk_3(cmd_line_options.version):
+        if version.is_3():
             cmd_line_options.docker_image_name = "broadinstitute/gatk3:" + cmd_line_options.version
         else:
             cmd_line_options.docker_image_name = "broadinstitute/gatk:" + cmd_line_options.version
 
     if not cmd_line_options.gatk_command:
-        if is_gatk_3(cmd_line_options.version):
+        if version.is_3():
             cmd_line_options.gatk_command = "java -jar /usr/GenomeAnalysisTK.jar"
         else:
             cmd_line_options.gatk_command = "java -jar /gatk/gatk.jar"
