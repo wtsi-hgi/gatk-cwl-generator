@@ -1,0 +1,11 @@
+[BASIC]
+
+good-names=_logger
+
+[MESSAGES CONTROL]
+
+disable=C0111,C0330,W0401,W0614
+
+[FORMAT]
+
+max-line-length=150
