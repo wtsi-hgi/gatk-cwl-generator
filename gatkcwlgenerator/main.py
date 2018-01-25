@@ -1,24 +1,22 @@
 #!/bin/python
 
 import argparse
+import functools
 import json
 import logging
 import os
 import shutil
-import time
-from typing import *
-from collections import namedtuple
 import sys
-import functools
+import time
+from types import SimpleNamespace
+from typing import *
 
 import coloredlogs
-import requests
-from bs4 import BeautifulSoup
 from ruamel import yaml
 
-from .GATK_classes import *
+from .gatk_tool_to_cwl import gatk_tool_to_cwl
 from .helpers import is_gatk_3
-from .json2cwl import json2cwl
+from .web_to_gatk_tool import get_gatk_links, get_gatk_tools
 
 _logger = logging.getLogger("gatkcwlgenerator")  # type: logging.Logger
 _logger.addHandler(logging.StreamHandler())
@@ -62,161 +60,10 @@ class OutputWriter:
         with open(gatk_json_path, "w") as file:
             json.dump(gatk_json_dict, file)
 
-
-def find_index(lst, func):
-    for i, item in enumerate(lst):
-        if func(item):
-            return i
-
-    raise ValueError("Item not found")
-
-"""
-GATKLinks: A class to store info from the leading GATK page
-"""
-GATKLinks = namedtuple("GATKLinks", [
-    "tool_urls",
-    "annotator_urls",
-    "readfilter_urls",
-    "resourcefile_urls",
-    "command_line_gatk_url"
-])
-
-
-def get_gatk_links(gatk_version) -> GATKLinks:
-    """
-    Parses the tool docs HTML page to get links to the json resources
-    """
-    base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" % gatk_version
-
-    base_webpage_request = requests.get(base_url)
-    base_webpage_request.raise_for_status()
-
-    data = base_webpage_request.text
-    soup = BeautifulSoup(data, "html.parser")
-
-    tool_urls = []
-
-    annotator_urls = []
-    readfilter_urls = []
-    resourcefile_urls = []
-
-    starting_str = "org_broadinstitute_gatk" if is_gatk_3(gatk_version) else "org_broadinstitute_hellbender"
-
-    # Parse the html to obtain all json file links
-    for link in soup.select("tr > td > a"):
-        href = link['href']
-        if href.startswith(starting_str) and "Exception" not in href:
-            if is_gatk_3(gatk_version):
-                full_url = base_url + href + ".json"  # v3 files end in .php.json
-            else:
-                full_url = base_url + href[:-4] + ".json"  # strip off .php as v4 files end in .json
-            rest_text = href[len(starting_str + "_"):]
-
-            # Need to process these separately
-            if rest_text.startswith("tools_walkers_annotator") \
-                    and "VariantAnnotator" not in rest_text:
-                    # VariantAnnotator is wrongly categorized in it's url (it's a tool)
-                annotator_urls.append(full_url)
-            elif rest_text.startswith("engine_filters"):
-                readfilter_urls.append(full_url)
-            elif rest_text.startswith("utils_codecs"):
-                resourcefile_urls.append(full_url)
-            else:
-                tool_urls.append(full_url)
-
-    # Remove duplicates
-    tool_urls = list(set(tool_urls))
-
-    cmd_line_gatk = None
-
-    # Move CommandLine to the front of the list
-    if is_gatk_3(gatk_version):
-        cmd_line_gatk = next((x for x in tool_urls if "CommandLineGATK" in x))
-
-    return GATKLinks(
-        tool_urls=tool_urls,
-        annotator_urls=annotator_urls,
-        readfilter_urls=readfilter_urls,
-        resourcefile_urls=resourcefile_urls,
-        command_line_gatk_url=cmd_line_gatk
-    )
-
-
 def should_generate_file(tool_url, cmd_line_options):
     no_ext_url = tool_url[:-len(".php.json" if is_gatk_3(cmd_line_options.version) else ".json")]
 
     return cmd_line_options.include is None or no_ext_url.endswith(cmd_line_options.include)
-
-def fetch_json_from(gatk_tool_url: str) -> Dict:
-    _logger.info(f"Fetching {gatk_tool_url}")
-    gatk_info_request = requests.get(gatk_tool_url)
-    gatk_info_request.raise_for_status()
-
-    try:
-        gatk_info_dict = gatk_info_request.json()
-    except ValueError as error:
-        raise Exception("Could not decode json retrieved from " + gatk_tool_url) from error
-
-    return gatk_info_dict
-
-def get_extra_readfilter_arguments(readfilter_urls: List[str]) -> List[Dict]:
-    arguments = [] # type: List[Dict]
-
-    for readfilter_url in readfilter_urls:
-        readfilter_dict = fetch_json_from(readfilter_url)
-
-        if "arguments" in readfilter_dict:
-            args = readfilter_dict["arguments"]
-
-            for arg in args:
-                # This argument is not necessarily valid, so we shouldn't set the default
-                arg["defaultValue"] = "NA"
-                arg["required"] = "no"
-
-            arguments.extend(args)
-
-    return arguments
-
-def get_gatk_tools(
-        gatk_version: str,
-        tool_urls: Iterable[str],
-        readfilter_urls: Iterable[str],
-        command_line_gatk_url: str = None
-    ) -> Iterable[GATKTool]:
-    """
-    Gets gatk tools from the specified tool_urls.
-    NOTE: command_line_gatk_url should be specified for gatk 3, and leave
-    as None in gatk 4
-    """
-    if is_gatk_3(gatk_version):
-        if command_line_gatk_url is None:
-            raise Exception("command_line_gatk_url needs to be specified in gatk 3 in get_gatk_tools")
-
-        cmd_line_gatk_dict = fetch_json_from(command_line_gatk_url)
-    read_filter_arguments = get_extra_readfilter_arguments(readfilter_urls)
-
-    for tool_url in tool_urls:
-        tool_dict = fetch_json_from(tool_url)
-        tool_name = tool_dict["name"]
-
-        if tool_name not in ("CommandLineGATK", "CatVariants"):
-            if is_gatk_3(gatk_version):
-                extra_arguments = cmd_line_gatk_dict["arguments"] + read_filter_arguments
-            else:
-                extra_arguments = read_filter_arguments
-        else:
-            extra_arguments = []
-
-        yield GATKTool(
-            tool_dict,
-            extra_arguments
-        )
-
-def gatk_tool_to_cwl(
-        gatk_tool: GATKTool,
-        cmd_line_options: Dict
-    ) -> Dict:
-    return json2cwl(gatk_tool, cmd_line_options)
 
 def main(cmd_line_options: SimpleNamespace):
     start = time.time()

@@ -1,15 +1,13 @@
 """
-The file converts the documentation's json files to cwl files
+GATKTool -> CWL Dict
 """
 
 import os
-import re
 import logging
 
-from ruamel import yaml
 from ruamel.yaml.scalarstring import PreservedScalarString
 
-from .gen_cwl_arg import gatk_argument_to_cwl_arguments
+from .gatk_argument_to_cwl import gatk_argument_to_cwl
 from .helpers import is_gatk_3
 from .GATK_classes import *
 
@@ -42,7 +40,7 @@ def get_js_library():
 
 JS_LIBRARY = get_js_library()
 
-def json2cwl(gatk_tool: GATKTool, cmd_line_options):
+def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options):
     """
     Make a cwl file with a given GATK json file in the cwl directory
     """
@@ -88,7 +86,7 @@ def json2cwl(gatk_tool: GATKTool, cmd_line_options):
 
     for argument in gatk_tool.arguments:
         if not argument.name in INVALID_ARGS:
-            argument_inputs, argument_outputs = gatk_argument_to_cwl_arguments(
+            argument_inputs, argument_outputs = gatk_argument_to_cwl(
                 argument,
                 gatk_tool.name,
                 cmd_line_options.version

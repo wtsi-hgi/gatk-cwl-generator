@@ -8,10 +8,9 @@ import logging
 import re
 from types import SimpleNamespace
 
-from .cwl_ast import *
+from .cwl_type_ast import *
 from .helpers import is_gatk_3
-from .GATK_classes import *
-from .helpers import JSONType
+from .gatk_classes import *
 
 _logger = logging.getLogger("gatkcwlgenerator")
 
@@ -177,7 +176,7 @@ def get_depth_of_coverage_outputs():
 
     return outputs
 
-def gatk_argument_to_cwl_arguments(argument: GATKArgument, toolname: str, gatk_version: str):
+def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: str):
     """
     Returns inputs and outputs for a given gatk argument, in the form (inputs, outputs).
     """
@@ -260,7 +259,7 @@ NON_ARRAY_TAGS_TAGS = CWLOptionalType(
     )
 )
 
-def get_input_objects(argument: GATKArgument, toolname: str, gatk_version: str) -> List[JSONType]:
+def get_input_objects(argument: GATKArgument, toolname: str, gatk_version: str) -> List[Dict]:
     """
     Returns a list of cwl input arguments for expressing the given gatk argument
 
