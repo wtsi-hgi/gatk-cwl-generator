@@ -10,6 +10,8 @@ from types import SimpleNamespace
 
 from .cwl_ast import *
 from .helpers import is_gatk_3
+from .GATK_classes import *
+from .helpers import JSONType
 
 _logger = logging.getLogger("gatkcwlgenerator")
 
@@ -19,10 +21,10 @@ class UnknownGATKTypeError(Exception):
 
         self.unknown_type = unknown_type
 
-def is_file_type(typ):
+def is_file_type(typ: CWLType):
     return isinstance(typ, CWLBasicType) and typ.name == "File"
 
-def GATK_type_to_CWL_type(gatk_type):
+def GATK_type_to_CWL_type(gatk_type: str):
     """
     Convert a GATK type to a CWL type.
     NOTE: No "hacks" or patching GATK types should be done in this function,
@@ -66,7 +68,7 @@ def GATK_type_to_CWL_type(gatk_type):
     elif gatk_type == "map[docoutputtype,printstream]":
         # This is used in DepthOfCoverage.out, gatk 3
         return CWLBasicType("string")
-    elif gatk_type in map(str.lower, output_type_to_file_ext.keys()):
+    elif gatk_type in map(str.lower, OUTPUT_TYPE_FILE_EXT.keys()):
         # insert this in here and replace it later
         return CWLBasicType("string")
     elif "intervalbinding" in gatk_type:
@@ -82,22 +84,21 @@ def GATK_type_to_CWL_type(gatk_type):
     else:
         raise UnknownGATKTypeError("Unknown GATK type: '" + gatk_type + "'")
 
-def get_CWL_type_for_argument(argument, toolname):
-    prefix = argument.long_prefix
-
+def get_CWL_type_for_argument(argument: GATKArgument, toolname: str):
+    cwl_type = None # type: CWLType
     gatk_type = argument.type
 
-    if prefix == "--input_file" or prefix == "--input":
+    if argument.name in ("input_file", "input"):
         gatk_type = "List[File]"
 
-    if prefix == "--intervals":
+    if argument.name == "intervals":
         # Enforce the GATK 3 type and fix https://github.com/broadinstitute/gatk/issues/4196
         if toolname == "GenomicsDBImport":
             gatk_type = "IntervalBinding[Feature]"
         else:
             gatk_type = "List[IntervalBinding[Feature]]"
 
-    if prefix == "--genomicsdb-workspace-path":
+    if argument.name == "genomicsdb-workspace-path":
         cwl_type = CWLBasicType("Directory")
     elif argument.options:
         cwl_type = CWLEnumType([x['name'] for x in argument.options])
@@ -118,7 +119,7 @@ def get_CWL_type_for_argument(argument, toolname):
         if file_or_string_type is not None:
             file_or_string_type.name = "string"
         else:
-            _logger.warning(f"Output argument {argument.long_prefix} should have a string or file type in it. GATK type: {argument.type}")
+            _logger.warning(f"Output argument {argument.long_prefix} should have a string or file type in it. GATK type: {gatk_type}")
 
     string_type = cwl_type.find_node(lambda node: node == CWLBasicType("string"))
 
@@ -134,24 +135,19 @@ def get_CWL_type_for_argument(argument, toolname):
     else:
         return cwl_type
 
-output_type_to_file_ext = {
-    "GATKSAMFileWriter": ".bam",
-    "PrintStream": '.txt',
-    'VariantContextWriter': '.vcf.gz'
-}
-
-def get_input_argument_name(argument, gatk_version):
+def get_input_argument_name(argument: GATKArgument, gatk_version: str):
     if argument.is_output_argument():
         if is_gatk_3(gatk_version):
-            return argument.id + "Filename"
+            return argument.name + "Filename"
         else:
-            return argument.id + "-filename"
+            return argument.name + "-filename"
 
-    return argument.id
+    return argument.name
 
 
 def get_depth_of_coverage_outputs():
-    # TODO: autogenerate this from https://software.broadinstitute.org/gatk/documentation/tooldocs/3.8-0/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php
+    # TODO: autogenerate this from
+    # https://software.broadinstitute.org/gatk/documentation/tooldocs/3.8-0/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php
     partition_types = ["library", "read_group", "sample"]
     output_types = [
         "summary",
@@ -170,7 +166,7 @@ def get_depth_of_coverage_outputs():
         for output_type in output_types:
             output_suffix = f"{partition_type}_{output_type}"
 
-            outputs.extend({
+            outputs.append({
                 "id": f"{output_suffix}Output",
                 "doc": f"The {output_suffix} generated file",
                 "type": "File?",
@@ -181,30 +177,29 @@ def get_depth_of_coverage_outputs():
 
     return outputs
 
-def gatk_argument_to_cwl_arguments(argument, toolname: str, gatk_version: str):
+def gatk_argument_to_cwl_arguments(argument: GATKArgument, toolname: str, gatk_version: str):
     """
     Returns inputs and outputs for a given gatk argument, in the form (inputs, outputs).
     """
-
     inputs = get_input_objects(argument, toolname, gatk_version)
 
     input_argument_name = get_input_argument_name(argument, gatk_version)
 
-    if argument.id in ("create-output-bam-md5", "create-output-variant-md5", "create-output-bam-index", "create-output-variant-index"):
+    if argument.name in ("create-output-bam-md5", "create-output-variant-md5", "create-output-bam-index", "create-output-variant-index"):
         outputs = [{
-            "id": argument.id[len("create-output-"):],
-            "doc": f"{'md5' if argument.id.endswith('md5') else 'index'} file generated if {argument.id} is true",
+            "id": argument.name[len("create-output-"):],
+            "doc": f"{'md5' if argument.name.endswith('md5') else 'index'} file generated if {argument.name} is true",
             "type": "File?",
             "outputBinding": {
-                "glob": f"$(inputs['{input_argument_name}'] + '.md5')" if argument.id.endswith("md5") else [
+                "glob": f"$(inputs['{input_argument_name}'] + '.md5')" if argument.name.endswith("md5") else [
                     f"$(inputs['{input_argument_name}'] + '.idx')",
                     f"$(inputs['{input_argument_name}'] + '.tbi')"
                 ]
             }
         }]
-    elif toolname == "DepthOfCoverage" and argument.id == "out":
+    elif toolname == "DepthOfCoverage" and argument.name == "out":
         outputs = get_depth_of_coverage_outputs()
-    elif toolname == "RandomlySplitVariants" and argument.id == "prefixForAllOutputFileNames":
+    elif toolname == "RandomlySplitVariants" and argument.name == "prefixForAllOutputFileNames":
         outputs = [{
             "id": "splitToManyOutput",
             "doc": "Output if --splitToManyFiles is true",
@@ -232,7 +227,7 @@ def get_input_binding(argument, gatk_version, cwl_type: CWLType):
         }
     elif has_file_type:
         return {
-            "valueFrom": f"$(applyTagsToArgument(\"{argument.long_prefix}\", inputs['{argument.id}_tags']))"
+            "valueFrom": f"$(applyTagsToArgument(\"{argument.long_prefix}\", inputs['{argument.name}_tags']))"
         }
     elif has_array_type:
         return {
@@ -265,24 +260,7 @@ NON_ARRAY_TAGS_TAGS = CWLOptionalType(
     )
 )
 
-class CWLArgument:
-    def __init__(self, **kwargs):
-        self._init_dict = kwargs
-
-    @property
-    def type(self) -> CWLType:
-        return self._init_dict["type"]
-
-    def __getattr__(self, name: str):
-        return self._init_dict[name]
-
-    def to_dict(self):
-        return {
-            **self._init_dict,
-            "type": self.type.get_cwl_object()
-        }
-
-def get_input_objects(argument, toolname, gatk_version):
+def get_input_objects(argument: GATKArgument, toolname: str, gatk_version: str) -> List[JSONType]:
     """
     Returns a list of cwl input arguments for expressing the given gatk argument
 
@@ -309,7 +287,7 @@ def get_input_objects(argument, toolname, gatk_version):
     base_cwl_arg = {
         "doc": argument.summary,
         "id": get_input_argument_name(argument, gatk_version),
-        "type": cwl_type,
+        "type": cwl_type.get_cwl_object(),
         "inputBinding": get_input_binding(argument, gatk_version, cwl_type)
     }
 
@@ -317,37 +295,35 @@ def get_input_objects(argument, toolname, gatk_version):
     if argument.has_default() and argument.is_output_argument() and argument.is_required():
         base_cwl_arg["default"] = argument.get_output_default_arg()
 
-    if argument.id == "reference_sequence" or argument.id == "reference":
+    if argument.name == "reference_sequence" or argument.name == "reference":
         base_cwl_arg["secondaryFiles"] = [".fai", "^.dict"]
-    elif argument.id == "input_file" or argument.id == "input":
+    elif argument.name == "input_file" or argument.name == "input":
         base_cwl_arg["secondaryFiles"] = "$(self.basename + self.nameext.replace('m','i'))"
 
     if has_file_type:
         if has_array_type:
-            tags_type = ARRAY_TAGS_TYPE
+            tags_type = ARRAY_TAGS_TYPE.get_cwl_object()
         else:
-            tags_type = NON_ARRAY_TAGS_TAGS
+            tags_type = NON_ARRAY_TAGS_TAGS.get_cwl_object()
 
         tag_argument = {
             "type": copy.deepcopy(tags_type),
-            "doc": "A argument to set the tags of '{}'".format(argument.id),
-            "id": argument.id + "_tags"
+            "doc": "A argument to set the tags of '{}'".format(argument.name),
+            "id": argument.name + "_tags"
         }
 
-        return [CWLArgument(**base_cwl_arg), CWLArgument(**tag_argument)]
+        return [base_cwl_arg, tag_argument]
     else:
-        return [CWLArgument(**base_cwl_arg)]
+        return [base_cwl_arg]
 
 
-def get_output_json(argument, gatk_version):
-    is_optional_arg = argument.required == "no"
-
+def get_output_json(argument: GATKArgument, gatk_version: str):
     input_argument_name = get_input_argument_name(argument, gatk_version)
 
     return {
-        'id': argument.id,
+        'id': argument.name,
         'doc': f"Output file from corresponding to the input argument {input_argument_name}",
-        'type': 'File?' if is_optional_arg else "File",
+        'type': "File" if argument.is_required() else "File?",
         'outputBinding': {
             'glob': f"$(inputs['{input_argument_name}'])"
         }

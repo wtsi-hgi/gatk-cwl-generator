@@ -1,24 +1,18 @@
 from types import SimpleNamespace
 from typing import *
 
-class GATKType(SimpleNamespace):
-    pass
-
-class GATKInfo(SimpleNamespace):
-    pass
-
-output_type_to_file_ext = {
+OUTPUT_TYPE_FILE_EXT = {
     "GATKSAMFileWriter": ".bam",
     "PrintStream": '.txt',
     'VariantContextWriter': '.vcf.gz'
 }
 
-class GATKArgument(SimpleNamespace):
+class GATKArgument:
     def __init__(self, **kwargs):
         self._init_dict = kwargs
 
     def is_required(self):
-        return self.required != "no"
+        return self.dict.required != "no"
 
     @property
     def long_prefix(self):
@@ -30,14 +24,14 @@ class GATKArgument(SimpleNamespace):
         """
         # Output types are defined to be keys of output_type_to_file_ext, so
         # this should not error
-        for output_type in output_type_to_file_ext:
+        for output_type in OUTPUT_TYPE_FILE_EXT:
             if self.type in output_type:
-                return self.id + output_type_to_file_ext[output_type]
+                return self.name + OUTPUT_TYPE_FILE_EXT[output_type]
 
-        raise Exception("Output argument should be defined in output_type_to_file_ext")
+        raise Exception("Output argument should be defined in OUTPUT_TYPE_FILE_EXT")
 
     @property
-    def id(self):
+    def name(self):
         return self.long_prefix.strip("-")
 
     def infer_if_file(self):
@@ -46,8 +40,8 @@ class GATKArgument(SimpleNamespace):
         as a string could represent a string or a file.
         """
         known_non_file_params = [
-            "--prefixForAllOutputFileNames",
-            "--READ_NAME_REGEX"
+            "prefixForAllOutputFileNames",
+            "READ_NAME_REGEX"
         ]
 
         return "file" in self.summary and self.name not in known_non_file_params
@@ -57,9 +51,10 @@ class GATKArgument(SimpleNamespace):
         Returns whether this this argument's properties indicate is should be an output argument.
         """
         known_output_files = [
-            "--score-warnings",
-            "--read-metadata",
-            "--filter-metrics"
+            "score-warnings",
+            "read-metadata",
+            "filter-metrics",
+            "output"
         ]
 
         output_suffixes = [
@@ -70,7 +65,7 @@ class GATKArgument(SimpleNamespace):
         ]
 
         no_num_or_bool_type = all((x not in self.type for x in ("boolean", "int")))
-        has_known_gatk_output_types = any(output_type in self.type for output_type in output_type_to_file_ext)
+        has_known_gatk_output_types = any(output_type in self.type for output_type in OUTPUT_TYPE_FILE_EXT)
         has_output_suffix = any(map(self.name.endswith, output_suffixes))
         in_known_output_files = self.name in known_output_files
 
@@ -80,29 +75,48 @@ class GATKArgument(SimpleNamespace):
             or in_known_output_files)
 
     def has_default(self):
-        return  self.defaultValue != "NA" \
-            and self.defaultValue.lower() != "none" \
-            and self.defaultValue.lower() != "null"
+        return  self.dict.defaultValue != "NA" \
+            and self.dict.defaultValue.lower() != "none" \
+            and self.dict.defaultValue.lower() != "null"
 
-    def __getattr__(self, name: str):
-        return self._init_dict[name]
+    @property
+    def options(self):
+        return self.dict.options
+
+    @property
+    def summary(self):
+        return self.dict.summary
+
+    @property
+    def type(self):
+        return self.dict.type
+
+    @property
+    def dict(self):
+        return SimpleNamespace(**self._init_dict)
 
 class GATKTool:
-    def __init__(
-        self,
-        original_tool_dict: Dict,
-        additional_arguments: List
-    ):
-        self.original_tool_dict = original_tool_dict
+    def __init__(self, original_dict: Dict, additional_arguments: List) -> None:
+        self.original_dict = original_dict
         self._additional_arguments = additional_arguments
+        self._argument_dict = self._build_argument_dict()
+
+    def _build_argument_dict(self):
+        # Build a dict, where the original_dict arguments override the _additional_arguments arguments
+        return dict(map(lambda argument: (argument["name"], argument), self._additional_arguments + self.original_dict["arguments"]))
+
+    def get_argument(self, name: str) -> GATKArgument:
+        return GATKArgument(**self._argument_dict[name])
 
     @property
-    def docs(self):
-        return self.original_tool_dict["description"]
+    def name(self):
+        return self.original_dict["name"]
 
     @property
-    def arguments(self) -> List[Dict]:
-        return self._additional_arguments + self.original_tool_dict["arguments"]
+    def dict(self):
+        return SimpleNamespace(**self.original_dict)
 
-    def __getattr__(self, name: str):
-        return self.original_tool_dict[name]
+    @property
+    def arguments(self) -> Iterable[GATKArgument]:
+        for argument_name in self._argument_dict:
+            yield self.get_argument(argument_name)

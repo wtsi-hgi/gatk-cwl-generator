@@ -2,6 +2,7 @@
 Classes to make an AST for CWL types
 """
 import abc
+import copy
 
 class CWLType:
     __metaclass__ = abc.ABCMeta
@@ -18,7 +19,7 @@ class CWLType:
             return False
 
     @abc.abstractmethod
-    def get_cwl_object(self):
+    def get_cwl_object(self, expand_types=False):
         pass
 
     def has_array_type(self):
@@ -69,7 +70,7 @@ class CWLBasicType(CWLType):
     def __eq__(self, other):
         return self.name == other.name
 
-    def get_cwl_object(self):
+    def get_cwl_object(self, expand_types=False):
         return self.name
 
 
@@ -81,15 +82,18 @@ class CWLArrayType(CWLType):
     def add_input_binding(self, inputBinding):
         self._input_binding = inputBinding
 
-    def get_cwl_object(self):
-        inner_cwl_object = self.inner_type.get_cwl_object()
+    def get_cwl_object(self, expand_types=False):
+        # NOTE: the cwl spec's schema salad doesn't expand variables on the property items
+        # so we have to expand the type manually
+        # issue: https://github.com/common-workflow-language/common-workflow-language/issues/608
+        inner_cwl_object = self.inner_type.get_cwl_object(True)
 
-        if isinstance(inner_cwl_object, str) and self._input_binding is None:
+        if isinstance(inner_cwl_object, str) and self._input_binding is None and not expand_types:
             return inner_cwl_object + "[]"
         else:
             cwl_object = {
                 "type": "array",
-                "items": self.inner_type.get_cwl_object()
+                "items": inner_cwl_object
             }
 
             if self._input_binding is not None:
@@ -102,14 +106,14 @@ class CWLUnionType(CWLType):
     def __init__(self, *items):
         self.items = items
 
-    def get_cwl_object(self):
+    def get_cwl_object(self, expand_types=False):
         cwl_object = []
 
         for item in self.items:
             if isinstance(item, CWLUnionType):
-                cwl_object.extend(item.get_cwl_object())
+                cwl_object.extend(item.get_cwl_object(expand_types))
             else:
-                cwl_object.append(item.get_cwl_object())
+                cwl_object.append(item.get_cwl_object(expand_types))
 
         return cwl_object
 
@@ -122,20 +126,20 @@ class CWLEnumType(CWLType):
     def __init__(self, symbols):
         self.symbols = symbols
 
-    def get_cwl_object(self):
+    def get_cwl_object(self, expand_types=False):
         return {
             "type": "enum",
-            "symbols": self.symbols
+            "symbols": copy.deepcopy(self.symbols)
         }
 
 class CWLOptionalType(CWLType):
     def __init__(self, inner_type):
         self.inner_type = inner_type
 
-    def get_cwl_object(self):
-        inner_cwl_object = self.inner_type.get_cwl_object()
+    def get_cwl_object(self, expand_types=False):
+        inner_cwl_object = self.inner_type.get_cwl_object(expand_types)
 
-        if isinstance(inner_cwl_object, str):
+        if isinstance(inner_cwl_object, str) and not expand_types:
             return inner_cwl_object + "?"
         elif isinstance(inner_cwl_object, list):
             return ["null"] + inner_cwl_object

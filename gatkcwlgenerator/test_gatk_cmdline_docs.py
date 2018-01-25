@@ -34,7 +34,7 @@ def get_suffix_from(iterable, prefixes: List[str]):
     commands.append(iterable[start_position:])
     return commands
 
-def get_cmdline_dict(split_cmdline: List[str]):
+def get_cmdline_dict(split_cmdline: Dict):
     arguments = dict()
     cmdline_key = None
 
@@ -54,7 +54,7 @@ def get_cmdline_dict(split_cmdline: List[str]):
 
 GATKCommandLine = namedtuple("GATKCommandLine", ["tool_name", "arguments"])
 
-def get_args_from_cwl(example: str, gatk_version: bool) -> typing.Dict[str, str]:
+def get_args_from_cwl(example: str, gatk_version: bool) -> List[GATKCommandLine]:
     example = re.sub(r"\[(.*)\]", r"\1", example)
     example = re.sub(r"#.*\n", "", example)
     example = example.replace("\n", " ").replace("\\", "").replace("...", "")
@@ -141,7 +141,13 @@ def test_cwl_docs_in_docs():
         for docs_pre in soup.select("pre"):
             example_text = docs_pre.text
 
-            arguments = get_args_from_cwl(example_text, gatk_version)
-            if arguments is not None:
-                # do something
-                pass
+            test_commands = get_args_from_cwl(example_text, gatk_version)
+            if test_commands is not None:
+                for test_command in test_commands:
+                    gatk_tool = next((x for x in gatk_tools if x.name == test_command.tool_name))
+                    for argument_name in test_command.arguments:
+                        gatk_argument = test_command.arguments[argument_name]
+                        cwl_argument = (x for x in gatk_tool.arguments if x.name == argument_name) # type: CWL
+
+                        print(gatk_argument)
+                        print(cwl_argument)
