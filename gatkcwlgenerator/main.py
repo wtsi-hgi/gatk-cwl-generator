@@ -16,7 +16,7 @@ from ruamel import yaml
 
 from .gatk_tool_to_cwl import gatk_tool_to_cwl
 from .common import GATKVersion
-from .web_to_gatk_tool import get_gatk_links, get_gatk_tools
+from .web_to_gatk_tool import get_gatk_links, get_gatk_tool, get_extra_arguments
 
 _logger = logging.getLogger("gatkcwlgenerator")  # type: logging.Logger
 _logger.addHandler(logging.StreamHandler())
@@ -73,23 +73,26 @@ def main(cmd_line_options: SimpleNamespace):
     output_writer = OutputWriter(cmd_line_options)
     gatk_links = get_gatk_links(gatk_version)
 
-    tool_urls = filter(functools.partial(
-        should_generate_file,
-        gatk_version=gatk_version,
-        include_pattern=cmd_line_options.include
-    ), gatk_links.tool_urls) # mypy: ignore
-
-    gatk_tools = get_gatk_tools(
+    extra_arguments = get_extra_arguments(
         gatk_version,
-        tool_urls,
-        gatk_links.readfilter_urls,
-        gatk_links.command_line_gatk_url
+        gatk_links
     )
 
-    for gatk_tool in gatk_tools:
-        output_writer.write_gatk_json_file(gatk_tool.original_dict, gatk_tool.name)
-        cwl = gatk_tool_to_cwl(gatk_tool, cmd_line_options)
-        output_writer.write_cwl_file(cwl, gatk_tool.name)
+    have_generated_file = False
+
+    for tool_url in gatk_links.tool_urls:
+        if should_generate_file(tool_url, gatk_version, cmd_line_options.include):
+            have_generated_file = True
+
+            gatk_tool = get_gatk_tool(tool_url, extra_arguments=extra_arguments)
+
+            output_writer.write_gatk_json_file(gatk_tool.original_dict, gatk_tool.name)
+
+            cwl = gatk_tool_to_cwl(gatk_tool, cmd_line_options)
+            output_writer.write_cwl_file(cwl, gatk_tool.name)
+
+    if not have_generated_file:
+        _logger.warning("No files have been generated. Check the include pattern is correct")
 
     end = time.time()
     _logger.info(f"Completed in {end - start:.2f} seconds")

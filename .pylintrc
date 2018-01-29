@@ -4,7 +4,7 @@ good-names=_logger
 
 [MESSAGES CONTROL]
 
-disable=C0111,C0330,W0401,W0614
+disable=C0111,C0330,W0401,W0614,redefined-outer-name,R1705
 
 [FORMAT]
 

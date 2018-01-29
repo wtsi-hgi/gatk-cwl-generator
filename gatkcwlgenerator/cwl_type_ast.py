@@ -73,6 +73,9 @@ class CWLBasicType(CWLType):
     def get_cwl_object(self, expand_types=False):
         return self.name
 
+    def __repr__(self):
+        return f"CWLBasicType(\"{self.name}\")"
+
 
 class CWLArrayType(CWLType):
     def __init__(self, inner_type):

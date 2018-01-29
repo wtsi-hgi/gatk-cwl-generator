@@ -5,8 +5,6 @@ The main exported functions are get_output_json and get_input_objects
 
 import copy
 import logging
-import re
-from types import SimpleNamespace
 
 from .cwl_type_ast import *
 from .common import GATKVersion

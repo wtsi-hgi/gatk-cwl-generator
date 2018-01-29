@@ -111,37 +111,35 @@ def _get_extra_readfilter_arguments(readfilter_urls: Iterable[str]) -> List[Dict
 
     return arguments
 
-def get_gatk_tools(
+def get_extra_arguments(
         gatk_version: GATKVersion,
-        tool_urls: Iterable[str],
-        readfilter_urls: Iterable[str],
-        command_line_gatk_url: str = None
-    ) -> Iterable[GATKTool]:
+        gatk_links: GATKLinks
+    ) -> List[Dict]:
+    read_filter_arguments = _get_extra_readfilter_arguments(gatk_links.readfilter_urls)
+
+    if gatk_version.is_3():
+        cmd_line_gatk_dict = fetch_json_from(gatk_links.command_line_gatk_url)
+        return cmd_line_gatk_dict["arguments"] + read_filter_arguments
+    else:
+        return read_filter_arguments
+
+def get_gatk_tool(
+        tool_url: str,
+        extra_arguments: List[Dict] = None
+    ) -> GATKTool:
     """
     Gets gatk tools from the specified tool_urls.
-    NOTE: command_line_gatk_url should be specified for gatk 3, and leave
-    as None in gatk 4
     """
-    if gatk_version.is_3():
-        if command_line_gatk_url is None:
-            raise Exception("command_line_gatk_url needs to be specified in gatk 3 in get_gatk_tools")
+    if extra_arguments is None:
+        extra_arguments = []
 
-        cmd_line_gatk_dict = fetch_json_from(command_line_gatk_url)
-    read_filter_arguments = _get_extra_readfilter_arguments(readfilter_urls)
+    tool_dict = fetch_json_from(tool_url)
+    tool_name = tool_dict["name"]
 
-    for tool_url in tool_urls:
-        tool_dict = fetch_json_from(tool_url)
-        tool_name = tool_dict["name"]
+    if tool_name in ("CommandLineGATK", "CatVariants"):
+        extra_arguments = []
 
-        if tool_name not in ("CommandLineGATK", "CatVariants"):
-            if gatk_version.is_3():
-                extra_arguments = cmd_line_gatk_dict["arguments"] + read_filter_arguments
-            else:
-                extra_arguments = read_filter_arguments
-        else:
-            extra_arguments = []
-
-        yield GATKTool(
-            tool_dict,
-            extra_arguments
-        )
+    return GATKTool(
+        tool_dict,
+        extra_arguments
+    )

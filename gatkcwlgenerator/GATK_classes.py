@@ -102,8 +102,13 @@ class GATKTool:
         self._argument_dict = self._build_argument_dict()
 
     def _build_argument_dict(self):
-        # Build a dict, where the original_dict arguments override the _additional_arguments arguments
-        return dict(map(lambda argument: (argument["name"], argument), self._additional_arguments + self.original_dict["arguments"]))
+        argument_dict = {}
+        for argument in self._additional_arguments + self.original_dict["arguments"]:
+            argument_dict[argument["name"]] = argument
+            if argument.get("synonyms") is not None and argument["synonyms"] != "NA":
+                argument_dict[argument["synonyms"]] = argument
+
+        return argument_dict
 
     def get_argument(self, name: str) -> GATKArgument:
         return GATKArgument(**self._argument_dict[name])
@@ -120,3 +125,7 @@ class GATKTool:
     def arguments(self) -> Iterable[GATKArgument]:
         for argument_name in self._argument_dict:
             yield self.get_argument(argument_name)
+
+    @property
+    def description(self) -> str:
+        return self.dict.description
