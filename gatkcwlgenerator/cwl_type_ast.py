@@ -2,12 +2,14 @@
 Classes to make an AST for CWL types
 """
 import abc
+from abc import abstractmethod
 import copy
+from typing import *
 
 class CWLType:
     __metaclass__ = abc.ABCMeta
 
-    def __eq__(self, other):
+    def __eq__(self, other: 'CWLType'):
         if self.is_leaf() and other.is_leaf():
             if type(self) is type(other):
                 raise NotImplementedError(f"Leaf comparison not implemented for {type(self)} (__eq__ should be overloaded)")
@@ -18,18 +20,18 @@ class CWLType:
         else:
             return False
 
-    @abc.abstractmethod
+    @abstractmethod
     def get_cwl_object(self, expand_types=False):
         pass
 
     def has_array_type(self):
         return self.find_node(lambda node: isinstance(node, CWLArrayType)) is not None
 
-    def has_file_type(self):
-        def is_file_type(cwl_type):
-            return isinstance(cwl_type, CWLBasicType) and cwl_type.name == "File"
+    def contains(self, other_type: 'CWLType'):
+        return self == other_type
 
-        return self.find_node(is_file_type) is not None
+    def has_file_type(self):
+        return self.find_node(lambda cwl_type: cwl_type == CWLFileType()) is not None
 
     def is_leaf(self):
         """
@@ -61,21 +63,6 @@ class CWLType:
                 return next(filter(None, (child.find_node(predicate) for child in self.children)))
             except (AttributeError, StopIteration):
                 return None
-
-
-class CWLBasicType(CWLType):
-    def __init__(self, name):
-        self.name = name
-
-    def __eq__(self, other):
-        return self.name == other.name
-
-    def get_cwl_object(self, expand_types=False):
-        return self.name
-
-    def __repr__(self):
-        return f"CWLBasicType(\"{self.name}\")"
-
 
 class CWLArrayType(CWLType):
     def __init__(self, inner_type):
@@ -109,6 +96,9 @@ class CWLUnionType(CWLType):
     def __init__(self, *items):
         self.items = items
 
+    def contains(self, other_type: CWLType):
+        return any(map(lambda item: item.contains(other_type), self.items))
+
     def get_cwl_object(self, expand_types=False):
         cwl_object = []
 
@@ -123,6 +113,9 @@ class CWLUnionType(CWLType):
     @property
     def children(self):
         return self.items
+
+    def __repr__(self):
+        return f"CWLUnionType({self.items})"
 
 
 class CWLEnumType(CWLType):
@@ -151,3 +144,69 @@ class CWLOptionalType(CWLType):
                 "null",
                 inner_cwl_object
             ]
+
+    def contains(self, other_type: CWLType):
+        return self.inner_type.contains(other_type)
+
+    def __repr__(self):
+        return f"CWLOptionalType({self.inner_type})"
+
+class CWLBasicType(CWLType):
+    __metaclass__ = abc.ABCMeta
+
+    subtypes = [] # type: List[CWLType]
+
+    def contains(self, other_type: CWLType):
+        if type(self) is type(other_type):
+            return True
+        else:
+            return any(map(lambda subtype: subtype.contains(other_type), self.subtypes))
+
+    @property
+    @abstractmethod
+    def name(self):
+        pass
+
+    def __eq__(self, other):
+        return self.name == other.name
+
+    def get_cwl_object(self, expand_types=False):
+        return self.name
+
+    def __repr__(self):
+        return f"{type(self)}()"
+
+def get_cwl_basic_type(basic_type_name: str):
+    try:
+        return globals()[f"CWL{basic_type_name.title()}Type"]()
+    except KeyError as error:
+        raise Exception(f"No CWL type of name {basic_type_name} found") from error
+
+class CWLFileType(CWLBasicType):
+    name = "File"
+
+class CWLDirectoryType(CWLBasicType):
+    name = "Directory"
+
+class CWLStringType(CWLBasicType):
+    name = "string"
+    def contains(self, other_type: CWLType):
+        return type(self) is type(other_type) or type(other_type) is CWLEnumType
+
+class CWLIntType(CWLBasicType):
+    name = "int"
+
+class CWLLongType(CWLBasicType):
+    name = "long"
+    subtypes = [CWLIntType()]
+
+class CWLFloatType(CWLBasicType):
+    name = "float"
+    subtypes = [CWLLongType()]
+
+class CWLDoubleType(CWLBasicType):
+    name = "double"
+    subtypes = [CWLFloatType()]
+
+class CWLBooleanType(CWLBasicType):
+    name = "boolean"

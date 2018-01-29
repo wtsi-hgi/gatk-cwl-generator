@@ -18,8 +18,8 @@ class UnknownGATKTypeError(Exception):
 
         self.unknown_type = unknown_type
 
-def is_file_type(typ: CWLType):
-    return isinstance(typ, CWLBasicType) and typ.name == "File"
+def is_file_type(cwl_type: CWLType):
+    return cwl_type == CWLFileType()
 
 def GATK_type_to_CWL_type(gatk_type: str):
     """
@@ -52,32 +52,34 @@ def GATK_type_to_CWL_type(gatk_type: str):
     elif '[]' in gatk_type:
         inner_type = gatk_type.strip('[]')
         return CWLArrayType(GATK_type_to_CWL_type(inner_type))
-    elif gatk_type in ("long", "double", "int", "string", "float", "boolean", "bool"):
-        return CWLBasicType(gatk_type)
+    elif gatk_type in ("long", "double", "int", "string", "float", "boolean"):
+        return get_cwl_basic_type(gatk_type)
+    elif gatk_type == "bool":
+        return CWLBooleanType()
     elif gatk_type == "file":
-        return CWLBasicType("File")
+        return CWLFileType()
     elif gatk_type in ("byte", "integer"):
-        return CWLBasicType("int")
+        return CWLIntType()
     elif gatk_type == "set":
-        return CWLArrayType(CWLBasicType("string"))
+        return CWLArrayType(CWLStringType())
     elif gatk_type in gatk_enum_types.keys():
         return CWLEnumType(gatk_enum_types[gatk_type])
     elif gatk_type == "map[docoutputtype,printstream]":
         # This is used in DepthOfCoverage.out, gatk 3
-        return CWLBasicType("string")
+        return CWLStringType()
     elif gatk_type in map(str.lower, OUTPUT_TYPE_FILE_EXT.keys()):
         # insert this in here and replace it later
-        return CWLBasicType("string")
+        return CWLStringType()
     elif "intervalbinding" in gatk_type:
         return CWLUnionType(
-            CWLBasicType("File"),
-            CWLBasicType("string")
+            CWLFileType(),
+            CWLStringType()
         )
     elif "rodbinding" in gatk_type or "featureinput" in gatk_type:
         # TODO: This type indicates the type of file as below. We could verify the file
         # is correct
         # https://gist.github.com/ThomasHickman/b4a0552231f4963520927812ad29eac8
-        return CWLBasicType("File")
+        return CWLFileType()
     else:
         raise UnknownGATKTypeError("Unknown GATK type: '" + gatk_type + "'")
 
@@ -96,7 +98,7 @@ def get_CWL_type_for_argument(argument: GATKArgument, toolname: str):
             gatk_type = "List[IntervalBinding[Feature]]"
 
     if argument.name == "genomicsdb-workspace-path":
-        cwl_type = CWLBasicType("Directory")
+        cwl_type = CWLDirectoryType()
     elif argument.options:
         cwl_type = CWLEnumType([x['name'] for x in argument.options])
     else:
@@ -109,16 +111,16 @@ def get_CWL_type_for_argument(argument: GATKArgument, toolname: str):
                 error.unknown_type
             )
 
-            cwl_type = CWLBasicType("string")
+            cwl_type = CWLStringType()
 
     if argument.is_output_argument():
-        file_or_string_type = cwl_type.find_node(lambda node: node == CWLBasicType("File") or node == CWLBasicType("string"))
+        file_or_string_type = cwl_type.find_node(lambda node: node == CWLFileType() or node == CWLStringType())
         if file_or_string_type is not None:
             file_or_string_type.name = "string"
         else:
             _logger.warning(f"Output argument {argument.long_prefix} should have a string or file type in it. GATK type: {gatk_type}")
 
-    string_type = cwl_type.find_node(lambda node: node == CWLBasicType("string"))
+    string_type = cwl_type.find_node(lambda node: node == CWLStringType())
 
     # overload the type of a gatk argument if think it should be a string
     if string_type is not None and argument.infer_if_file():
@@ -143,7 +145,7 @@ def get_input_argument_name(argument: GATKArgument, gatk_version: GATKVersion):
 
 
 def get_depth_of_coverage_outputs():
-    # TODO: autogenerate this from
+    # TODO autogenerate this from
     # https://software.broadinstitute.org/gatk/documentation/tooldocs/3.8-0/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php
     partition_types = ["library", "read_group", "sample"]
     output_types = [
@@ -215,7 +217,7 @@ def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: GA
 def get_input_binding(argument, gatk_version: GATKVersion, cwl_type: CWLType):
     has_file_type = cwl_type.find_node(is_file_type) is not None
     has_array_type = cwl_type.find_node(lambda node: isinstance(node, CWLArrayType)) is not None
-    has_boolean_type = cwl_type.find_node(lambda node: node == CWLBasicType("boolean"))
+    has_boolean_type = cwl_type.find_node(lambda node: node == CWLBooleanType())
 
     if gatk_version.is_4() and has_boolean_type:
         return {
@@ -239,9 +241,9 @@ def get_input_binding(argument, gatk_version: GATKVersion, cwl_type: CWLType):
 ARRAY_TAGS_TYPE = CWLOptionalType(
     CWLArrayType(
         CWLUnionType(
-            CWLBasicType("string"),
+            CWLStringType(),
             CWLArrayType(
-                CWLBasicType("string")
+                CWLStringType()
             )
         )
     )
@@ -250,9 +252,9 @@ ARRAY_TAGS_TYPE = CWLOptionalType(
 # (string | string[])?
 NON_ARRAY_TAGS_TAGS = CWLOptionalType(
     CWLUnionType(
-        CWLBasicType("string"),
+        CWLStringType(),
         CWLArrayType(
-            CWLBasicType("string")
+            CWLStringType()
         )
     )
 )

@@ -122,12 +122,12 @@ def parse_gatk_pre_box(pre_box_text: str):
 
     return parsed_commands
 
-def get_correct_cwl_types(value: str):
+def infer_cwl_type_for_value(value: str) -> CWLType:
     """
     Given a string of a cwl value, returns a list of correct cwl types
     """
     if value in ("true", "false", "True", "False"):
-        return ["boolean"]
+        return CWLBooleanType()
 
     try:
         float(value)
@@ -135,17 +135,17 @@ def get_correct_cwl_types(value: str):
         pass
     else:
         if value.find(".") != -1:
-            return ["float", "double"]
+            return CWLIntType()
         else:
-            return ["float", "double", "int", "long"]
+            return CWLFloatType()
 
     if value.find(".") != -1:
-        return ["File"]
+        return CWLFileType()
 
     if value.find("/") != -1:
-        return ["Directory"]
+        return CWLDirectoryType()
 
-    return ["string"]
+    return CWLStringType()
 
 def assert_cwl_type_matches_value(cwl_type: CWLType, value: Union[bool, str, List[str]]):
     if isinstance(value, bool):
@@ -157,13 +157,10 @@ def assert_cwl_type_matches_value(cwl_type: CWLType, value: Union[bool, str, Lis
                 map(lambda args: assert_cwl_type_matches_value(*args), zip(cwl_type.children, value))
             )
 
-    correct_cwl_types = get_correct_cwl_types(value)
+    infered_cwl_type = infer_cwl_type_for_value(value)
 
-    if(not any(map(
-        lambda eq_cwl_type: cwl_type == CWLBasicType(eq_cwl_type),
-        correct_cwl_types
-    ))):
-        print(f"Type: {cwl_type} doesn't match any correct cwl types {correct_cwl_types} for value {repr(value)}")
-        return False
-    else:
+    if cwl_type.contains(infered_cwl_type):
         return True
+    else:
+        print(f"Type: {cwl_type} doesn't match infered cwl type: {infered_cwl_type} for value {repr(value)}")
+        return False
