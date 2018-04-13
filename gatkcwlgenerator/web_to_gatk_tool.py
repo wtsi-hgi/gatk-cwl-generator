@@ -4,7 +4,7 @@ from collections import namedtuple
 import requests
 from bs4 import BeautifulSoup
 
-from .gatk_classes import *
+from .GATK_classes import *
 from .common import GATKVersion
 
 _logger = logging.getLogger("gatkcwlgenerator")  # type: logging.Logger

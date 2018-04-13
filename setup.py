@@ -1,7 +1,11 @@
 from setuptools import setup, find_packages
+import sys
+if sys.version_info < (3, 6):
+        sys.exit('Sorry, Python < 3.6 is not supported')
 
 try:
     from pypandoc import convert
+
     def read_markdown(file):
         return convert(file, "rst")
 except ImportError:
@@ -10,6 +14,7 @@ except ImportError:
 
 setup(
     name="gatk_cwl_generator",
+    python_requires='>=3.6, <4',
     version=open("gatkcwlgenerator/VERSION", "r").read(),
     packages=find_packages(exclude=["tests"]),
     install_requires=open("requirements.txt", "r").readlines(),
