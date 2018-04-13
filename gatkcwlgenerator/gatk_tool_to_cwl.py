@@ -9,7 +9,7 @@ from ruamel.yaml.scalarstring import PreservedScalarString
 
 from .gatk_argument_to_cwl import gatk_argument_to_cwl
 from .common import GATKVersion
-from .gatk_classes import *
+from .GATK_classes import *
 
 _logger = logging.getLogger("gatkcwlgenerator")
 

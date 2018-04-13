@@ -8,7 +8,7 @@ import logging
 
 from .cwl_type_ast import *
 from .common import GATKVersion
-from .gatk_classes import *
+from .GATK_classes import *
 
 _logger = logging.getLogger("gatkcwlgenerator")
 
