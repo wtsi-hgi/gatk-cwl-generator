@@ -99,6 +99,8 @@ def get_CWL_type_for_argument(argument: GATKArgument, toolname: str):
 
     if argument.name == "genomicsdb-workspace-path":
         cwl_type = CWLDirectoryType()
+    elif toolname == "GenotypeGVCFs" and argument.name == "variant":
+        cwl_type = CWLUnionType(CWLFileType(), CWLArrayType(CWLFileType()), CWLDirectoryType())
     elif argument.options:
         cwl_type = CWLEnumType([x['name'] for x in argument.options])
     else:
