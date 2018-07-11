@@ -21,10 +21,10 @@ You may also want to install [cwltool](https://github.com/common-workflow-langua
 ## Usage
 
 ```
-usage: gatkcwlgenerator [-h] [--version VERSION] [--verbose] [--out OUTPUT_DIR]
-                        [--include INCLUDE] [--dev] [--use_cache [CACHE_LOCATION]]
-                        [--no_docker] [--docker_image_name DOCKER_IMAGE_NAME]
-                        [--gatk_command GATK_COMMAND]
+usage: gatk_cwl_generator [-h] [--version VERSION] [--verbose] [--out OUTPUT_DIR]
+                          [--include INCLUDE] [--dev] [--use_cache [CACHE_LOCATION]]
+                          [--no_docker] [--docker_image_name DOCKER_IMAGE_NAME]
+                          [--gatk_command GATK_COMMAND]
 
 Generates CWL files from the GATK documentation
 
