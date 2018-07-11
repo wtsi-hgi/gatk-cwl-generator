@@ -178,7 +178,7 @@ def get_depth_of_coverage_outputs():
 
     return outputs
 
-def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: GATKVersion):
+def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: GATKVersion) -> Tuple[List[Dict], List[Dict]]:
     """
     Returns inputs and outputs for a given gatk argument, in the form (inputs, outputs).
     """
@@ -318,7 +318,7 @@ def get_input_objects(argument: GATKArgument, toolname: str, gatk_version: GATKV
         return [base_cwl_arg]
 
 
-def get_output_json(argument: GATKArgument, gatk_version: GATKVersion):
+def get_output_json(argument: GATKArgument, gatk_version: GATKVersion) -> Dict:
     input_argument_name = get_input_argument_name(argument, gatk_version)
 
     return {

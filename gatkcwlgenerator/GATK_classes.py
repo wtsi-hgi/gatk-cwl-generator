@@ -96,7 +96,7 @@ class GATKArgument:
         return SimpleNamespace(**self._init_dict)
 
 class GATKTool:
-    def __init__(self, original_dict: Dict, additional_arguments: List) -> None:
+    def __init__(self, original_dict: Dict, additional_arguments: List[Dict]) -> None:
         self.original_dict = original_dict
         self._additional_arguments = additional_arguments
         self._argument_dict = self._build_argument_dict()
