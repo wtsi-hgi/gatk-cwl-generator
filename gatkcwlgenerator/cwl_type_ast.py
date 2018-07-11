@@ -91,6 +91,9 @@ class CWLArrayType(CWLType):
 
             return cwl_object
 
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__}({self.inner_type!r})>"
+
 
 class CWLUnionType(CWLType):
     def __init__(self, *items):
@@ -115,7 +118,7 @@ class CWLUnionType(CWLType):
         return self.items
 
     def __repr__(self):
-        return f"CWLUnionType({self.items})"
+        return f"{type(self).__name__}({self.items!r})"
 
 
 class CWLEnumType(CWLType):
@@ -127,6 +130,10 @@ class CWLEnumType(CWLType):
             "type": "enum",
             "symbols": copy.deepcopy(self.symbols)
         }
+
+    def __repr__(self):
+        return f"{type(self).__name__}({self.symbols!r})"
+
 
 class CWLOptionalType(CWLType):
     def __init__(self, inner_type):
@@ -149,7 +156,7 @@ class CWLOptionalType(CWLType):
         return self.inner_type.contains(other_type)
 
     def __repr__(self):
-        return f"CWLOptionalType({self.inner_type})"
+        return f"{type(self).__name__}({self.inner_type!r})"
 
 class CWLBasicType(CWLType):
     __metaclass__ = abc.ABCMeta
@@ -174,7 +181,7 @@ class CWLBasicType(CWLType):
         return self.name
 
     def __repr__(self):
-        return f"{type(self)}()"
+        return f"{type(self).__name__}()"
 
 def get_cwl_basic_type(basic_type_name: str):
     try:
