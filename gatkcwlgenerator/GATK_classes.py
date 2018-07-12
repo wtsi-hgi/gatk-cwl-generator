@@ -105,8 +105,6 @@ class GATKTool:
         argument_dict = {}
         for argument in self._additional_arguments + self.original_dict["arguments"]:
             argument_dict[argument["name"]] = argument
-            if argument.get("synonyms") is not None and argument["synonyms"] != "NA":
-                argument_dict[argument["synonyms"]] = argument
 
         return argument_dict
 
