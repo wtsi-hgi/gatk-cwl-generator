@@ -69,15 +69,15 @@ class GATKArgument:
         has_output_suffix = any(map(self.name.endswith, output_suffixes))
         in_known_output_files = self.name in known_output_files
 
-        return no_num_or_bool_type and \
-            (has_known_gatk_output_types \
-            or has_output_suffix \
-            or in_known_output_files)
+        return no_num_or_bool_type and (
+                has_known_gatk_output_types
+                or has_output_suffix
+                or in_known_output_files)
 
     def has_default(self):
-        return  self.dict.defaultValue != "NA" \
-            and self.dict.defaultValue.lower() != "none" \
-            and self.dict.defaultValue.lower() != "null"
+        return (self.dict.defaultValue != "NA"
+            and self.dict.defaultValue.lower() != "none"
+            and self.dict.defaultValue.lower() != "null")
 
     @property
     def options(self):
