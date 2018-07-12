@@ -209,6 +209,15 @@ def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: GA
                 "glob": "$(inputs.prefixForAllOutputFileNames + '.split.*.vcf')"
             }
         }]
+    elif toolname == "GenomicsDBImport" and argument.name == "genomicsdb-workspace-path":
+        outputs = [{
+            "id": "genomicsdb-workspace-path-out",
+            "doc": "Resulting GenomicsDB workspace (corresponding to the input genomicsdb-workspace-path).",
+            "type": "Directory",
+            "outputBinding": {
+                "glob": "$(inputs['genomicsdb-workspace-path'])"
+            }
+        }]
     elif argument.is_output_argument():
         outputs = [get_output_json(argument, gatk_version)]
     else:
