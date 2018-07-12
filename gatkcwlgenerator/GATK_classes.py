@@ -95,6 +95,10 @@ class GATKArgument:
     def dict(self):
         return SimpleNamespace(**self._init_dict)
 
+    @property
+    def synonym(self) -> Optional[str]:
+        return self.dict.synonyms if self.dict.synonyms != "NA" else None
+
 class GATKTool:
     def __init__(self, original_dict: Dict, additional_arguments: List[Dict]) -> None:
         self.original_dict = original_dict

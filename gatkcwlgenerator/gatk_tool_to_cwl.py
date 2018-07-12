@@ -94,6 +94,10 @@ def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options):
                 version
             )
 
+            synonym = argument.synonym
+            if synonym is not None and len(argument_inputs) >= 1 and synonym.lstrip("-") != argument.name.lstrip("-"):
+                argument_inputs[0]["doc"] += f" [synonymous with {argument.synonym}]"
+
             outputs.extend(argument_outputs)
 
             for argument_input in argument_inputs:
