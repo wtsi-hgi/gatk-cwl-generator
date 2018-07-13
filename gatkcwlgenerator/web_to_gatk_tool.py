@@ -55,7 +55,7 @@ def get_gatk_links(gatk_version: GATKVersion) -> GATKLinks:
             # Need to process these separately
             if rest_text.startswith("tools_walkers_annotator") \
                     and "VariantAnnotator" not in rest_text:
-                    # VariantAnnotator is wrongly categorized in it's url (it's a tool)
+                # VariantAnnotator is wrongly categorized in its url (it's a tool)
                 annotator_urls.append(full_url)
             elif rest_text.startswith("engine_filters"):
                 readfilter_urls.append(full_url)

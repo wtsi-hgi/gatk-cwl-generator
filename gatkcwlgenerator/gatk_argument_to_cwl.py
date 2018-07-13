@@ -184,9 +184,9 @@ def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: GA
     """
     inputs = get_input_objects(argument, toolname, gatk_version)
 
-    input_argument_name = get_input_argument_name(argument, gatk_version)
 
     if argument.name in ("create-output-bam-md5", "create-output-variant-md5", "create-output-bam-index", "create-output-variant-index"):
+        input_argument_name = get_input_argument_name(argument, gatk_version)
         outputs = [{
             "id": argument.name[len("create-output-"):],
             "doc": f"{'md5' if argument.name.endswith('md5') else 'index'} file generated if {argument.name} is true",
@@ -275,7 +275,6 @@ def get_input_objects(argument: GATKArgument, toolname: str, gatk_version: GATKV
     Returns a list of cwl input arguments for expressing the given gatk argument
 
     :param argument: The cwl argument, as specified in the json file
-    :param options: Command line options
 
     :returns: CWL objects to describe the given argument
     """
