@@ -40,7 +40,7 @@ def get_js_library():
 
 JS_LIBRARY = get_js_library()
 
-def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options):
+def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options, annotation_names: List[str]):
     """
     Make a cwl file with a given GATK json file in the cwl directory
     """
@@ -91,7 +91,8 @@ def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options):
             argument_inputs, argument_outputs = gatk_argument_to_cwl(
                 argument,
                 gatk_tool.name,
-                version
+                version,
+                annotation_names
             )
 
             synonym = argument.synonym

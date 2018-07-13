@@ -178,12 +178,32 @@ def get_depth_of_coverage_outputs():
 
     return outputs
 
-def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: GATKVersion) -> Tuple[List[Dict], List[Dict]]:
+
+def gatk_argument_to_cwl(
+    argument: GATKArgument, toolname: str, gatk_version: GATKVersion, annotation_names: List[str]
+) -> Tuple[List[Dict], List[Dict]]:
     """
     Returns inputs and outputs for a given gatk argument, in the form (inputs, outputs).
     """
     inputs = get_input_objects(argument, toolname, gatk_version)
 
+    # Special-case annotations, since they can only take certain values (see #14).
+    if argument.name == "annotation":
+        assert len(inputs) == 1
+        inputs[0]["type"] = [
+            "null",
+            {
+                "type": "enum",
+                "symbols": annotation_names
+            },
+            {
+                "type": "array",
+                "items": {
+                    "type": "enum",
+                    "symbols": annotation_names
+                }
+            }
+        ]
 
     if argument.name in ("create-output-bam-md5", "create-output-variant-md5", "create-output-bam-index", "create-output-variant-index"):
         input_argument_name = get_input_argument_name(argument, gatk_version)

@@ -16,7 +16,7 @@ from ruamel import yaml
 
 from .gatk_tool_to_cwl import gatk_tool_to_cwl
 from .common import GATKVersion
-from .web_to_gatk_tool import get_gatk_links, get_gatk_tool, get_extra_arguments
+from .web_to_gatk_tool import get_annotation_name, get_gatk_links, get_gatk_tool, get_extra_arguments
 
 _logger = logging.getLogger("gatkcwlgenerator")  # type: logging.Logger
 _logger.addHandler(logging.StreamHandler())
@@ -80,6 +80,8 @@ def main(cmd_line_options: SimpleNamespace):
 
     have_generated_file = False
 
+    annotation_names = [get_annotation_name(url) for url in gatk_links.annotator_urls]
+
     for tool_url in gatk_links.tool_urls:
         if should_generate_file(tool_url, gatk_version, cmd_line_options.include):
             have_generated_file = True
@@ -88,7 +90,7 @@ def main(cmd_line_options: SimpleNamespace):
 
             output_writer.write_gatk_json_file(gatk_tool.original_dict, gatk_tool.name)
 
-            cwl = gatk_tool_to_cwl(gatk_tool, cmd_line_options)
+            cwl = gatk_tool_to_cwl(gatk_tool, cmd_line_options, annotation_names)
             output_writer.write_cwl_file(cwl, gatk_tool.name)
 
     if not have_generated_file:
