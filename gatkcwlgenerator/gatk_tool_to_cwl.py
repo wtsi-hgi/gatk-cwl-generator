@@ -72,6 +72,14 @@ def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options, annotation_names: Li
                 "expressionLib": [
                     PreservedScalarString(JS_LIBRARY)
                 ]
+            },
+            {
+                "class": "SchemaDefRequirement",
+                "types": [{
+                    "type": "enum",
+                    "name": "annotation_type",
+                    "symbols": annotation_names
+                }]
             }
         ] + ([]
             if cmd_line_options.no_docker else
@@ -91,8 +99,7 @@ def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options, annotation_names: Li
             argument_inputs, argument_outputs = gatk_argument_to_cwl(
                 argument,
                 gatk_tool.name,
-                version,
-                annotation_names
+                version
             )
 
             synonym = argument.synonym
