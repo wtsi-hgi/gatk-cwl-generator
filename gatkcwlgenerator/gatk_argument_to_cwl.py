@@ -186,7 +186,8 @@ def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: GA
     inputs = get_input_objects(argument, toolname, gatk_version)
 
     # Special-case annotations, since they can only take certain values (see #14).
-    if argument.name == "annotation":
+    # NB: annotation-group is different, and the possible values are not documented anywhere.
+    if argument.name in ("annotation", "annotations-to-exclude"):
         assert len(inputs) == 1
         inputs[0]["type"] = ["null", "annotation_type", "annotation_type[]"]
 
