@@ -6,7 +6,7 @@ from os import sys, path
 sys.path.append(path.dirname(path.dirname(path.dirname(path.abspath(__file__)))))
 from gatkcwlgenerator.common import GATKVersion
 from gatkcwlgenerator.web_to_gatk_tool import get_gatk_links, get_gatk_tool, get_extra_arguments
-from gatkcwlgenerator.gatk_classes import GATKTool
+from gatkcwlgenerator.GATK_classes import GATKTool
 
 requests_cache.install_cache()
 
