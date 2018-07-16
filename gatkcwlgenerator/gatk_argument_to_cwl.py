@@ -190,6 +190,10 @@ def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: GA
     if argument.name in ("annotation", "annotations-to-exclude"):
         assert len(inputs) == 1
         inputs[0]["type"] = ["null", "annotation_type", "annotation_type[]"]
+        # In GATK 3, CombineGVCFs and GenotypeGVCFs allow the value "none" to remove the default annotations.
+        # This isn't allowed in any other tools or in GATK 4.
+        if gatk_version.is_3() and toolname in ("CombineGVCFs", "GenotypeGVCFs"):
+            inputs[0]["type"].append({"type": "enum", "symbols": ["none"]})
 
     if argument.name in ("create-output-bam-md5", "create-output-variant-md5", "create-output-bam-index", "create-output-variant-index"):
         input_argument_name = get_input_argument_name(argument, gatk_version)
