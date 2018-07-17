@@ -71,7 +71,11 @@ def test_gatk_docs(gatk_version: GATKVersion):
         soup = BeautifulSoup(gatk_tool.description, "html.parser")
         if gatk_tool.name not in EXCLUDE_TOOLS:
             for pre_element in soup.select("pre"):
-                commands = parse_gatk_pre_box(pre_element.text)
+                example_text = pre_element.string
+                if example_text is None:
+                    print(f"Possible invalid markup in example for tool {gatk_tool.name}")
+                    continue
+                commands = parse_gatk_pre_box(example_text)
                 if commands is not None:
                     for command in commands:
                         assert command.tool_name == gatk_tool.name
