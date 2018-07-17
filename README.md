@@ -80,7 +80,6 @@ The cwl files will be outputted to `gatk_cmdline_tools/<VERSION>/cwl` and the JS
 - The output parameters id's are of the format `<NAME>Output`
 - All read filter parameters are included as optional parameters in every tool, if they don't conflict with input parameters
 - Types of parameters are mostly what is specified in the documentation, corrected in a couple of places
-- The type of the input parameter `annotation` is a string, not an enumeration of all the possible options
 - Array types in the documentation are implemented as a union of the base type and the array type
 
 ## Examples
@@ -104,7 +103,6 @@ You can also run the tests in parallel with `-n` to improve performance
 
 ## Limitations:
 
-- The parameter `annotation` (for example, in [HaplotypeCaller](https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php#--annotation)) is specified to take in a string in the generated CWL file, not an enumeration of all the possible options
 - All parameters that you can pass to read filters that don't conflict with tool parameters are included and they are marked as optional
 
 ## Creating a new version
