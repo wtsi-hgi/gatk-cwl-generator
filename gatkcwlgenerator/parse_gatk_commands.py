@@ -134,15 +134,15 @@ def infer_cwl_type_for_value(value: str) -> CWLType:
     except ValueError:
         pass
     else:
-        if value.find(".") != -1:
-            return CWLIntType()
-        else:
+        if "." in value:
             return CWLFloatType()
+        else:
+            return CWLIntType()
 
-    if value.find(".") != -1:
+    if "." in value:
         return CWLFileType()
 
-    if value.find("/") != -1:
+    if "/" in value:
         return CWLDirectoryType()
 
     return CWLStringType()
