@@ -95,7 +95,7 @@ def parse_gatk_command(gatk_command: str):
         arguments=arguments
     )
 
-def parse_gatk_pre_box(pre_box_text: str):
+def parse_gatk_pre_box(pre_box_text: str) -> List:
     # get rid of "[<COMMAND>]"
     pre_box_text = re.sub(r"\[(.*)\]", r"\1", pre_box_text)
     # remove common whitespace
@@ -104,7 +104,7 @@ def parse_gatk_pre_box(pre_box_text: str):
     pre_box_text = pre_box_text.lstrip(" \n")
 
     if not pre_box_text.startswith(COMMAND_STARTS):
-        return None
+        return []
 
     box_text_lines = pre_box_text.split("\n")
 

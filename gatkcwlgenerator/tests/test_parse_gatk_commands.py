@@ -76,17 +76,16 @@ def test_gatk_docs(gatk_version: GATKVersion):
                     print(f"Possible invalid markup in example for tool {gatk_tool.name}")
                     continue
                 commands = parse_gatk_pre_box(example_text)
-                if commands is not None:
-                    for command in commands:
-                        assert command.tool_name == gatk_tool.name
+                for command in commands:
+                    assert command.tool_name == gatk_tool.name
 
-                        for argument_name, argument_value in command.arguments.items():
-                            try:
-                                cwlgen_argument = gatk_tool.get_argument(argument_name)
-                            except KeyError:
-                                print(f"Argument {argument_name} not found for tool {gatk_tool.name}")
-                            else:
-                                cwl_type = get_CWL_type_for_argument(cwlgen_argument, gatk_tool.name)
+                    for argument_name, argument_value in command.arguments.items():
+                        try:
+                            cwlgen_argument = gatk_tool.get_argument(argument_name)
+                        except KeyError:
+                            print(f"Argument {argument_name} not found for tool {gatk_tool.name}")
+                        else:
+                            cwl_type = get_CWL_type_for_argument(cwlgen_argument, gatk_tool.name)
 
-                                if not assert_cwl_type_matches_value(cwl_type, argument_value):
-                                    print(f"Argument {argument_name} in tool {gatk_tool.name} is invalid")
+                            if not assert_cwl_type_matches_value(cwl_type, argument_value):
+                                print(f"Argument {argument_name} in tool {gatk_tool.name} is invalid")
