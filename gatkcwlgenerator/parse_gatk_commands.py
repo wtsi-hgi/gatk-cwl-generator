@@ -38,7 +38,12 @@ def parse_program_command(command: str):
             cmdline_key = element
         else:
             if cmdline_key is None:
-                positional_arguments.append(element)
+                if element != "...":
+                    # If there's a positional argument '...', it's probably just indicating that
+                    # the previous (non-positional) argument can be repeated, so we ignore it.
+                    # For example, see the first GATK 3 UnifiedGenotyper example:
+                    # <https://software.broadinstitute.org/gatk/documentation/tooldocs/3.8-0/org_broadinstitute_gatk_tools_walkers_genotyper_UnifiedGenotyper.php>
+                    positional_arguments.append(element)
             else:
                 old_value = arguments.get(cmdline_key)
 
