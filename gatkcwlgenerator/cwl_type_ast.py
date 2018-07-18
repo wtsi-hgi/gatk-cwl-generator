@@ -92,7 +92,7 @@ class CWLArrayType(CWLType):
             return cwl_object
 
     def __repr__(self) -> str:
-        return f"<{type(self).__name__}({self.inner_type!r})>"
+        return f"{type(self).__name__}({self.inner_type!r})"
 
 
 class CWLUnionType(CWLType):

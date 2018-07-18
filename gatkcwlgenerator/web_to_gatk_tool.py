@@ -26,6 +26,11 @@ def get_gatk_links(gatk_version: GATKVersion) -> GATKLinks:
     """
     Parses the tool docs HTML page to get links to the json resources
     """
+
+    # TODO: make this look at the JSON files to categorise them
+    # The group they belong in is right there in the JSON, under "group" -- using that
+    # rather than the URL to categorise them should work much better.
+
     base_url = "https://software.broadinstitute.org/gatk/documentation/tooldocs/%s/" % gatk_version
 
     base_webpage_request = requests.get(base_url)
@@ -57,7 +62,8 @@ def get_gatk_links(gatk_version: GATKVersion) -> GATKLinks:
                     and "VariantAnnotator" not in rest_text:
                 # VariantAnnotator is wrongly categorized in its url (it's a tool)
                 annotator_urls.append(full_url)
-            elif rest_text.startswith("engine_filters"):
+            elif rest_text.startswith("engine_filters") or "HCMappingQualityFilter" in rest_text:
+                # HCMappingQualityFilter's url suggests it's a tool
                 readfilter_urls.append(full_url)
             elif rest_text.startswith("utils_codecs"):
                 resourcefile_urls.append(full_url)
