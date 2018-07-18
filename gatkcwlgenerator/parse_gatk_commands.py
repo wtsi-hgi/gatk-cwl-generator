@@ -145,12 +145,12 @@ def parse_gatk_pre_box(pre_box_text: str) -> List:
 
     return parsed_commands
 
-def infer_cwl_type_for_value(value: str) -> CWLType:
+def infer_cwl_type_for_value(value: str) -> List[CWLType]:
     """
-    Given a string of a cwl value, returns a list of correct cwl types
+    Given a string of a CWL value, returns a list of possible CWL types.
     """
     if value in ("true", "false", "True", "False"):
-        return CWLBooleanType()
+        return [CWLBooleanType()]
 
     try:
         float(value)
@@ -158,17 +158,17 @@ def infer_cwl_type_for_value(value: str) -> CWLType:
         pass
     else:
         if "." in value:
-            return CWLFloatType()
+            return [CWLFloatType()]
         else:
-            return CWLIntType()
+            return [CWLIntType()]
 
     if "." in value:
-        return CWLFileType()
+        return [CWLFileType(), CWLStringType()]
 
     if "/" in value:
-        return CWLDirectoryType()
+        return [CWLFileType(), CWLDirectoryType(), CWLStringType()]
 
-    return CWLStringType()
+    return [CWLStringType(), CWLFileType()]
 
 def assert_cwl_type_matches_value(cwl_type: CWLType, value: Union[bool, str, List[str]]):
     while isinstance(cwl_type, CWLOptionalType):
@@ -186,10 +186,20 @@ def assert_cwl_type_matches_value(cwl_type: CWLType, value: Union[bool, str, Lis
                 map(lambda args: assert_cwl_type_matches_value(*args), zip(cwl_type.children, value))
             )
 
-    infered_cwl_type = infer_cwl_type_for_value(value)
+    inferred_cwl_types = infer_cwl_type_for_value(value)
 
-    if cwl_type.contains(infered_cwl_type):
+    if any(cwl_type.contains(t) for t in inferred_cwl_types):
+        return True
+    elif any(isinstance(t, CWLFileType) or isinstance(t, CWLDirectoryType) for t in inferred_cwl_types) and cwl_type.contains(CWLStringType()):
+        # Output filenames are usually inferred to be files (or sometimes directories), but must be strings in CWL.
+        return True
+    elif any(isinstance(t, CWLStringType) for t in inferred_cwl_types) and (
+            cwl_type.has_file_type() or cwl_type.find_node(lambda node: isinstance(node, CWLEnumType))
+    ):
+        # Filenames may sometimes be inferred to be strings, and enum arguments are invariably detected as strings.
         return True
     else:
-        print(f"Type: {cwl_type} doesn't match infered cwl type: {infered_cwl_type} for value {repr(value)}")
+        # This is not necessarily an indication of a problem in the docs,
+        # since there may be other types (in a union) that will be tested
+        # once this type is known not to match.
         return False
