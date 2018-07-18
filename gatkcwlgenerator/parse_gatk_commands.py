@@ -31,6 +31,9 @@ def parse_program_command(command: str):
     cmdline_key = None # type: str
 
     for element in lexed_command[1:]:
+        if element == "--":
+            # It seems that, usually, anything after "--" is Spark configuration that we don't have types for.
+            break
         if element[0] == "-":
             if cmdline_key is not None:
                 if arguments.get(cmdline_key):
