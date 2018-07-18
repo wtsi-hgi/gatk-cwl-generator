@@ -79,7 +79,7 @@ def parse_gatk_command(gatk_command: str):
     arguments = parsed_command.arguments
 
     if parsed_command.program_name == "java" and arguments.get("-jar") == "GenomeAnalysisTK.jar":
-        assert not parsed_command.positional_arguments
+        assert not parsed_command.positional_arguments, parsed_command.positional_arguments
 
         gatk_tool_name = arguments.get("-T") or arguments.get("--analysis_type")
 
@@ -90,7 +90,7 @@ def parse_gatk_command(gatk_command: str):
             "-Xmx4g"
         ))
     elif parsed_command.program_name == "gatk":
-        assert len(parsed_command.positional_arguments) == 1
+        assert len(parsed_command.positional_arguments) == 1, parsed_command
         gatk_tool_name = parsed_command.positional_arguments[0]
 
         remove_from_dict_if_exists(arguments, ["--java-options"])
