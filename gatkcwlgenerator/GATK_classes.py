@@ -103,17 +103,23 @@ class GATKTool:
     def __init__(self, original_dict: Dict, additional_arguments: List[Dict]) -> None:
         self.original_dict = original_dict
         self._additional_arguments = additional_arguments
-        self._argument_dict = self._build_argument_dict()
+        self._argument_dict, self._synonym_dict = self._build_argument_dict()
 
     def _build_argument_dict(self):
         argument_dict = {}
+        synonyms = {}
         for argument in self._additional_arguments + self.original_dict["arguments"]:
             argument_dict[argument["name"]] = argument
+            if argument.get("synonyms") is not None and argument["synonyms"] != "NA":
+                synonyms[argument["synonyms"]] = argument
 
-        return argument_dict
+        return argument_dict, synonyms
 
     def get_argument(self, name: str) -> GATKArgument:
-        return GATKArgument(**self._argument_dict[name])
+        try:
+            return GATKArgument(**self._argument_dict[name])
+        except KeyError:
+            return GATKArgument(**self._synonym_dict[name])
 
     @property
     def name(self):
