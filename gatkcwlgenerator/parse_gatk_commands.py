@@ -39,7 +39,9 @@ def parse_program_command(command: str):
                 if arguments.get(cmdline_key):
                     raise Exception(f"Cannot have two boolean arguments. Found two of {cmdline_key}.")
                 arguments[cmdline_key] = True
-
+            if ":" in element:
+                # Remove a tag, if there is one (e.g. "--variant:RawHapMap" to "--variant").
+                element = element[:element.index(":")]
             cmdline_key = element
         else:
             if cmdline_key is None:
