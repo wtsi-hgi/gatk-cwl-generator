@@ -73,7 +73,7 @@ def remove_from_dict_if_exists(input_dict: Dict, keys: Iterable[str]):
             del input_dict[key]
 
 GATKCommand = namedtuple("GATKCommand", ["tool_name", "arguments"])
-def parse_gatk_command(gatk_command: str):
+def parse_gatk_command(gatk_command: str) -> Optional[GATKCommand]:
     parsed_command = parse_program_command(gatk_command)
 
     arguments = parsed_command.arguments
@@ -94,6 +94,8 @@ def parse_gatk_command(gatk_command: str):
         gatk_tool_name = parsed_command.positional_arguments[0]
 
         remove_from_dict_if_exists(arguments, ["--java-options"])
+    else:
+        return None
 
     return GATKCommand(
         tool_name=gatk_tool_name,
@@ -116,17 +118,23 @@ def parse_gatk_pre_box(pre_box_text: str) -> List:
         if not box_text_lines:
             return []
 
-    parsed_commands = []
-
+    # Split each potential command into a separate string.
+    commands: List[str] = []
     command_lines = [] # type: List[str]
     for line in box_text_lines:
         if line.startswith(COMMAND_STARTS) and command_lines:
-            parsed_commands.append(parse_gatk_command("\n".join(command_lines)))
+            commands.append("\n".join(command_lines))
             command_lines = [line]
         else:
             command_lines.append(line)
+    commands.append("\n".join(command_lines))
 
-    parsed_commands.append(parse_gatk_command("\n".join(command_lines)))
+    # Attempt to parse each command, and return the ones we can parse.
+    parsed_commands: List[GATKCommand] = []
+    for command in commands:
+        parsed = parse_gatk_command(command)
+        if parsed is not None:
+            parsed_commands.append(parsed)
 
     return parsed_commands
 
