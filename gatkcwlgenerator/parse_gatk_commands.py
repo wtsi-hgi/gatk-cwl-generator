@@ -97,7 +97,7 @@ def parse_gatk_command(gatk_command: str) -> Optional[GATKCommand]:
             "-Xmx4g"
         ))
     elif parsed_command.program_name == "gatk":
-        assert len(parsed_command.positional_arguments) == 1, parsed_command
+        assert len(parsed_command.positional_arguments) == 1 or parsed_command.positional_arguments[0] == "CompareBaseQualities", parsed_command
         gatk_tool_name = parsed_command.positional_arguments[0]
 
         remove_from_dict_if_exists(arguments, ["--java-options"])
