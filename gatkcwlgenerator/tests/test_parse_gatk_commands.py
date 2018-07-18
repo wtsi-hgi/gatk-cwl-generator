@@ -57,6 +57,9 @@ def test_does_cwl_type_match_value():
     assert assert_cwl_type_matches_value(CWLArrayType(CWLStringType()), ["one", "two"])
     assert assert_cwl_type_matches_value(CWLBooleanType(), True)
 
+    assert assert_cwl_type_matches_value(CWLUnionType(CWLArrayType(CWLIntType()), CWLIntType()), "42")
+    assert assert_cwl_type_matches_value(CWLOptionalType(CWLStringType()), "aaaa")
+
 EXCLUDE_TOOLS = (
     "PathSeqBuildReferenceTaxonomy" #https://github.com/broadinstitute/gatk/issues/4284
 )

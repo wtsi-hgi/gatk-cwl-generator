@@ -171,6 +171,12 @@ def infer_cwl_type_for_value(value: str) -> CWLType:
     return CWLStringType()
 
 def assert_cwl_type_matches_value(cwl_type: CWLType, value: Union[bool, str, List[str]]):
+    while isinstance(cwl_type, CWLOptionalType):
+        cwl_type = cwl_type.inner_type
+
+    if isinstance(cwl_type, CWLUnionType):
+        return any(assert_cwl_type_matches_value(child, value) for child in cwl_type.children)
+
     if isinstance(value, bool):
         value = "true"
 
