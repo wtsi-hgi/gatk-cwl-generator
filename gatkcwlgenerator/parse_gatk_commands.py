@@ -20,6 +20,8 @@ ParsedCommand = namedtuple("ParsedCommand", ["program_name", "positional_argumen
 def parse_program_command(command: str):
     # below is not parsed in shlex, so do it for it
     command = command.replace("\\\n", "")
+    # Remove technically-invalid but frequently-used comments after a line continuation.
+    command = re.sub(r"\\\s+#.*$", "", command, flags=re.MULTILINE)
     lexed_command = shlex.split(command, comments=True, posix=False)
     program_name = lexed_command[0]
 
