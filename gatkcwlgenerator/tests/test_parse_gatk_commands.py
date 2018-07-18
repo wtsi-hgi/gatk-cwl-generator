@@ -93,4 +93,4 @@ def test_gatk_docs(gatk_version: GATKVersion):
                             cwl_type = get_CWL_type_for_argument(cwlgen_argument, gatk_tool.name)
 
                             if not assert_cwl_type_matches_value(cwl_type, argument_value):
-                                print(f"Argument {argument_name} in tool {gatk_tool.name} is invalid")
+                                print(f"Argument {argument_name} in tool {gatk_tool.name} is invalid (type {cwl_type} does not match inferred type for value {argument_value!r})")
