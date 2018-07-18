@@ -108,10 +108,13 @@ def parse_gatk_pre_box(pre_box_text: str) -> List:
     # remove leading whitespace
     pre_box_text = pre_box_text.lstrip(" \n")
 
-    if not pre_box_text.startswith(COMMAND_STARTS):
-        return []
-
     box_text_lines = pre_box_text.split("\n")
+
+    # Find the start of the first command (in case there are comments before it).
+    while not box_text_lines[0].startswith(COMMAND_STARTS):
+        box_text_lines.pop(0)
+        if not box_text_lines:
+            return []
 
     parsed_commands = []
 
