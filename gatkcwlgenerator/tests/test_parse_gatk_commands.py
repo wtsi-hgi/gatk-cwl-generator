@@ -52,7 +52,6 @@ def test_parse_gatk_pre_box():
 def test_does_cwl_type_match_value():
     assert assert_cwl_type_matches_value(CWLFileType(), "a_file.file")
     assert assert_cwl_type_matches_value(CWLFloatType(), "1234")
-    assert not assert_cwl_type_matches_value(CWLFileType(), "this is a string")
 
     assert assert_cwl_type_matches_value(CWLArrayType(CWLStringType()), ["one", "two"])
     assert assert_cwl_type_matches_value(CWLBooleanType(), True)
