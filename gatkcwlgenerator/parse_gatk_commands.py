@@ -65,6 +65,11 @@ def parse_program_command(command: str):
 
             cmdline_key = None
 
+    if cmdline_key is not None:
+        if arguments.get(cmdline_key):
+            raise Exception(f"Cannot have two boolean arguments. Found two of {cmdline_key}.")
+        arguments[cmdline_key] = True
+
     return ParsedCommand(
         program_name=program_name,
         positional_arguments=positional_arguments,
