@@ -13,15 +13,15 @@ from .GATK_classes import *
 _logger = logging.getLogger("gatkcwlgenerator")
 
 class UnknownGATKTypeError(Exception):
-    def __init__(self, unknown_type):
+    def __init__(self, unknown_type) -> None:
         super(UnknownGATKTypeError, self).__init__("Unknown GATK type: '" + unknown_type + "'")
 
         self.unknown_type = unknown_type
 
-def is_file_type(cwl_type: CWLType):
+def is_file_type(cwl_type: CWLType) -> bool:
     return cwl_type == CWLFileType()
 
-def GATK_type_to_CWL_type(gatk_type: str):
+def GATK_type_to_CWL_type(gatk_type: str) -> CWLType:
     """
     Convert a GATK type to a CWL type.
     NOTE: No "hacks" or patching GATK types should be done in this function,
@@ -35,7 +35,7 @@ def GATK_type_to_CWL_type(gatk_type: str):
         "contaminationruntype": ['META', 'SAMPLE', 'READGROUP'],  # default is META
         # Example: https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_coverage_DepthOfCoverage.php#--partitionType
         "partition": ["readgroup", "sample", "library", "platform", "center",
-                    "sample_by_platform", "sample_by_center", "sample_by_platform_by_center"],
+                      "sample_by_platform", "sample_by_center", "sample_by_platform_by_center"],
         # NOTE: this actually refers to VariantContext.Type in the gatk 3 source code
         "type": ['INDEL', 'SNP', 'MIXED', 'MNP', 'SYMBOLIC', 'NO_VARIATION'],
         # from https://git.io/vNmFy
@@ -83,8 +83,8 @@ def GATK_type_to_CWL_type(gatk_type: str):
     else:
         raise UnknownGATKTypeError("Unknown GATK type: '" + gatk_type + "'")
 
-def get_CWL_type_for_argument(argument: GATKArgument, toolname: str):
-    cwl_type = None # type: CWLType
+def get_CWL_type_for_argument(argument: GATKArgument, toolname: str) -> CWLType:
+    cwl_type: CWLType
     gatk_type = argument.type
 
     if argument.name in ("input_file", "input"):
@@ -122,7 +122,7 @@ def get_CWL_type_for_argument(argument: GATKArgument, toolname: str):
         else:
             _logger.warning(f"Output argument {argument.long_prefix} should have a string or file type in it. GATK type: {gatk_type}")
 
-    string_type = cwl_type.find_node(lambda node: node == CWLStringType())
+    string_type: Optional[CWLStringType] = cwl_type.find_node(lambda node: node == CWLStringType())
 
     # overload the type of a gatk argument if think it should be a string
     if string_type is not None and argument.infer_if_file():
@@ -136,7 +136,7 @@ def get_CWL_type_for_argument(argument: GATKArgument, toolname: str):
     else:
         return cwl_type
 
-def get_input_argument_name(argument: GATKArgument, gatk_version: GATKVersion):
+def get_input_argument_name(argument: GATKArgument, gatk_version: GATKVersion) -> str:
     if argument.is_output_argument():
         if gatk_version.is_3():
             return argument.name + "Filename"
@@ -235,7 +235,7 @@ def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: GA
 
     return inputs, outputs
 
-def get_input_binding(argument, gatk_version: GATKVersion, cwl_type: CWLType):
+def get_input_binding(argument, gatk_version: GATKVersion, cwl_type: CWLType) -> Dict:
     has_file_type = cwl_type.find_node(is_file_type) is not None
     has_array_type = cwl_type.find_node(lambda node: isinstance(node, CWLArrayType)) is not None
     has_boolean_type = cwl_type.find_node(lambda node: node == CWLBooleanType())
@@ -294,7 +294,7 @@ def get_input_objects(argument: GATKArgument, toolname: str, gatk_version: GATKV
     has_array_type = False
     has_file_type = cwl_type.find_node(is_file_type) is not None
 
-    array_node = cwl_type.find_node(lambda node: isinstance(node, CWLArrayType))
+    array_node: Optional[CWLArrayType] = cwl_type.find_node(lambda node: isinstance(node, CWLArrayType))
     if array_node is not None:
         # NOTE: this is fixing the issue at https://github.com/common-workflow-language/cwltool/issues/593
         array_node.add_input_binding({

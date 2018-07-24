@@ -1,7 +1,6 @@
 #!/bin/python
 
 import argparse
-import functools
 import json
 import logging
 import os
@@ -18,12 +17,12 @@ from .gatk_tool_to_cwl import gatk_tool_to_cwl
 from .common import GATKVersion
 from .web_to_gatk_tool import get_annotation_name, get_gatk_links, get_gatk_tool, get_extra_arguments
 
-_logger = logging.getLogger("gatkcwlgenerator")  # type: logging.Logger
+_logger: logging.Logger = logging.getLogger("gatkcwlgenerator")
 _logger.addHandler(logging.StreamHandler())
 
 
 class OutputWriter:
-    def __init__(self, cmd_line_options):
+    def __init__(self, cmd_line_options) -> None:
         # Get current directory and make folders for files
         json_dir = os.path.join(cmd_line_options.output_dir, "json")
         cwl_dir = os.path.join(cmd_line_options.output_dir, "cwl")
@@ -44,7 +43,7 @@ class OutputWriter:
         self._json_dir = json_dir
         self._cwl_dir = cwl_dir
 
-    def write_cwl_file(self, cwl_dict: Dict, tool_name: str):
+    def write_cwl_file(self, cwl_dict: Dict, tool_name: str) -> None:
         cwl_path = os.path.join(self._cwl_dir, tool_name + ".cwl")
 
         _logger.info(f"Writing cwl file to {cwl_path}")
@@ -52,7 +51,7 @@ class OutputWriter:
         with open(cwl_path, "w") as file:
             yaml.round_trip_dump(cwl_dict, file)
 
-    def write_gatk_json_file(self, gatk_json_dict: Dict, tool_name: str):
+    def write_gatk_json_file(self, gatk_json_dict: Dict, tool_name: str) -> None:
         gatk_json_path = os.path.join(self._json_dir, tool_name + ".json")
 
         _logger.info(f"Writing gatk json file to {gatk_json_path}")
@@ -60,12 +59,12 @@ class OutputWriter:
         with open(gatk_json_path, "w") as file:
             json.dump(gatk_json_dict, file)
 
-def should_generate_file(tool_url, gatk_version: GATKVersion, include_pattern: str = None):
+def should_generate_file(tool_url, gatk_version: GATKVersion, include_pattern: str = None) -> bool:
     no_ext_url = tool_url[:-len(".php.json" if gatk_version.is_3() else ".json")]
 
     return include_pattern is None or no_ext_url.endswith(include_pattern)
 
-def main(cmd_line_options: SimpleNamespace):
+def main(cmd_line_options: SimpleNamespace) -> None:
     start = time.time()
 
     gatk_version = GATKVersion(cmd_line_options.version)
@@ -100,9 +99,9 @@ def main(cmd_line_options: SimpleNamespace):
     _logger.info(f"Completed in {end - start:.2f} seconds")
 
 
-def gatk_cwl_generator(**cmd_line_options):
+def gatk_cwl_generator(**cmd_line_options) -> None:
     """
-    Programmic entry to gatk_cwl_generator.
+    Programmatic entry to gatk_cwl_generator.
 
     This converts the object to cmd line flags and
     passes it though the command line interface, to apply defaults
@@ -118,7 +117,7 @@ def gatk_cwl_generator(**cmd_line_options):
 
     cmdline_main(args)
 
-def cmdline_main(args=None):
+def cmdline_main(args=None) -> None:
     """
     Function to be called when this is invoked on the command line.
     """
@@ -135,7 +134,7 @@ def cmdline_main(args=None):
     parser.add_argument('--out', "-o", dest='output_dir',
         help="Sets the output directory for generated files. Default is ./gatk_cmdline_tools/<VERSION>/")
     parser.add_argument('--include', dest='include',
-        help="Only generate this file (note, CommandLinkGATK has to be generated for v3.x)")
+        help="Only generate this file (note, CommandLineGATK has to be generated for v3.x)")
     parser.add_argument("--dev", dest="dev", action="store_true",
         help="Enable --use_cache and overwriting of the generated files (for development purposes). " +
         "Requires requests_cache to be installed")
@@ -179,7 +178,7 @@ def cmdline_main(args=None):
 
     if cmd_line_options.use_cache:
         import requests_cache
-        requests_cache.install_cache(cmd_line_options.use_cache) # Decreases the time to run dramatically
+        requests_cache.install_cache(cmd_line_options.use_cache)  # Decreases the time to run dramatically
 
     main(cmd_line_options)
 

@@ -6,9 +6,6 @@ from collections import namedtuple
 
 import requests_cache
 
-from gatkcwlgenerator.common import GATKVersion
-from gatkcwlgenerator.web_to_gatk_tool import get_gatk_tool, get_gatk_links, get_extra_arguments
-from gatkcwlgenerator.gatk_argument_to_cwl import get_CWL_type_for_argument
 from gatkcwlgenerator.cwl_type_ast import *
 
 requests_cache.install_cache()
@@ -17,7 +14,7 @@ COMMAND_STARTS = ("java -jar ", "gatk ")
 
 ParsedCommand = namedtuple("ParsedCommand", ["program_name", "positional_arguments", "arguments"])
 
-def parse_program_command(command: str):
+def parse_program_command(command: str) -> ParsedCommand:
     # below is not parsed in shlex, so do it for it
     command = command.replace("\\\n", "")
     # Remove technically-invalid but frequently-used comments after a line continuation.
@@ -25,10 +22,10 @@ def parse_program_command(command: str):
     lexed_command = shlex.split(command, comments=True, posix=False)
     program_name = lexed_command[0]
 
-    arguments = dict() # type: Dict[str, Union[str, List[str], bool]]
-    positional_arguments = []
+    arguments: Dict[str, Union[str, List[str], bool]] = {}
+    positional_arguments: List[str] = []
 
-    cmdline_key = None # type: str
+    cmdline_key: Optional[str] = None
 
     for element in lexed_command[1:]:
         if element == "--":
@@ -59,7 +56,7 @@ def parse_program_command(command: str):
                 elif isinstance(old_value, bool):
                     raise Exception(f"Invalid usage of argument {cmdline_key}")
                 elif isinstance(old_value, list):
-                    arguments[cmdline_key].append(element) # type: ignore
+                    arguments[cmdline_key].append(element)  # type: ignore
                 else:
                     arguments[cmdline_key] = [old_value, element]
 
@@ -79,7 +76,9 @@ def parse_program_command(command: str):
 def test_parse_program_command():
     pass
 
-def remove_from_dict_if_exists(input_dict: Dict, keys: Iterable[str]):
+T = TypeVar("T")
+
+def remove_from_dict_if_exists(input_dict: Dict[T, Any], keys: Iterable[T]) -> None:
     for key in keys:
         if input_dict.get(key) is not None:
             del input_dict[key]
@@ -114,7 +113,7 @@ def parse_gatk_command(gatk_command: str) -> Optional[GATKCommand]:
         arguments=arguments
     )
 
-def parse_gatk_pre_box(pre_box_text: str) -> List:
+def parse_gatk_pre_box(pre_box_text: str) -> List[GATKCommand]:
     # get rid of "[<COMMAND>]"
     pre_box_text = re.sub(r"\[(.*)\]", r"\1", pre_box_text)
     # remove common whitespace
@@ -132,7 +131,7 @@ def parse_gatk_pre_box(pre_box_text: str) -> List:
 
     # Split each potential command into a separate string.
     commands: List[str] = []
-    command_lines = [] # type: List[str]
+    command_lines: List[str] = []
     for line in box_text_lines:
         if line.startswith(COMMAND_STARTS) and command_lines:
             commands.append("\n".join(command_lines))
@@ -175,7 +174,7 @@ def infer_cwl_type_for_value(value: str) -> List[CWLType]:
 
     return [CWLStringType(), CWLFileType()]
 
-def assert_cwl_type_matches_value(cwl_type: CWLType, value: Union[bool, str, List[str]]):
+def assert_cwl_type_matches_value(cwl_type: CWLType, value: Union[bool, str, List[str]]) -> bool:
     while isinstance(cwl_type, CWLOptionalType):
         cwl_type = cwl_type.inner_type
 

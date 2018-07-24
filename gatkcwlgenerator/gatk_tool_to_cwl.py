@@ -16,19 +16,17 @@ _logger = logging.getLogger("gatkcwlgenerator")
 INVALID_ARGS = [
     "help",
     "defaultBaseQualities",
-    "analysis_type"           # this is hard coded into the baseCommand for each tool
+    "analysis_type"  # this is hard coded into the baseCommand for each tool
 ]
 
-"""
-This indicates gatk modules that require extra undocumented output arguments in gatk3.
-These haven't been ported to gatk 4, but when they are, the patched arguments need to be updated.
-"""
+# This indicates gatk modules that require extra undocumented output arguments in gatk3.
+# These haven't been ported to gatk 4, but when they are, the patched arguments need to be updated.
 SPECIAL_GATK3_MODULES = [
     "DepthOfCoverage",
     "RandomlySplitVariants"
 ]
 
-def get_js_library():
+def get_js_library() -> str:
     js_library_path = os.path.join(
         os.path.dirname(__file__),
         "js_library.js"
@@ -40,7 +38,7 @@ def get_js_library():
 
 JS_LIBRARY = get_js_library()
 
-def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options, annotation_names: List[str]):
+def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options, annotation_names: List[str]) -> Dict:
     """
     Make a cwl file with a given GATK json file in the cwl directory
     """
@@ -81,12 +79,10 @@ def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options, annotation_names: Li
                     "symbols": annotation_names
                 }]
             }
-        ] + ([]
-            if cmd_line_options.no_docker else
-            [{
-                "class": "DockerRequirement",
-                "dockerPull": cmd_line_options.docker_image_name
-            }])
+        ] + ([] if cmd_line_options.no_docker else [{
+            "class": "DockerRequirement",
+            "dockerPull": cmd_line_options.docker_image_name
+        }])
     }
 
     # Create and write the cwl file
@@ -95,7 +91,7 @@ def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options, annotation_names: Li
     inputs = []
 
     for argument in gatk_tool.arguments:
-        if not argument.name in INVALID_ARGS:
+        if argument.name not in INVALID_ARGS:
             argument_inputs, argument_outputs = gatk_argument_to_cwl(
                 argument,
                 gatk_tool.name,
@@ -104,12 +100,12 @@ def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options, annotation_names: Li
 
             synonym = argument.synonym
             if synonym is not None and len(argument_inputs) >= 1 and synonym.lstrip("-") != argument.name.lstrip("-"):
-                argument_inputs[0]["doc"] += f" [synonymous with {argument.synonym}]"
+                argument_inputs[0]["doc"] += f" [synonymous with {synonym}]"
 
             outputs.extend(argument_outputs)
 
             for argument_input in argument_inputs:
-                if "secondaryFiles" in argument_input: # So reference_sequence doesn't conflict with refIndex and refDict
+                if "secondaryFiles" in argument_input:  # So reference_sequence doesn't conflict with refIndex and refDict
                     inputs.insert(0, argument_input)
                 else:
                     inputs.append(argument_input)

@@ -8,8 +8,7 @@ sys.path.append(path.dirname(path.dirname(path.dirname(path.abspath(__file__))))
 from gatkcwlgenerator.common import GATKVersion
 from gatkcwlgenerator.cwl_type_ast import *
 from gatkcwlgenerator.parse_gatk_commands import (assert_cwl_type_matches_value,
-                                                  parse_gatk_pre_box,
-                                                  parse_program_command)
+                                                  parse_gatk_pre_box)
 from gatkcwlgenerator.web_to_gatk_tool import (get_extra_arguments,
                                                get_gatk_links,
                                                get_gatk_tool)
@@ -60,7 +59,7 @@ def test_does_cwl_type_match_value():
     assert assert_cwl_type_matches_value(CWLOptionalType(CWLStringType()), "aaaa")
 
 EXCLUDE_TOOLS = (
-    "PathSeqBuildReferenceTaxonomy" #https://github.com/broadinstitute/gatk/issues/4284
+    "PathSeqBuildReferenceTaxonomy"  # https://github.com/broadinstitute/gatk/issues/4284
 )
 
 def test_gatk_docs(gatk_version: GATKVersion):

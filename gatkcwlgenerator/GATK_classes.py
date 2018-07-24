@@ -8,19 +8,19 @@ OUTPUT_TYPE_FILE_EXT = {
 }
 
 class GATKArgument:
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self._init_dict = kwargs
 
-    def is_required(self):
+    def is_required(self) -> bool:
         return self.dict.required != "no"
 
     @property
     def long_prefix(self):
         return self._init_dict["name"]
 
-    def get_output_default_arg(self):
+    def get_output_default_arg(self) -> str:
         """
-        Returns the overriden default argument for an output argument.
+        Returns the overridden default argument for an output argument.
         """
         # Output types are defined to be keys of output_type_to_file_ext, so
         # this should not error
@@ -31,10 +31,10 @@ class GATKArgument:
         raise Exception("Output argument should be defined in OUTPUT_TYPE_FILE_EXT")
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.long_prefix.strip("-")
 
-    def infer_if_file(self):
+    def infer_if_file(self) -> bool:
         """
         Infer from properties of an argument if it is a file. To be used if an argument's type contains a 'string'
         as a string could represent a string or a file.
@@ -46,7 +46,7 @@ class GATKArgument:
 
         return "file" in self.summary and self.name not in known_non_file_params
 
-    def is_output_argument(self):
+    def is_output_argument(self) -> bool:
         """
         Returns whether this this argument's properties indicate is should be an output argument.
         """
@@ -74,7 +74,7 @@ class GATKArgument:
                 or has_output_suffix
                 or in_known_output_files)
 
-    def has_default(self):
+    def has_default(self) -> bool:
         return (self.dict.defaultValue != "NA"
             and self.dict.defaultValue.lower() != "none"
             and self.dict.defaultValue.lower() != "null")
@@ -98,6 +98,7 @@ class GATKArgument:
     @property
     def synonym(self) -> Optional[str]:
         return self.dict.synonyms if self.dict.synonyms != "NA" else None
+
 
 class GATKTool:
     def __init__(self, original_dict: Dict, additional_arguments: List[Dict]) -> None:

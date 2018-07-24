@@ -7,13 +7,11 @@ from bs4 import BeautifulSoup
 from .GATK_classes import *
 from .common import GATKVersion
 
-_logger = logging.getLogger("gatkcwlgenerator")  # type: logging.Logger
+_logger: logging.Logger = logging.getLogger("gatkcwlgenerator")
 _logger.addHandler(logging.StreamHandler())
 
 
-"""
-GATKLinks: A class to store info from the leading GATK page
-"""
+# A class to store info from the leading GATK page
 GATKLinks = namedtuple("GATKLinks", [
     "tool_urls",
     "annotator_urls",
@@ -100,7 +98,7 @@ def fetch_json_from(gatk_tool_url: str) -> Dict:
     return gatk_info_dict
 
 def _get_extra_readfilter_arguments(readfilter_urls: Iterable[str]) -> List[Dict]:
-    arguments = [] # type: List[Dict]
+    arguments: List[Dict] = []
 
     for readfilter_url in readfilter_urls:
         readfilter_dict = fetch_json_from(readfilter_url)

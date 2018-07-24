@@ -6,6 +6,7 @@ from abc import abstractmethod
 import copy
 from typing import *
 
+
 class CWLType:
     __metaclass__ = abc.ABCMeta
 
@@ -24,16 +25,16 @@ class CWLType:
     def get_cwl_object(self, expand_types=False):
         pass
 
-    def has_array_type(self):
+    def has_array_type(self) -> bool:
         return self.find_node(lambda node: isinstance(node, CWLArrayType)) is not None
 
-    def contains(self, other_type: 'CWLType'):
+    def contains(self, other_type: 'CWLType') -> bool:
         return self == other_type
 
-    def has_file_type(self):
+    def has_file_type(self) -> bool:
         return self.find_node(lambda cwl_type: cwl_type == CWLFileType()) is not None
 
-    def is_leaf(self):
+    def is_leaf(self) -> bool:
         """
         Returns True if this element has no children.
         """
@@ -53,7 +54,7 @@ class CWLType:
 
     def find_node(self, predicate):
         """
-        Traverses the AST to find a node that satifies the given predicate.
+        Traverses the AST to find a node that satisfies the given predicate.
         If the no node is found, returns None
         """
         if predicate(self):
@@ -64,12 +65,13 @@ class CWLType:
             except (AttributeError, StopIteration):
                 return None
 
+
 class CWLArrayType(CWLType):
-    def __init__(self, inner_type):
+    def __init__(self, inner_type) -> None:
         self.inner_type = inner_type
         self._input_binding = None
 
-    def add_input_binding(self, inputBinding):
+    def add_input_binding(self, inputBinding) -> None:
         self._input_binding = inputBinding
 
     def get_cwl_object(self, expand_types=False):
@@ -96,10 +98,10 @@ class CWLArrayType(CWLType):
 
 
 class CWLUnionType(CWLType):
-    def __init__(self, *items):
+    def __init__(self, *items) -> None:
         self.items = items
 
-    def contains(self, other_type: CWLType):
+    def contains(self, other_type: CWLType) -> bool:
         return any(map(lambda item: item.contains(other_type), self.items))
 
     def get_cwl_object(self, expand_types=False):
@@ -117,12 +119,12 @@ class CWLUnionType(CWLType):
     def children(self):
         return self.items
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{type(self).__name__}({self.items!r})"
 
 
 class CWLEnumType(CWLType):
-    def __init__(self, symbols):
+    def __init__(self, symbols) -> None:
         self.symbols = symbols
 
     def get_cwl_object(self, expand_types=False):
@@ -131,12 +133,12 @@ class CWLEnumType(CWLType):
             "symbols": copy.deepcopy(self.symbols)
         }
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{type(self).__name__}({self.symbols!r})"
 
 
 class CWLOptionalType(CWLType):
-    def __init__(self, inner_type):
+    def __init__(self, inner_type) -> None:
         self.inner_type = inner_type
 
     def get_cwl_object(self, expand_types=False):
@@ -152,18 +154,19 @@ class CWLOptionalType(CWLType):
                 inner_cwl_object
             ]
 
-    def contains(self, other_type: CWLType):
+    def contains(self, other_type: CWLType) -> bool:
         return self.inner_type.contains(other_type)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{type(self).__name__}({self.inner_type!r})"
+
 
 class CWLBasicType(CWLType):
     __metaclass__ = abc.ABCMeta
 
-    subtypes = [] # type: List[CWLType]
+    subtypes: List[CWLType] = []
 
-    def contains(self, other_type: CWLType):
+    def contains(self, other_type: CWLType) -> bool:
         if type(self) is type(other_type):
             return True
         else:
@@ -180,14 +183,16 @@ class CWLBasicType(CWLType):
     def get_cwl_object(self, expand_types=False):
         return self.name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{type(self).__name__}()"
 
-def get_cwl_basic_type(basic_type_name: str):
+
+def get_cwl_basic_type(basic_type_name: str) -> CWLBasicType:
     try:
         return globals()[f"CWL{basic_type_name.title()}Type"]()
     except KeyError as error:
         raise Exception(f"No CWL type of name {basic_type_name} found") from error
+
 
 class CWLFileType(CWLBasicType):
     name = "File"
@@ -197,7 +202,8 @@ class CWLDirectoryType(CWLBasicType):
 
 class CWLStringType(CWLBasicType):
     name = "string"
-    def contains(self, other_type: CWLType):
+
+    def contains(self, other_type: CWLType) -> bool:
         return type(self) is type(other_type) or type(other_type) is CWLEnumType
 
 class CWLIntType(CWLBasicType):
