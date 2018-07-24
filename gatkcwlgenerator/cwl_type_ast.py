@@ -38,12 +38,7 @@ class CWLType:
         """
         Returns True if this element has no children.
         """
-        try:
-            self.children
-        except AttributeError:
-            return True
-
-        return False
+        return not hasattr(self, "children")
 
     @property
     def children(self):
