@@ -326,9 +326,9 @@ def get_input_objects(argument: GATKArgument, toolname: str, gatk_version: GATKV
             tags_type = NON_ARRAY_TAGS_TAGS.get_cwl_object()
 
         tag_argument = {
-            "type": copy.deepcopy(tags_type),
             "doc": "A argument to set the tags of '{}'".format(argument.name),
-            "id": argument.name + "_tags"
+            "id": argument.name + "_tags",
+            "type": copy.deepcopy(tags_type)
         }
 
         return [base_cwl_arg, tag_argument]
