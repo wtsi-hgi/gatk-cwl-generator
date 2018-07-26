@@ -41,10 +41,13 @@ class GATKArgument:
         """
         known_non_file_params = [
             "prefixForAllOutputFileNames",
-            "READ_NAME_REGEX"
+            "READ_NAME_REGEX",
+            "read-name-regex",
+            "output",  # This refers to the (input) filename, which is a string.
+            "ignore-filter"
         ]
-
-        return "file" in self.summary and self.name not in known_non_file_params
+        s = self.summary.lower()
+        return self.name not in known_non_file_params and "file" in s and "to this file" not in s and "output" not in s
 
     def is_output_argument(self) -> bool:
         """
