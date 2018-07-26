@@ -195,20 +195,7 @@ def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: GA
         if gatk_version.is_3() and toolname in ("CombineGVCFs", "GenotypeGVCFs"):
             inputs[0]["type"].append({"type": "enum", "symbols": ["none"]})
 
-    if argument.name in ("create-output-bam-md5", "create-output-variant-md5", "create-output-bam-index", "create-output-variant-index"):
-        input_argument_name = get_input_argument_name(argument, gatk_version)
-        outputs = [{
-            "id": argument.name[len("create-output-"):],
-            "doc": f"{'md5' if argument.name.endswith('md5') else 'index'} file generated if {argument.name} is true",
-            "type": "File?",
-            "outputBinding": {
-                "glob": f"$(inputs['{input_argument_name}'] + '.md5')" if argument.name.endswith("md5") else [
-                    f"$(inputs['{input_argument_name}'] + '.idx')",
-                    f"$(inputs['{input_argument_name}'] + '.tbi')"
-                ]
-            }
-        }]
-    elif toolname == "DepthOfCoverage" and argument.name == "out":
+    if toolname == "DepthOfCoverage" and argument.name == "out":
         outputs = get_depth_of_coverage_outputs()
     elif toolname == "RandomlySplitVariants" and argument.name == "prefixForAllOutputFileNames":
         outputs = [{

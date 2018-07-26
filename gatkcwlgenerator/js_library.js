@@ -73,3 +73,8 @@ function generateArrayCmd(prefix){
 
     return output;
 }
+
+/* Polyfill String.endsWith (it was introduced in ES6, but CWL 1.0 only supports ES5) */
+String.prototype.endsWith = String.prototype.endsWith || function(suffix) {
+    return this.indexOf(suffix, this.length - suffix.length) >= 0;
+};

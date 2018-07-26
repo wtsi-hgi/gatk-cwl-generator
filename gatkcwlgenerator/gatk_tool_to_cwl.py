@@ -102,13 +102,52 @@ def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options, annotation_names: Li
             if synonym is not None and len(argument_inputs) >= 1 and synonym.lstrip("-") != argument.name.lstrip("-"):
                 argument_inputs[0]["doc"] += f" [synonymous with {synonym}]"
 
-            outputs.extend(argument_outputs)
-
             for argument_input in argument_inputs:
                 if "secondaryFiles" in argument_input:  # So reference_sequence doesn't conflict with refIndex and refDict
                     inputs.insert(0, argument_input)
                 else:
                     inputs.append(argument_input)
+
+            if argument_outputs and any(arg.name.startswith("create-output-") for arg in gatk_tool.arguments):
+                # This depends on the first output always being the main one (not a tag).
+                assert "tag" not in argument_outputs[0]["doc"]
+                argument_outputs[0].setdefault("secondaryFiles", [])
+                doc = argument.summary + argument.dict.fulltext
+                if (
+                    ("BAM" in doc or "bam" in argument.name) and ("VCF" not in doc and "variant" not in doc)
+                    or gatk_tool.name in (
+                        "UnmarkDuplicates", "FixMisencodedBaseQualityReads", "RevertBaseQualityScores", "ApplyBQSR",
+                        "PrintReads"
+                )):
+                    # This is probably the BAM output.
+                    argument_outputs[0]["secondaryFiles"].extend([
+                        "$(inputs['create-output-bam-index']? self.basename + '.bai' : [])",
+                        "$(inputs['create-output-bam-md5']? self.basename + '.md5' : [])"
+                    ])
+                elif (("VCF" in doc or "variant" in doc) and "BAM" not in doc
+                    or gatk_tool.name == "CNNScoreVariants"
+                ):
+                    # This is probably the VCF output.
+                    argument_outputs[0]["secondaryFiles"].extend([
+                        # If the extension is .vcf, the index's extension is .vcf.idx;
+                        # if the extension is .vcf.gz, the index's extension is .vcf.gz.tbi.
+                        "$(inputs['create-output-variant-index']? self.basename + (inputs['output-filename'].endsWith('.gz')? '.tbi':'.idx') : [])",
+                        "$(inputs['create-output-variant-md5']? self.basename + '.md5' : [])"
+                    ])
+                elif "IGV formatted file" in doc or "table" in doc or argument.name in (
+                    "graph-output", "activity-profile-out"
+                ) or gatk_tool.name in (
+                    "Pileup", "AnnotateIntervals", "VariantsToTable", "GetSampleName", "PreprocessIntervals",
+                    "BaseRecalibrator", "CountFalsePositives", "CollectAllelicCounts", "CalculateMixingFractions",
+                    "SplitIntervals", "GenomicsDBImport", "GetPileupSummaries", "VariantRecalibrator",
+                    "CollectReadCounts", "CheckPileup", "ASEReadCounter"
+                ):
+                    # This is not a BAM or VCF output, no need to add secondary files.
+                    pass
+                else:
+                    _logger.warning(f"Ambiguous output argument {argument.name} for {gatk_tool.name}")
+
+            outputs.extend(argument_outputs)
 
     cwl["inputs"] = inputs
     cwl["outputs"] = outputs
