@@ -151,6 +151,15 @@ def get_gatk_tool(
 
 def get_annotation_name(annotation_url: str) -> str:
     """Get the annotation name from the specified URL."""
-    # TODO: can this be done without a web request?
-    json = fetch_json_from(annotation_url)
-    return json["name"]
+    if annotation_url.endswith(".json"):
+        annotation_url = annotation_url[:-len(".json")]
+    if annotation_url.endswith(".php"):
+        annotation_url = annotation_url[:-len(".php")]
+    parts = annotation_url.split("_")
+    for i, fragment in enumerate(parts):
+        if fragment[0].isupper():
+            name = "_".join(parts[i:])
+            break
+    else:
+        raise ValueError(f"Could not infer annotation name from URL: {annotation_url}")
+    return name
