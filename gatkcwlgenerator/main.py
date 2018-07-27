@@ -7,7 +7,6 @@ import os
 import shutil
 import sys
 import time
-from types import SimpleNamespace
 from typing import *
 
 import coloredlogs
@@ -21,8 +20,20 @@ _logger: logging.Logger = logging.getLogger("gatkcwlgenerator")
 _logger.addHandler(logging.StreamHandler())
 
 
+class CmdLineArguments(argparse.Namespace):
+    version: str
+    verbose: bool
+    output_dir: str
+    include: Optional[str]
+    dev: bool
+    use_cache: Optional[str]
+    no_docker: bool
+    docker_image_name: str
+    gatk_command: str
+
+
 class OutputWriter:
-    def __init__(self, cmd_line_options) -> None:
+    def __init__(self, cmd_line_options: CmdLineArguments) -> None:
         # Get current directory and make folders for files
         json_dir = os.path.join(cmd_line_options.output_dir, "json")
         cwl_dir = os.path.join(cmd_line_options.output_dir, "cwl")
@@ -64,7 +75,7 @@ def should_generate_file(tool_url, gatk_version: GATKVersion, include_pattern: s
 
     return include_pattern is None or no_ext_url.endswith(include_pattern)
 
-def main(cmd_line_options: SimpleNamespace) -> None:
+def main(cmd_line_options: CmdLineArguments) -> None:
     start = time.time()
 
     gatk_version = GATKVersion(cmd_line_options.version)
@@ -147,7 +158,7 @@ def cmdline_main(args=None) -> None:
         "for version 3.x and 'broadinstitute/gatk:<VERSION>' for 4.x")
     parser.add_argument("--gatk_command", "-l", dest="gatk_command",
         help="Command to launch GATK. Default is 'java -jar /usr/GenomeAnalysisTK.jar' for GATK 3.x and 'java -jar /gatk/gatk.jar' for GATK 4.x")
-    cmd_line_options = parser.parse_args(args)
+    cmd_line_options = parser.parse_args(args, namespace=CmdLineArguments())
 
     log_format = "%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s"
 
