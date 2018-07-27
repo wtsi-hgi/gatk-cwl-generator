@@ -76,7 +76,7 @@ def get_gatk_links(gatk_version: GATKVersion) -> GATKLinks:
 
     # Move CommandLine to the front of the list
     if gatk_version.is_3():
-        cmd_line_gatk = next((x for x in tool_urls if "CommandLineGATK" in x))
+        cmd_line_gatk = next(x for x in tool_urls if "CommandLineGATK" in x)
 
     return GATKLinks(
         tool_urls=tool_urls,

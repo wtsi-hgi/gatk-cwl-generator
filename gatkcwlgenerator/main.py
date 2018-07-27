@@ -32,7 +32,7 @@ class OutputWriter:
             os.makedirs(cwl_dir)
         except OSError:
             if cmd_line_options.dev:
-                # Removing existing generated files if the folder already exists, for testing
+                # Remove existing generated files if the folder already exists, for testing
                 shutil.rmtree(json_dir)
                 shutil.rmtree(cwl_dir)
                 os.makedirs(json_dir)
@@ -46,7 +46,7 @@ class OutputWriter:
     def write_cwl_file(self, cwl_dict: Dict, tool_name: str) -> None:
         cwl_path = os.path.join(self._cwl_dir, tool_name + ".cwl")
 
-        _logger.info(f"Writing cwl file to {cwl_path}")
+        _logger.info(f"Writing CWL file to {cwl_path}")
 
         with open(cwl_path, "w") as file:
             yaml.round_trip_dump(cwl_dict, file)
