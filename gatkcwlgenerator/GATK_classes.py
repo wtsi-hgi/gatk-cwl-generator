@@ -48,6 +48,7 @@ class GATKArgument:
             "READ_NAME_REGEX",
             "read-name-regex",
             "output",  # This refers to the (input) filename, which is a string.
+            "out",
             "ignore-filter"
         ]
         s = self.summary.lower()
