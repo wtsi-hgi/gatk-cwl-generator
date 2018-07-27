@@ -23,7 +23,7 @@ GATKLinks = namedtuple("GATKLinks", [
 
 def get_gatk_links(gatk_version: GATKVersion) -> GATKLinks:
     """
-    Parses the tool docs HTML page to get links to the json resources
+    Parse the tool docs HTML page to get links to the JSON resources.
     """
 
     # TODO: make this look at the JSON files to categorise them
@@ -46,7 +46,7 @@ def get_gatk_links(gatk_version: GATKVersion) -> GATKLinks:
 
     starting_str = "org_broadinstitute_gatk" if gatk_version.is_3() else "org_broadinstitute_hellbender"
 
-    # Parse the html to obtain all json file links
+    # Parse the HTML to obtain all JSON file links.
     for link in soup.select("tr > td > a"):
         href = link['href']
         if href.startswith(starting_str) and "Exception" not in href:
@@ -94,7 +94,7 @@ def fetch_json_from(gatk_tool_url: str) -> Dict:
     try:
         gatk_info_dict = gatk_info_request.json()
     except ValueError as error:
-        raise Exception("Could not decode json retrieved from " + gatk_tool_url) from error
+        raise Exception("Could not decode JSON retrieved from " + gatk_tool_url) from error
 
     return gatk_info_dict
 
@@ -133,7 +133,7 @@ def get_gatk_tool(
         extra_arguments: List[Dict] = None
     ) -> GATKTool:
     """
-    Gets gatk tools from the specified tool_urls.
+    Get GATK tools from the specified tool_urls.
     """
     if extra_arguments is None:
         extra_arguments = []
@@ -150,7 +150,7 @@ def get_gatk_tool(
     )
 
 def get_annotation_name(annotation_url: str) -> str:
-    """Gets the annotation name from the specified URL."""
+    """Get the annotation name from the specified URL."""
     # TODO: can this be done without a web request?
     json = fetch_json_from(annotation_url)
     return json["name"]

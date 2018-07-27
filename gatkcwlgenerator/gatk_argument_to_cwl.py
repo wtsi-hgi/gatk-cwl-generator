@@ -182,7 +182,7 @@ def get_depth_of_coverage_outputs():
 
 def gatk_argument_to_cwl(argument: GATKArgument, toolname: str, gatk_version: GATKVersion) -> Tuple[List[Dict], List[Dict]]:
     """
-    Returns inputs and outputs for a given gatk argument, in the form (inputs, outputs).
+    Return inputs and outputs for a given GATK argument, in the form (inputs, outputs).
     """
     inputs = get_input_objects(argument, toolname, gatk_version)
 
@@ -270,9 +270,9 @@ NON_ARRAY_TAGS_TAGS = CWLOptionalType(
 
 def get_input_objects(argument: GATKArgument, toolname: str, gatk_version: GATKVersion) -> List[Dict]:
     """
-    Returns a list of cwl input arguments for expressing the given gatk argument
+    Return a list of CWL input arguments for expressing the given GATK argument.
 
-    :param argument: The cwl argument, as specified in the json file
+    :param argument: The CWL argument, as specified in the JSON file
 
     :returns: CWL objects to describe the given argument
     """

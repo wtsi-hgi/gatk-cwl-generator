@@ -7,8 +7,8 @@ __all__ = ["OUTPUT_TYPE_FILE_EXT", "GATKArgument", "GATKTool"]
 
 OUTPUT_TYPE_FILE_EXT = {
     "GATKSAMFileWriter": ".bam",
-    "PrintStream": '.txt',
-    'VariantContextWriter': '.vcf.gz'
+    "PrintStream": ".txt",
+    "VariantContextWriter": ".vcf.gz"
 }
 
 class GATKArgument:
@@ -55,7 +55,7 @@ class GATKArgument:
 
     def is_output_argument(self) -> bool:
         """
-        Returns whether this this argument's properties indicate is should be an output argument.
+        Return whether this argument's properties indicate it should be an output argument.
         """
         known_output_files = [
             "score-warnings",

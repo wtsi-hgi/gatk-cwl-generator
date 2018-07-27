@@ -20,12 +20,13 @@ INVALID_ARGS = [
     "analysis_type"  # this is hard coded into the baseCommand for each tool
 ]
 
-# This indicates gatk modules that require extra undocumented output arguments in gatk3.
-# These haven't been ported to gatk 4, but when they are, the patched arguments need to be updated.
+# This indicates GATK modules that require extra undocumented output arguments in GATK 3.
+# These haven't been ported to GATK 4, but when they are, the patched arguments need to be updated.
 SPECIAL_GATK3_MODULES = [
     "DepthOfCoverage",
     "RandomlySplitVariants"
 ]
+
 
 def get_js_library() -> str:
     js_library_path = os.path.join(
@@ -39,9 +40,10 @@ def get_js_library() -> str:
 
 JS_LIBRARY = get_js_library()
 
+
 def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options, annotation_names: List[str]) -> Dict:
     """
-    Make a cwl file with a given GATK json file in the cwl directory
+    Return a dictionary representing a CWL file from a given GATKTool.
     """
 
     version = GATKVersion(cmd_line_options.version)

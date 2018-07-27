@@ -1,7 +1,7 @@
 import sys
 
 if sys.version_info[0] < 3:
-    raise Exception("Must run in python 3.")
+    raise Exception("Must run in Python 3.")
 
 from .main import *
 import gatkcwlgenerator.web_to_gatk_tool

@@ -54,7 +54,7 @@ class OutputWriter:
     def write_gatk_json_file(self, gatk_json_dict: Dict, tool_name: str) -> None:
         gatk_json_path = os.path.join(self._json_dir, tool_name + ".json")
 
-        _logger.info(f"Writing gatk json file to {gatk_json_path}")
+        _logger.info(f"Writing GATK JSON file to {gatk_json_path}")
 
         with open(gatk_json_path, "w") as file:
             json.dump(gatk_json_dict, file)
@@ -141,12 +141,12 @@ def cmdline_main(args=None) -> None:
     parser.add_argument("--use_cache", dest="use_cache", nargs="?", const=default_cache_location, metavar="CACHE_LOCATION",
         help="Use requests_cache, using the cache at CACHE_LOCATION, or 'cache' if not specified. Default is False.")
     parser.add_argument("--no_docker", dest="no_docker", action="store_true",
-        help="Make the generated CWL files not use docker containers. Default is False.")
+        help="Make the generated CWL files not use Docker containers. Default is False.")
     parser.add_argument("--docker_image_name", "-c", dest="docker_image_name",
-        help="Docker image name for generated cwl files. Default is 'broadinstitute/gatk3:<VERSION>' " +
+        help="Docker image name for generated CWL files. Default is 'broadinstitute/gatk3:<VERSION>' " +
         "for version 3.x and 'broadinstitute/gatk:<VERSION>' for 4.x")
     parser.add_argument("--gatk_command", "-l", dest="gatk_command",
-        help="Command to launch GATK. Default is 'java -jar /usr/GenomeAnalysisTK.jar' for gatk 3.x and 'java -jar /gatk/gatk.jar' for gatk 4.x")
+        help="Command to launch GATK. Default is 'java -jar /usr/GenomeAnalysisTK.jar' for GATK 3.x and 'java -jar /gatk/gatk.jar' for GATK 4.x")
     cmd_line_options = parser.parse_args(args)
 
     log_format = "%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s"
