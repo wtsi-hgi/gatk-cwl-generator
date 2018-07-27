@@ -1,9 +1,4 @@
-from os import path, sys
-
-import pytest
 from bs4 import BeautifulSoup
-
-sys.path.append(path.dirname(path.dirname(path.dirname(path.abspath(__file__)))))
 
 from gatkcwlgenerator.common import GATKVersion
 from gatkcwlgenerator.cwl_type_ast import *
@@ -37,12 +32,6 @@ gatk --java-options "-Xmx4g" HaplotypeCaller  \
     -ERC GVCF
 """
 
-EG_3 = "3.5-0"
-EG_4 = "4.0.0.0"
-
-@pytest.fixture(params=[EG_3, EG_4])
-def gatk_version(request):
-    return GATKVersion(request.param)
 
 def test_parse_gatk_pre_box():
     assert len(parse_gatk_pre_box(gatk_3_test)) == 2

@@ -1,6 +1,3 @@
-from os import sys, path
-
-sys.path.append(path.dirname(path.dirname(path.dirname(path.abspath(__file__)))))
 from gatkcwlgenerator.cwl_type_ast import *
 
 def test_cwl_type_contains():

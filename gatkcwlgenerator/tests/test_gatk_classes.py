@@ -1,6 +1,3 @@
-from os import sys, path
-
-sys.path.append(path.dirname(path.dirname(path.dirname(path.abspath(__file__)))))
 from gatkcwlgenerator.GATK_classes import GATKTool
 
 def test_gatk_tool_override():
