@@ -73,9 +73,6 @@ def parse_program_command(command: str) -> ParsedCommand:
         arguments=arguments
     )
 
-def test_parse_program_command():
-    pass
-
 T = TypeVar("T")
 
 def remove_from_dict_if_exists(input_dict: Dict[T, Any], keys: Iterable[T]) -> None:
