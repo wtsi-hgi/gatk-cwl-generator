@@ -1,12 +1,8 @@
-import requests_cache
-
 from gatkcwlgenerator.common import GATKVersion
 from gatkcwlgenerator.web_to_gatk_tool import (
     get_gatk_links, get_gatk_tool, get_extra_arguments, fetch_json_from, get_annotation_name
 )
 from gatkcwlgenerator.GATK_classes import GATKTool
-
-requests_cache.install_cache()
 
 
 def test_get_gatk_links(gatk_version: GATKVersion):

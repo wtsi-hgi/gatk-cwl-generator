@@ -4,11 +4,7 @@ import textwrap
 from typing import *
 from collections import namedtuple
 
-import requests_cache
-
 from gatkcwlgenerator.cwl_type_ast import *
-
-requests_cache.install_cache()
 
 COMMAND_STARTS = ("java -jar ", "gatk ")
 
