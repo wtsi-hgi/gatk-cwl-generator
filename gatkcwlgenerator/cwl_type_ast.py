@@ -7,6 +7,14 @@ import copy
 from typing import *
 
 
+__all__ = [
+    "CWLType", "CWLArrayType", "CWLUnionType", "CWLEnumType", "CWLOptionalType",
+    "CWLBasicType", "CWLFileType", "CWLDirectoryType", "CWLStringType",
+    "CWLIntType", "CWLLongType", "CWLFloatType", "CWLDoubleType",
+    "CWLBooleanType", "get_cwl_basic_type"
+]
+
+
 class CWLType(metaclass=abc.ABCMeta):
 
     def __eq__(self, other: 'CWLType'):

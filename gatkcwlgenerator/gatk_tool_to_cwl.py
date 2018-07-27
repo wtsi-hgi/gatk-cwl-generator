@@ -4,6 +4,7 @@ GATKTool -> CWL Dict
 
 import os
 import logging
+from typing import *
 
 from ruamel.yaml.scalarstring import PreservedScalarString
 

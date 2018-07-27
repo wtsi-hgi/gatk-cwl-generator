@@ -1,5 +1,6 @@
 import logging
 from collections import namedtuple
+from typing import *
 
 import requests
 from bs4 import BeautifulSoup

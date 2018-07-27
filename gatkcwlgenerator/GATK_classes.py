@@ -1,6 +1,10 @@
 from types import SimpleNamespace
 from typing import *
 
+
+__all__ = ["OUTPUT_TYPE_FILE_EXT", "GATKArgument", "GATKTool"]
+
+
 OUTPUT_TYPE_FILE_EXT = {
     "GATKSAMFileWriter": ".bam",
     "PrintStream": '.txt',
