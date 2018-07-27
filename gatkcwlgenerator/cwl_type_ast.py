@@ -7,8 +7,7 @@ import copy
 from typing import *
 
 
-class CWLType:
-    __metaclass__ = abc.ABCMeta
+class CWLType(metaclass=abc.ABCMeta):
 
     def __eq__(self, other: 'CWLType'):
         if self.is_leaf() and other.is_leaf():
