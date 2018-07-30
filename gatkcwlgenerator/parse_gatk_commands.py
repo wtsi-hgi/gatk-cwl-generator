@@ -167,7 +167,7 @@ def infer_cwl_type_for_value(value: str) -> List[CWLType]:
     if "/" in value:
         return [CWLFileType(), CWLDirectoryType(), CWLStringType()]
 
-    return [CWLStringType(), CWLFileType()]
+    return [CWLStringType(), CWLFileType(), CWLDirectoryType()]
 
 def assert_cwl_type_matches_value(cwl_type: CWLType, value: Union[bool, str, List[str]]) -> bool:
     while isinstance(cwl_type, CWLOptionalType):
