@@ -70,7 +70,7 @@ def GATK_type_to_CWL_type(gatk_type: str) -> CWLType:
         return CWLStringType()
     elif gatk_type in map(str.lower, OUTPUT_TYPE_FILE_EXT.keys()):
         # insert this in here and replace it later
-        return CWLStringType()  # TODO: should this be CWLFileType?
+        return CWLStringType()
     elif "intervalbinding" in gatk_type:
         return CWLUnionType(
             CWLFileType(),
