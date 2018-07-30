@@ -150,6 +150,9 @@ def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options, annotation_names: Li
                 else:
                     _logger.warning(f"Ambiguous output argument {argument.name} for {gatk_tool.name}")
 
+                if not argument_outputs[0]["secondaryFiles"]:
+                    del argument_outputs[0]["secondaryFiles"]
+
             outputs.extend(argument_outputs)
 
     cwl["inputs"] = inputs
