@@ -1,3 +1,6 @@
+"""Scraping and downloading from the online GATK documentation."""
+
+
 import logging
 from collections import namedtuple
 from typing import *
