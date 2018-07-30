@@ -105,11 +105,7 @@ def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options, annotation_names: Li
             if synonym is not None and len(argument_inputs) >= 1 and synonym.lstrip("-") != argument.name.lstrip("-"):
                 argument_inputs[0]["doc"] += f" [synonymous with {synonym}]"
 
-            for argument_input in argument_inputs:
-                if "secondaryFiles" in argument_input:  # So reference_sequence doesn't conflict with refIndex and refDict
-                    inputs.insert(0, argument_input)
-                else:
-                    inputs.append(argument_input)
+            inputs.extend(argument_inputs)
 
             if argument_outputs and any(arg.name.startswith("create-output-") for arg in gatk_tool.arguments):
                 # This depends on the first output always being the main one (not a tag).
