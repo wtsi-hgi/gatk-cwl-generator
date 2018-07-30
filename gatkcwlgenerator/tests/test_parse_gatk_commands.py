@@ -59,25 +59,28 @@ def test_gatk_docs(gatk_version: GATKVersion):
     for tool_url in gatk_links.tool_urls:
         gatk_tool = get_gatk_tool(tool_url, extra_arguments)
         soup = BeautifulSoup(gatk_tool.description, "html.parser")
-        if gatk_tool.name not in EXCLUDE_TOOLS:
-            for pre_element in soup.select("pre"):
-                example_text = pre_element.string
-                if example_text is None:
-                    print(f"Possible invalid markup in example for tool {gatk_tool.name}")
+        if gatk_tool.name in EXCLUDE_TOOLS:
+            continue
+
+        for pre_element in soup.select("pre"):
+            example_text = pre_element.string
+            if example_text is None:
+                print(f"Possible invalid markup in example for tool {gatk_tool.name}")
+                continue
+
+            commands = parse_gatk_pre_box(example_text)
+            for command in commands:
+                if command.tool_name != gatk_tool.name:
+                    print(f"Mismatched tool names, not checking: example uses {command.tool_name}, but page is for {gatk_tool.name}")
                     continue
-                commands = parse_gatk_pre_box(example_text)
-                for command in commands:
-                    if command.tool_name != gatk_tool.name:
-                        print(f"Mismatched tool names, not checking: example uses {command.tool_name}, but page is for {gatk_tool.name}")
-                        continue
 
-                    for argument_name, argument_value in command.arguments.items():
-                        try:
-                            cwlgen_argument = gatk_tool.get_argument(argument_name)
-                        except KeyError:
-                            print(f"Argument {argument_name} not found for tool {gatk_tool.name}")
-                        else:
-                            cwl_type = get_CWL_type_for_argument(cwlgen_argument, gatk_tool.name, gatk_version)
+                for argument_name, argument_value in command.arguments.items():
+                    try:
+                        cwlgen_argument = gatk_tool.get_argument(argument_name)
+                    except KeyError:
+                        print(f"Argument {argument_name} not found for tool {gatk_tool.name}")
+                    else:
+                        cwl_type = get_CWL_type_for_argument(cwlgen_argument, gatk_tool.name, gatk_version)
 
-                            if not assert_cwl_type_matches_value(cwl_type, argument_value):
-                                print(f"Argument {argument_name} in tool {gatk_tool.name} is invalid (type {cwl_type} does not match inferred type for value {argument_value!r})")
+                        if not assert_cwl_type_matches_value(cwl_type, argument_value):
+                            print(f"Argument {argument_name} in tool {gatk_tool.name} is invalid (type {cwl_type} does not match inferred type for value {argument_value!r})")
