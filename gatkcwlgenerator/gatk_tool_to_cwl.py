@@ -122,9 +122,9 @@ def gatk_tool_to_cwl(gatk_tool: GATKTool, cmd_line_options, annotation_names: Li
                         "UnmarkDuplicates", "FixMisencodedBaseQualityReads", "RevertBaseQualityScores", "ApplyBQSR",
                         "PrintReads"
                 )):
-                    # This is probably the BAM output.
+                    # This is probably the BAM/CRAM output.
                     argument_outputs[0]["secondaryFiles"].extend([
-                        "$(inputs['create-output-bam-index']? self.basename + '.bai' : [])",
+                        "$(inputs['create-output-bam-index']? self.basename + self.nameext.replace('m', 'i') : [])",
                         "$(inputs['create-output-bam-md5']? self.basename + '.md5' : [])"
                     ])
                 elif (("VCF" in doc or "variant" in doc) and "BAM" not in doc
