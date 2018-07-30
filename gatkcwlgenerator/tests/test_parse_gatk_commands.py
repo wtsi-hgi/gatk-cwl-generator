@@ -77,7 +77,7 @@ def test_gatk_docs(gatk_version: GATKVersion):
                         except KeyError:
                             print(f"Argument {argument_name} not found for tool {gatk_tool.name}")
                         else:
-                            cwl_type = get_CWL_type_for_argument(cwlgen_argument, gatk_tool.name)
+                            cwl_type = get_CWL_type_for_argument(cwlgen_argument, gatk_tool.name, gatk_version)
 
                             if not assert_cwl_type_matches_value(cwl_type, argument_value):
                                 print(f"Argument {argument_name} in tool {gatk_tool.name} is invalid (type {cwl_type} does not match inferred type for value {argument_value!r})")

@@ -84,7 +84,7 @@ def GATK_type_to_CWL_type(gatk_type: str) -> CWLType:
     else:
         raise UnknownGATKTypeError("Unknown GATK type: '" + gatk_type + "'")
 
-def get_CWL_type_for_argument(argument: GATKArgument, toolname: str) -> CWLType:
+def get_CWL_type_for_argument(argument: GATKArgument, toolname: str, gatk_version: GATKVersion) -> CWLType:
     cwl_type: CWLType
     gatk_type = argument.type
 
@@ -93,7 +93,7 @@ def get_CWL_type_for_argument(argument: GATKArgument, toolname: str) -> CWLType:
 
     if argument.name == "intervals":
         # Enforce the GATK 3 type and fix https://github.com/broadinstitute/gatk/issues/4196
-        if toolname == "GenomicsDBImport":
+        if toolname == "GenomicsDBImport" and gatk_version < GATKVersion("4.0.6.0"):
             gatk_type = "IntervalBinding[Feature]"
         else:
             gatk_type = "List[IntervalBinding[Feature]]"
@@ -277,7 +277,7 @@ def get_input_objects(argument: GATKArgument, toolname: str, gatk_version: GATKV
     :returns: CWL objects to describe the given argument
     """
 
-    cwl_type = get_CWL_type_for_argument(argument, toolname)
+    cwl_type = get_CWL_type_for_argument(argument, toolname, gatk_version)
 
     has_array_type = False
     has_file_type = cwl_type.find_node(is_file_type) is not None
