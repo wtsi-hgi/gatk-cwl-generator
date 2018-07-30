@@ -85,7 +85,7 @@ def parse_gatk_command(gatk_command: str) -> Optional[GATKCommand]:
     arguments = parsed_command.arguments
 
     if parsed_command.program_name == "java" and arguments.get("-jar") == "GenomeAnalysisTK.jar":
-        assert not parsed_command.positional_arguments, parsed_command.positional_arguments
+        assert not parsed_command.positional_arguments, parsed_command
 
         gatk_tool_name = arguments.get("-T") or arguments.get("--analysis_type")
 
