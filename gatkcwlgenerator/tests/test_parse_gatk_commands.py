@@ -47,9 +47,44 @@ def test_does_cwl_type_match_value():
     assert assert_cwl_type_matches_value(CWLUnionType(CWLArrayType(CWLIntType()), CWLIntType()), "42")
     assert assert_cwl_type_matches_value(CWLOptionalType(CWLStringType()), "aaaa")
 
-EXCLUDE_TOOLS = (
-    "PathSeqBuildReferenceTaxonomy"  # https://github.com/broadinstitute/gatk/issues/4284
-)
+
+# Values should be the version in which the docs were fixed, or the
+# special value UNFIXED if there is no released fix.
+UNFIXED = object()
+EXCLUDE_TOOLS = {
+    "CountRODsByRef": GATKVersion("4"),
+    "FindCoveredIntervals": GATKVersion("4"),
+    "PrintReads": GATKVersion("4"),
+    "QualifyMissingIntervals": GATKVersion("4"),
+    "SelectHeaders": GATKVersion("4"),
+    "SelectVariants": GATKVersion("4"),
+    "ValidateVariants": GATKVersion("4"),
+    "ValidationSiteSelector": GATKVersion("4"),
+    "SplitNCigarReads": GATKVersion("4.0.3.0"),
+    "ApplyVQSR": GATKVersion("4.0.5.0"),
+    # https://github.com/broadinstitute/gatk/issues/4284
+    "PathSeqBuildReferenceTaxonomy": GATKVersion("4.0.5.2"),
+    # https://github.com/broadinstitute/gatk/pull/5021
+    "FlagStat": GATKVersion("4.0.7.0"),
+    "FlagStatSpark": GATKVersion("4.0.7.0"),
+    "GetSampleName": GATKVersion("4.0.7.0"),
+    "SplitReads": GATKVersion("4.0.7.0"),
+    # https://github.com/broadinstitute/gatk/pull/5028
+    "FilterMutectCalls": GATKVersion("4.0.7.0"),
+    "ReadsPipelineSpark": GATKVersion("4.0.7.0"),
+    "VariantFiltration": GATKVersion("4.0.7.0"),
+    # https://github.com/broadinstitute/gatk/pull/5063
+    "AnnotateVcfWithExpectedAlleleFraction": UNFIXED,
+    "ApplyBQSRSpark": UNFIXED,
+    "CalculateGenotypePosteriors": UNFIXED,
+    "CNNVariantTrain": UNFIXED,
+    "CNNVariantWriteTensors": UNFIXED,
+    "PathSeqPipelineSpark": UNFIXED,
+    "VariantRecalibrator": UNFIXED,
+    # https://github.com/broadinstitute/gatk/issues/5072
+    "LeftAlignIndels": UNFIXED,
+}
+
 
 def test_gatk_docs(gatk_version: GATKVersion):
     gatk_links = get_gatk_links(gatk_version)
@@ -59,7 +94,10 @@ def test_gatk_docs(gatk_version: GATKVersion):
     for tool_url in gatk_links.tool_urls:
         gatk_tool = get_gatk_tool(tool_url, extra_arguments)
         soup = BeautifulSoup(gatk_tool.description, "html.parser")
-        if gatk_tool.name in EXCLUDE_TOOLS:
+        if EXCLUDE_TOOLS.get(gatk_tool.name) is not None and (
+            EXCLUDE_TOOLS[gatk_tool.name] is UNFIXED or gatk_version < EXCLUDE_TOOLS[gatk_tool.name]
+        ):
+            # Documentation for tool is known-bad, ignore it.
             continue
 
         for pre_element in soup.select("pre"):
