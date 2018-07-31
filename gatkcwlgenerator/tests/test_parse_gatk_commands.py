@@ -85,6 +85,18 @@ EXCLUDE_TOOLS = {
     "LeftAlignIndels": UNFIXED,
 }
 
+# Keys are allowed to use their associated values in examples. (This
+# should only be used when an example needs to refer to another tool,
+# not when the cross-reference is a bug!)
+ALLOW_CROSS_REFERENCES = {
+    # GATK 3
+    "AnalyzeCovariates": {"BaseRecalibrator"},
+    "MuTect2": {"CombineVariants"},
+    # GATK 4
+    "CreateSomaticPanelOfNormals": {"Mutect2"},
+    "FilterByOrientationBias": {"CollectSequencingArtifactMetrics"},
+}
+
 
 def test_gatk_docs(gatk_version: GATKVersion):
     gatk_links = get_gatk_links(gatk_version)
@@ -102,23 +114,20 @@ def test_gatk_docs(gatk_version: GATKVersion):
 
         for pre_element in soup.select("pre"):
             example_text = pre_element.string
-            if example_text is None:
-                print(f"Possible invalid markup in example for tool {gatk_tool.name}")
-                continue
+            assert example_text is not None, f"Invalid markup in example for tool {gatk_tool.name}"
 
             commands = parse_gatk_pre_box(example_text)
             for command in commands:
                 if command.tool_name != gatk_tool.name:
-                    print(f"Mismatched tool names, not checking: example uses {command.tool_name}, but page is for {gatk_tool.name}")
+                    assert command.tool_name in ALLOW_CROSS_REFERENCES.get(gatk_tool.name, []), f"Mismatched tool names: example uses {command.tool_name}, but page is for {gatk_tool.name}"
                     continue
 
                 for argument_name, argument_value in command.arguments.items():
                     try:
                         cwlgen_argument = gatk_tool.get_argument(argument_name)
                     except KeyError:
-                        print(f"Argument {argument_name} not found for tool {gatk_tool.name}")
-                    else:
-                        cwl_type = get_CWL_type_for_argument(cwlgen_argument, gatk_tool.name, gatk_version)
+                        raise AssertionError(f"Argument {argument_name} not found for tool {gatk_tool.name}") from None
 
-                        if not assert_cwl_type_matches_value(cwl_type, argument_value):
-                            print(f"Argument {argument_name} in tool {gatk_tool.name} is invalid (type {cwl_type} does not match inferred type for value {argument_value!r})")
+                    cwl_type = get_CWL_type_for_argument(cwlgen_argument, gatk_tool.name, gatk_version)
+                    if not assert_cwl_type_matches_value(cwl_type, argument_value):
+                        print(f"Argument {argument_name} in tool {gatk_tool.name} is invalid (type {cwl_type} does not match inferred type for value {argument_value!r})")
