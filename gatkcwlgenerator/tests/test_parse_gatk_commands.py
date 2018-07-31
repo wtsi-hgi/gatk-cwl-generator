@@ -131,3 +131,9 @@ def test_gatk_docs(gatk_version: GATKVersion):
                     cwl_type = get_CWL_type_for_argument(cwlgen_argument, gatk_tool.name, gatk_version)
                     if not assert_cwl_type_matches_value(cwl_type, argument_value):
                         print(f"Argument {argument_name} in tool {gatk_tool.name} is invalid (type {cwl_type} does not match inferred type for value {argument_value!r})")
+
+
+def test_docs_no_unfixed_bugs():
+    # We're silencing errors above, but the tests should still fail
+    # while the docs are broken.
+    assert UNFIXED not in EXCLUDE_TOOLS.values(), "The docs are known to be broken"  # or EXCLUDE_TOOLS needs updating
