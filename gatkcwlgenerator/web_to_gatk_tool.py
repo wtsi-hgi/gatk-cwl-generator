@@ -152,17 +152,27 @@ def get_gatk_tool(
         extra_arguments
     )
 
-def get_annotation_name(annotation_url: str) -> str:
-    """Get the annotation name from the specified URL."""
-    if annotation_url.endswith(".json"):
-        annotation_url = annotation_url[:-len(".json")]
-    if annotation_url.endswith(".php"):
-        annotation_url = annotation_url[:-len(".php")]
-    parts = annotation_url.split("_")
+def get_tool_name(url: str) -> str:
+    """Get the tool name from the specified URL."""
+    if url.endswith(".json"):
+        url = url[:-len(".json")]
+    if url.endswith(".php"):
+        url = url[:-len(".php")]
+
+    parts = url.split("_")
     for i, fragment in enumerate(parts):
         if fragment[0].isupper():
             name = "_".join(parts[i:])
             break
     else:
-        raise ValueError(f"Could not infer annotation name from URL: {annotation_url}")
+        raise ValueError(f"Could not infer tool name from URL: {url}")
+
+    # Read filters sometimes have a $ in the URL, e.g.:
+    # https://software.broadinstitute.org/gatk/documentation/tooldocs/4.0.7.0/org_broadinstitute_hellbender_engine_filters_ReadFilterLibrary$AllowAllReadsReadFilter.json
+    if "$" in name:
+        # Workaround for bizarre one-off GATK 3 tool name:
+        # https://software.broadinstitute.org/gatk/documentation/tooldocs/3.8-0/org_broadinstitute_gatk_engine_filters_CountingFilteringIterator$CountingReadFilter.php
+        if name == "CountingFilteringIterator$CountingReadFilter":
+            return "CountingFilteringIterator.CountingReadFilter"
+        return name[name.index("$")+1:]
     return name
