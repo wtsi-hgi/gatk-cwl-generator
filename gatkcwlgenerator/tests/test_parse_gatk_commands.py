@@ -50,6 +50,43 @@ def test_does_cwl_type_match_value():
     assert assert_cwl_type_matches_value(CWLOptionalType(CWLStringType()), "aaaa")
 
 
+# Values should be the version in which the docs were fixed, or the
+# special value UNFIXED if there is no released fix.
+UNFIXED = object()
+XFAIL_TOOLS = {
+    "CountRODsByRef": GATKVersion("4"),
+    "FindCoveredIntervals": GATKVersion("4"),
+    "PrintReads": GATKVersion("4"),
+    "QualifyMissingIntervals": GATKVersion("4"),
+    "SelectHeaders": GATKVersion("4"),
+    "SelectVariants": GATKVersion("4"),
+    "ValidateVariants": GATKVersion("4"),
+    "ValidationSiteSelector": GATKVersion("4"),
+    "SplitNCigarReads": GATKVersion("4.0.3.0"),
+    "ApplyVQSR": GATKVersion("4.0.5.0"),
+    # https://github.com/broadinstitute/gatk/issues/4284
+    "PathSeqBuildReferenceTaxonomy": GATKVersion("4.0.5.2"),
+    # https://github.com/broadinstitute/gatk/pull/5021
+    "FlagStat": GATKVersion("4.0.7.0"),
+    "FlagStatSpark": GATKVersion("4.0.7.0"),
+    "GetSampleName": GATKVersion("4.0.7.0"),
+    "SplitReads": GATKVersion("4.0.7.0"),
+    # https://github.com/broadinstitute/gatk/pull/5028
+    "FilterMutectCalls": GATKVersion("4.0.7.0"),
+    "ReadsPipelineSpark": GATKVersion("4.0.7.0"),
+    "VariantFiltration": GATKVersion("4.0.7.0"),
+    # https://github.com/broadinstitute/gatk/pull/5063
+    "AnnotateVcfWithExpectedAlleleFraction": UNFIXED,
+    "ApplyBQSRSpark": UNFIXED,
+    "CalculateGenotypePosteriors": UNFIXED,
+    "CNNVariantTrain": UNFIXED,
+    "CNNVariantWriteTensors": UNFIXED,
+    "PathSeqPipelineSpark": UNFIXED,
+    "VariantRecalibrator": UNFIXED,
+    # https://github.com/broadinstitute/gatk/issues/5072
+    "LeftAlignIndels": UNFIXED,
+}
+
 # Keys are allowed to use their associated values in examples. (This
 # should only be used when an example needs to refer to another tool,
 # not when the cross-reference is a bug!)
@@ -95,8 +132,14 @@ for version in map(GATKVersion, TESTED_VERSIONS):
     gatk_links = get_gatk_links(version)
     extra_arguments = get_extra_arguments(version, gatk_links)
     for tool_url in gatk_links.tool_urls:
+        tool_name = get_tool_name(tool_url)
         # Add a mark to allow executing tests for one version only.
         # e.g. to execute tests for GATK 3.8, pass `-m v3_8_0`.
-        mark = getattr(pytest.mark, escape_for_mark(str(version), initial_char="v"))
-        params.append(pytest.param(version, (tool_url, extra_arguments), marks=mark, id=f"{version}:{get_tool_name(tool_url)}"))
+        marks = [getattr(pytest.mark, escape_for_mark(str(version), initial_char="v"))]
+        if XFAIL_TOOLS.get(tool_name) is not None and (
+                XFAIL_TOOLS[tool_name] is UNFIXED or version < XFAIL_TOOLS[tool_name]
+        ):
+            # Documentation for tool is known-bad, ignore it.
+            marks.append(pytest.mark.xfail)
+        params.append(pytest.param(version, (tool_url, extra_arguments), marks=marks, id=f"{version}:{tool_name}"))
 pytest.mark.parametrize("gatk_version, gatk_tool", params, indirect=["gatk_tool"])(test_docs_for_tool)
