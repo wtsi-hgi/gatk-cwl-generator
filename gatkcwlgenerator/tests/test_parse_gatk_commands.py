@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+import pytest
 
 from gatkcwlgenerator.common import GATKVersion
 from gatkcwlgenerator.cwl_type_ast import *
@@ -8,6 +9,7 @@ from gatkcwlgenerator.web_to_gatk_tool import (get_extra_arguments,
                                                get_gatk_links,
                                                get_gatk_tool)
 from gatkcwlgenerator.gatk_argument_to_cwl import get_CWL_type_for_argument
+from gatkcwlgenerator.tests.globals import TESTED_VERSIONS, escape_for_mark
 
 
 gatk_3_test = r"""
@@ -98,39 +100,49 @@ ALLOW_CROSS_REFERENCES = {
 }
 
 
-def test_gatk_docs(gatk_version: GATKVersion):
-    gatk_links = get_gatk_links(gatk_version)
+# NB: this test is parametrized; see below for details.
+def test_docs_for_tool(gatk_version, gatk_tool):
+    soup = BeautifulSoup(gatk_tool.description, "html.parser")
 
-    extra_arguments = get_extra_arguments(gatk_version, gatk_links)
+    for pre_element in soup.select("pre"):
+        example_text = pre_element.string
+        assert example_text is not None, f"Invalid markup in example for tool {gatk_tool.name}"
 
+        commands = parse_gatk_pre_box(example_text)
+        for command in commands:
+            if command.tool_name != gatk_tool.name:
+                assert command.tool_name in ALLOW_CROSS_REFERENCES.get(gatk_tool.name, []), f"Mismatched tool names: example uses {command.tool_name}, but page is for {gatk_tool.name}"
+                continue
+
+            for argument_name, argument_value in command.arguments.items():
+                try:
+                    cwlgen_argument = gatk_tool.get_argument(argument_name)
+                except KeyError:
+                    raise AssertionError(f"Argument {argument_name} not found for tool {gatk_tool.name}") from None
+
+                cwl_type = get_CWL_type_for_argument(cwlgen_argument, gatk_tool.name, gatk_version)
+                if not assert_cwl_type_matches_value(cwl_type, argument_value):
+                    raise AssertionError(f"Argument {argument_name} in tool {gatk_tool.name} is invalid (type {cwl_type} does not match inferred type for value {argument_value!r})")
+
+
+# Do the parametrization for test_docs_for_tool().
+# NOTE: this makes web requests as part of test collection.
+params = []
+for version in map(GATKVersion, TESTED_VERSIONS):
+    gatk_links = get_gatk_links(version)
+    extra_arguments = get_extra_arguments(version, gatk_links)
     for tool_url in gatk_links.tool_urls:
         gatk_tool = get_gatk_tool(tool_url, extra_arguments)
-        soup = BeautifulSoup(gatk_tool.description, "html.parser")
         if EXCLUDE_TOOLS.get(gatk_tool.name) is not None and (
-            EXCLUDE_TOOLS[gatk_tool.name] is UNFIXED or gatk_version < EXCLUDE_TOOLS[gatk_tool.name]
+            EXCLUDE_TOOLS[gatk_tool.name] is UNFIXED or version < EXCLUDE_TOOLS[gatk_tool.name]
         ):
             # Documentation for tool is known-bad, ignore it.
             continue
-
-        for pre_element in soup.select("pre"):
-            example_text = pre_element.string
-            assert example_text is not None, f"Invalid markup in example for tool {gatk_tool.name}"
-
-            commands = parse_gatk_pre_box(example_text)
-            for command in commands:
-                if command.tool_name != gatk_tool.name:
-                    assert command.tool_name in ALLOW_CROSS_REFERENCES.get(gatk_tool.name, []), f"Mismatched tool names: example uses {command.tool_name}, but page is for {gatk_tool.name}"
-                    continue
-
-                for argument_name, argument_value in command.arguments.items():
-                    try:
-                        cwlgen_argument = gatk_tool.get_argument(argument_name)
-                    except KeyError:
-                        raise AssertionError(f"Argument {argument_name} not found for tool {gatk_tool.name}") from None
-
-                    cwl_type = get_CWL_type_for_argument(cwlgen_argument, gatk_tool.name, gatk_version)
-                    if not assert_cwl_type_matches_value(cwl_type, argument_value):
-                        print(f"Argument {argument_name} in tool {gatk_tool.name} is invalid (type {cwl_type} does not match inferred type for value {argument_value!r})")
+        # Add a mark to allow executing tests for one version only.
+        # e.g. to execute tests for GATK 3.8, pass `-m v3_8_0`.
+        mark = getattr(pytest.mark, escape_for_mark(str(version), initial_char="v"))
+        params.append(pytest.param(version, gatk_tool, marks=mark, id=f"{version}:{gatk_tool.name}"))
+pytest.mark.parametrize("gatk_version, gatk_tool", params)(test_docs_for_tool)
 
 
 def test_docs_no_unfixed_bugs():
