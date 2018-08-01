@@ -7,7 +7,7 @@ from gatkcwlgenerator.parse_gatk_commands import (assert_cwl_type_matches_value,
                                                   parse_gatk_pre_box)
 from gatkcwlgenerator.web_to_gatk_tool import (get_extra_arguments,
                                                get_gatk_links,
-                                               get_gatk_tool)
+                                               get_tool_name)
 from gatkcwlgenerator.gatk_argument_to_cwl import get_CWL_type_for_argument
 from gatkcwlgenerator.tests.globals import TESTED_VERSIONS, escape_for_mark
 
@@ -95,9 +95,8 @@ for version in map(GATKVersion, TESTED_VERSIONS):
     gatk_links = get_gatk_links(version)
     extra_arguments = get_extra_arguments(version, gatk_links)
     for tool_url in gatk_links.tool_urls:
-        gatk_tool = get_gatk_tool(tool_url, extra_arguments)
         # Add a mark to allow executing tests for one version only.
         # e.g. to execute tests for GATK 3.8, pass `-m v3_8_0`.
         mark = getattr(pytest.mark, escape_for_mark(str(version), initial_char="v"))
-        params.append(pytest.param(version, gatk_tool, marks=mark, id=f"{version}:{gatk_tool.name}"))
-pytest.mark.parametrize("gatk_version, gatk_tool", params)(test_docs_for_tool)
+        params.append(pytest.param(version, (tool_url, extra_arguments), marks=mark, id=f"{version}:{get_tool_name(tool_url)}"))
+pytest.mark.parametrize("gatk_version, gatk_tool", params, indirect=["gatk_tool"])(test_docs_for_tool)
